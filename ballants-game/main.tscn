@@ -1,7 +1,43 @@
 [gd_scene format=3 uid="uid://dt4l2qlxcgdjf"]
 
+[ext_resource type="Script" uid="uid://bfrc3cv2rxoql" path="res://rigid_body_3d.gd" id="1_ig7tw"]
+[ext_resource type="Script" uid="uid://c0y6ukajfye8h" path="res://camera_3d.gd" id="2_h2yge"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_0xm2m"]
+generate_mipmaps = false
+as_normal_map = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_h2yge"]
+albedo_texture = SubResource("NoiseTexture2D_0xm2m")
+uv1_triplanar = true
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_7dm0k"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ig7tw"]
+
 [node name="Node3D" type="Node3D" unique_id=457228558]
 
 [node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=888665636]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15236855, 1.9073486e-06, -1.157383)
-size = Vector3(20, 1, 20)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.02170086, 0.021892548, -0.014554977)
+use_collision = true
+size = Vector3(75, 1, 75)
+material = SubResource("StandardMaterial3D_h2yge")
+
+[node name="RigidBody3D" type="RigidBody3D" parent="." unique_id=1414156786]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+physics_material_override = SubResource("PhysicsMaterial_7dm0k")
+script = ExtResource("1_ig7tw")
+
+[node name="CSGSphere3D" type="CSGSphere3D" parent="RigidBody3D" unique_id=192307082]
+use_collision = true
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D" unique_id=510091289]
+shape = SubResource("SphereShape3D_ig7tw")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=486858874 node_paths=PackedStringArray("target")]
+transform = Transform3D(1, 0, 0, 0, 0.9659258, 0.25881904, 0, -0.25881904, 0.9659258, 0, 6.5, 3.5)
+script = ExtResource("2_h2yge")
+target = NodePath("../RigidBody3D")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=510756069]
+transform = Transform3D(1, 0, 0, 0, -0.04121297, 0.9991504, 0, -0.9991504, -0.04121297, 0, 33.75203, 0)

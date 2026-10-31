@@ -148,6 +148,7 @@ click the window to grab it again.
 godot                                   # just play
 godot -- --autotest                     # scripted self-test, prints PASS/FAIL
 godot -- --screenshot=/tmp/shot.png     # save a picture after 1.5 s and quit
+godot -- --zoom=2                       # camera closer, for ant close-ups
 ```
 
 ---
@@ -171,10 +172,19 @@ godot -- --screenshot=/tmp/shot.png     # save a picture after 1.5 s and quit
 - Roll toward the dark wall on the left: the ball bounces off it slightly.
 
 **Camera**
-- Move the mouse right: the camera orbits so you look further right. Hold
-  W while doing it: the ball curves to follow the new camera direction.
+- Roll in any direction and let go of the mouse: within a second or two
+  the camera swings around to sit behind the ball, looking the way it's
+  rolling.
+- Hold S from a standstill: the ball rolls toward the camera, the camera
+  swings around behind it, and the ball keeps going in a straight line
+  the whole time (the controls don't flip mid-swing). Release S, and W now
+  continues in the same direction.
+- Move the mouse right: the camera orbits so you look further right, and
+  stays there for about a second after you stop moving the mouse, then
+  eases back behind the direction of travel. Hold W while turning it: the
+  ball curves to follow the new camera direction.
 - Move the mouse up/down: the view tilts, but stops before going below the
-  ground or straight overhead.
+  ground or straight overhead. It eases back to the default tilt on its own.
 - With a gamepad, the right stick does the same.
 - Roll close to a wall with the camera behind you: the camera moves in
   rather than showing you the inside of the wall.
@@ -212,11 +222,16 @@ godot -- --screenshot=/tmp/shot.png     # save a picture after 1.5 s and quit
   ball reappears at the start (no restart needed).
 
 **Visual**
-- The ant sits on top of the ball at all times, even when the ball spins.
-- When the ball rolls, the ant faces the direction it is moving and its
-  legs move; faster rolling = faster legs.
+- The ant stands upright on its two back legs on top of the ball at all
+  times, even when the ball spins. It is about half the ball's height.
+- Its back feet stay on the ball's surface; they never float above it or
+  sink into it, including while walking and while leaning.
+- When the ball rolls, the ant faces the direction it is moving, leans
+  forward, and its back feet shuffle; faster rolling = faster shuffle.
 - When you accelerate hard or brake hard, the ant slides a little toward
   the back of the ball, then settles back on top.
+- Jump: the ant stretches slightly on take-off and squashes on landing,
+  then springs back.
 - All on-screen text uses Nunito (the zeros in "0.0 m/s" are plain ovals).
 
 ---
@@ -230,9 +245,9 @@ Known issues
 - **Jump height is ~0.1 m short of the tuning value** (1.5 m measured vs
   1.6 m set). This is physics-step rounding, not a bug; set the number a
   touch higher if it matters.
-- **The camera doesn't auto-swing behind the ball.** It stays where you
-  left it until you move it. Many ball games add a gentle auto-follow; easy
-  to add once you know if you want it (Q3).
+- **Holding A or D alone makes you circle.** With the camera swinging
+  behind you, "right" keeps rotating as the camera does, so the ball
+  spirals. Most follow-camera games behave this way; say so if it bothers you.
 - **No "balance" feedback yet** beyond the ant's lean: no wobble meter,
   no sound, no camera shake.
 - **Bounce pads also launch crates and the boulder.** Intentional for now
@@ -270,10 +285,10 @@ Suggested next steps, in order
 - (c) Short "fell!" message, then restart.
 - (d) Lives system.
 
-**Q3. Camera behavior when you're not touching it:**
-- (a) Stays where you left it (as now).
-- (b) Slowly swings around to sit behind the direction of travel.
-- (c) Always locked behind the ball; stick/mouse only tilts it up and down.
+**Q3. Camera behavior when you're not touching it:** answered — it swings
+behind the direction of travel, with a look-around that eases back.
+`camera_auto_follow_speed` and `camera_look_hold_time` in the tuning file
+set how fast and how long.
 
 **Q4. Current feel target, before you've played it — which is closest?**
 - (a) Heavy momentum: slow to start, slow to stop, wide turns (Monkey Ball).

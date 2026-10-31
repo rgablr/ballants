@@ -18,4 +18,4 @@ shape = SubResource("SphereShape3D_ball")
 top_level = true
 script = ExtResource("2_ant")
 ball = NodePath("..")
-model_scale = 1.3
+model_scale = 1.0

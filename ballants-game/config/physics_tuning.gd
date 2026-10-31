@@ -106,6 +106,21 @@ var camera_follow_speed := 14.0
 ## Camera field of view in degrees. Bigger = see more, feels faster.
 var camera_fov := 70.0
 
+## The camera swings around behind the direction you're rolling by itself.
+## false = fully manual camera.
+var camera_auto_follow := true
+
+## How quickly the camera swings behind you. Higher = snappier.
+var camera_auto_follow_speed := 2.5
+
+## After you move the mouse or right stick, the camera stays where you put
+## it for this many seconds before it starts swinging back behind you.
+var camera_look_hold_time := 1.2
+
+## Below this speed the camera stops trying to swing behind you, so it
+## doesn't twitch when you're nearly stopped.
+var camera_auto_follow_min_speed := 1.5
+
 ## Mouse look speed. Small numbers; try 0.001 to 0.005.
 var mouse_sensitivity := 0.0025
 
@@ -132,6 +147,13 @@ var ant_lean_smoothing := 8.0
 
 ## How quickly the ant turns to face the direction of travel.
 var ant_turn_speed := 10.0
+
+## How much the ant squashes when the ball lands. 0 = none, 0.3 = squashes
+## to 70% height. It also stretches slightly on take-off.
+var ant_land_squash := 0.3
+
+## How long the landing squash takes to spring back, in seconds.
+var ant_land_bounce_time := 0.35
 
 
 # --------------------------------------------------- INTERACTIVE OBJECTS ----

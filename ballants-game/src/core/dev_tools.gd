@@ -12,6 +12,9 @@ extends Node
 ##       Waits 1.5 seconds, saves a picture of the game window, and quits.
 ##       Can be combined with --autotest to capture the end of the test.
 ##
+##   godot -- --zoom=2.5
+##       Overrides the camera distance for this run (close-ups of the ant).
+##
 ## Loaded as a global called "DevTools".
 
 var _screenshot_path := ""
@@ -25,6 +28,8 @@ func _ready() -> void:
 			autotest = true
 		elif arg.begins_with("--screenshot="):
 			_screenshot_path = arg.get_slice("=", 1)
+		elif arg.begins_with("--zoom="):
+			Tuning.camera_distance = float(arg.get_slice("=", 1))
 	if autotest:
 		_run_autotest()
 	elif not _screenshot_path.is_empty():

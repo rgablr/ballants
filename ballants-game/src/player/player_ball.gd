@@ -27,6 +27,12 @@ var _time_since_grounded := 999.0
 var _time_since_jump_pressed := 999.0
 var _spawn_transform: Transform3D
 
+# While the player holds "back", the control direction is frozen at the
+# camera angle they started with. That way the camera can swing around
+# behind the reversing ball without the controls flipping mid-swing.
+var _control_yaw_frozen := false
+var _frozen_yaw := 0.0
+
 @onready var _collision: CollisionShape3D = $CollisionShape3D
 @onready var _visual_root: Node3D = $Visual
 
@@ -52,6 +58,13 @@ func _ready() -> void:
 
 	_visual_root.add_child(Assets.instantiate_model("ball"))
 
+	if camera_rig and camera_rig.has_signal("manually_turned"):
+		camera_rig.manually_turned.connect(_on_camera_manually_turned)
+
+
+func _on_camera_manually_turned(yaw_delta: float) -> void:
+	_frozen_yaw += yaw_delta
+
 
 func is_grounded() -> bool:
 	return _grounded
@@ -73,6 +86,10 @@ func _physics_process(delta: float) -> void:
 
 func _apply_movement() -> void:
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var holding_back := input.y > 0.5
+	if holding_back and not _control_yaw_frozen:
+		_frozen_yaw = _camera_yaw()
+	_control_yaw_frozen = holding_back
 	if input == Vector2.ZERO:
 		return
 	var direction := _camera_relative(input)
@@ -108,20 +125,22 @@ func _apply_rolling_resistance() -> void:
 	apply_central_force(-velocity_h * Tuning.rolling_resistance * mass)
 
 
-## Turns stick/keyboard input (x = right, y = back) into a world direction
-## based on where the camera is looking, flattened so we never push into the
-## floor or the sky.
+func _camera_yaw() -> float:
+	if camera_rig == null:
+		return 0.0
+	if camera_rig.has_method("get_yaw"):
+		return camera_rig.get_yaw()
+	return camera_rig.global_rotation.y
+
+
+## Turns stick/keyboard input (x = right, y = back) into a flat world
+## direction based on the camera's left/right angle (or the frozen angle
+## while reversing), so we never push into the floor or the sky.
 func _camera_relative(input: Vector2) -> Vector3:
-	var forward := Vector3.FORWARD
-	var right := Vector3.RIGHT
-	if camera_rig:
-		forward = -camera_rig.global_basis.z
-		right = camera_rig.global_basis.x
-	forward.y = 0.0
-	right.y = 0.0
-	if forward.length_squared() < 0.0001:
-		return Vector3.ZERO
-	var direction := right.normalized() * input.x + forward.normalized() * -input.y
+	var yaw := _frozen_yaw if _control_yaw_frozen else _camera_yaw()
+	var forward := Vector3(-sin(yaw), 0.0, -cos(yaw))
+	var right := Vector3(cos(yaw), 0.0, -sin(yaw))
+	var direction := right * input.x + forward * -input.y
 	return direction.limit_length(1.0)
 
 

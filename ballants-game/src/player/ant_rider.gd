@@ -6,6 +6,7 @@ extends Node3D
 ##     ball speeds up or slows down, so it looks like it's balancing
 ##   - it turns to face the direction of travel
 ##   - it asks the model to animate its legs faster the faster the ball rolls
+##   - it squashes on landing and stretches on take-off
 ##
 ## This node is marked "top level" so it ignores the ball's spinning and
 ## positions itself in world space every frame.
@@ -19,6 +20,7 @@ var _visual: Node3D
 var _facing := Vector3.FORWARD
 var _lean := Vector3.ZERO       # smoothed horizontal acceleration
 var _previous_velocity := Vector3.ZERO
+var _bounce_tween: Tween
 
 
 func _ready() -> void:
@@ -26,6 +28,17 @@ func _ready() -> void:
 	_visual = Assets.instantiate_model("ant")
 	_visual.scale = Vector3.ONE * model_scale
 	add_child(_visual)
+	if _visual.has_method("set_ball_radius"):
+		_visual.set_ball_radius(_ball_radius() / model_scale)
+	if ball:
+		if ball.has_signal("landed"):
+			ball.landed.connect(_on_landed)
+		if ball.has_signal("jumped"):
+			ball.jumped.connect(_on_jumped)
+
+
+func _ball_radius() -> float:
+	return ball.radius if ball and "radius" in ball else 0.5
 
 
 func _physics_process(delta: float) -> void:
@@ -41,7 +54,6 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if ball == null:
 		return
-	var ball_radius: float = ball.radius if "radius" in ball else 0.5
 
 	# Which way is "up" for the ant: straight up, tilted away from the
 	# direction the ball is accelerating (it gets left behind, then catches up).
@@ -64,7 +76,29 @@ func _process(delta: float) -> void:
 	if forward.length_squared() < 0.0001:
 		forward = Vector3.FORWARD
 	forward = forward.normalized()
-	global_transform = Transform3D(Basis.looking_at(forward, up), ball.global_position + up * ball_radius)
+	global_transform = Transform3D(Basis.looking_at(forward, up), ball.global_position + up * _ball_radius())
 
 	if _visual.has_method("set_walk_speed"):
 		_visual.set_walk_speed(speed)
+
+
+## Squash on landing, then spring back.
+func _on_landed() -> void:
+	var squash := Tuning.ant_land_squash
+	_play_bounce(Vector3(1.0 + squash * 0.6, 1.0 - squash, 1.0 + squash * 0.6))
+
+
+## A smaller stretch on take-off.
+func _on_jumped() -> void:
+	var stretch := Tuning.ant_land_squash * 0.5
+	_play_bounce(Vector3(1.0 - stretch * 0.5, 1.0 + stretch, 1.0 - stretch * 0.5))
+
+
+func _play_bounce(shape: Vector3) -> void:
+	if _bounce_tween:
+		_bounce_tween.kill()
+	var base := Vector3.ONE * model_scale
+	_visual.scale = base * shape
+	_bounce_tween = create_tween()
+	_bounce_tween.tween_property(_visual, "scale", base, Tuning.ant_land_bounce_time) \
+			.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)

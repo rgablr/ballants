@@ -51,11 +51,18 @@ func _ready() -> void:
 	_rebuild()
 
 	if not Engine.is_editor_hint() and not tuning_mass_name.is_empty():
-		var tuned = Tuning.get(tuning_mass_name)
-		if tuned == null:
-			push_error("PhysicsProp: no '%s' in physics_tuning.gd" % tuning_mass_name)
-		else:
-			mass = tuned
+		_apply_tuned_mass()
+		Tuning.value_changed.connect(func(value_name: String, _value):
+			if value_name == tuning_mass_name:
+				_apply_tuned_mass())
+
+
+func _apply_tuned_mass() -> void:
+	var tuned = Tuning.get(tuning_mass_name)
+	if tuned == null:
+		push_error("PhysicsProp: no '%s' in physics_tuning.gd" % tuning_mass_name)
+	else:
+		mass = tuned
 
 
 func _rebuild() -> void:

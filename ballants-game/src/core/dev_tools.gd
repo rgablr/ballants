@@ -15,6 +15,14 @@ extends Node
 ##   godot -- --zoom=2.5
 ##       Overrides the camera distance for this run (close-ups of the ant).
 ##
+##   godot -- --press=toggle_tuning_panel
+##       Presses a named input action half a second after start (any action
+##       from the Input Map). Handy with --screenshot to capture the F1/F2 panels.
+##
+##   godot --headless -- --save-roundtrip
+##       Re-saves the tuning file unchanged and quits; `git diff` should then
+##       be empty. Checks the F1 panel's Save can't mangle the file.
+##
 ## Loaded as a global called "DevTools".
 
 var _screenshot_path := ""
@@ -30,10 +38,29 @@ func _ready() -> void:
 			_screenshot_path = arg.get_slice("=", 1)
 		elif arg.begins_with("--zoom="):
 			Tuning.camera_distance = float(arg.get_slice("=", 1))
+		elif arg.begins_with("--press="):
+			_press_later(arg.get_slice("=", 1))
+		elif arg == "--save-roundtrip":
+			var error := Tuning.save_to_file()
+			print("[devtools] save roundtrip: %s" % ("ok" if error.is_empty() else error))
+			get_tree().quit.call_deferred(0 if error.is_empty() else 1)
+			return
 	if autotest:
 		_run_autotest()
 	elif not _screenshot_path.is_empty():
 		_screenshot_then_quit(1.5)
+
+
+func _press_later(action: String) -> void:
+	await get_tree().create_timer(0.5).timeout
+	var press := InputEventAction.new()
+	press.action = action
+	press.pressed = true
+	Input.parse_input_event(press)
+	var release := InputEventAction.new()
+	release.action = action
+	release.pressed = false
+	Input.parse_input_event(release)
 
 
 func _check(name: String, ok: bool, detail := "") -> void:

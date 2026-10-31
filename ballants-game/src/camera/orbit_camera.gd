@@ -57,6 +57,9 @@ func _input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	_seconds_since_manual += delta
+	# Cheap to re-apply every frame, and it makes the F1 panel's changes live.
+	_arm.spring_length = Tuning.camera_distance
+	_camera.fov = Tuning.camera_fov
 
 	var stick := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down")
 	if stick != Vector2.ZERO:

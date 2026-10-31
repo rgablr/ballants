@@ -42,15 +42,9 @@ func _ready() -> void:
 	_spawn_transform = global_transform
 	radius = (_collision.shape as SphereShape3D).radius
 
-	mass = Tuning.ball_mass
-	# Rolling resistance is applied by hand in _apply_rolling_resistance so it
-	# only slows horizontal motion and never shortens a jump.
-	linear_damp = 0.0
-	angular_damp = Tuning.spin_resistance
-	var material := PhysicsMaterial.new()
-	material.friction = Tuning.ball_friction
-	material.bounce = Tuning.ball_bounce
-	physics_material_override = material
+	physics_material_override = PhysicsMaterial.new()
+	_apply_tuning()
+	Tuning.value_changed.connect(func(_name: String, _value): _apply_tuning())
 
 	# Needed so _integrate_forces can see what we're touching.
 	contact_monitor = true
@@ -66,8 +60,26 @@ func _on_camera_manually_turned(yaw_delta: float) -> void:
 	_frozen_yaw += yaw_delta
 
 
+## Copies the values the physics engine needs from the tuning file. Called
+## at startup and again whenever a value changes in the F1 panel.
+func _apply_tuning() -> void:
+	mass = Tuning.ball_mass
+	# Rolling resistance is applied by hand in _apply_rolling_resistance so it
+	# only slows horizontal motion and never shortens a jump.
+	linear_damp = 0.0
+	angular_damp = Tuning.spin_resistance
+	physics_material_override.friction = Tuning.ball_friction
+	physics_material_override.bounce = Tuning.ball_bounce
+
+
 func is_grounded() -> bool:
 	return _grounded
+
+
+## True during the short window after leaving the ground when a jump is
+## still allowed.
+func is_coyote_active() -> bool:
+	return not _grounded and _time_since_grounded <= Tuning.coyote_time
 
 
 func _physics_process(delta: float) -> void:

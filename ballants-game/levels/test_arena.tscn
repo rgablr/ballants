@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://src/player/player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://src/camera/orbit_camera.tscn" id="3_camera"]
 [ext_resource type="PackedScene" path="res://src/ui/hud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" path="res://src/ui/tuning_panel.tscn" id="11_tuning"]
 [ext_resource type="PackedScene" path="res://src/objects/block.tscn" id="5_block"]
 [ext_resource type="PackedScene" path="res://src/objects/crate.tscn" id="6_crate"]
 [ext_resource type="PackedScene" path="res://src/objects/boulder.tscn" id="7_boulder"]
@@ -46,6 +47,8 @@ position = Vector3(0, 1.6, 0)
 target = NodePath("../Player")
 
 [node name="HUD" parent="." instance=ExtResource("4_hud")]
+
+[node name="TuningPanel" parent="." instance=ExtResource("11_tuning")]
 
 [node name="Ground" parent="." instance=ExtResource("5_block")]
 position = Vector3(0, -0.5, 0)

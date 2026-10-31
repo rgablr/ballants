@@ -9,15 +9,24 @@ signal level_completed
 signal level_restarting
 
 var level_complete := false
+## True while a panel (F1 tuning) wants the mouse free.
+var ui_open := false
 
 
 func _ready() -> void:
-	# Gravity lives in the tuning file, not in Project Settings, so it is
-	# applied to the physics world here at startup.
+	_apply_gravity()
+	Tuning.value_changed.connect(func(value_name: String, _value):
+		if value_name == "gravity":
+			_apply_gravity())
+	capture_mouse()
+
+
+## Gravity lives in the tuning file, not in Project Settings, so it is
+## applied to the physics world here.
+func _apply_gravity() -> void:
 	var space := get_viewport().find_world_3d().space
 	PhysicsServer3D.area_set_param(space, PhysicsServer3D.AREA_PARAM_GRAVITY, Tuning.gravity)
 	PhysicsServer3D.area_set_param(space, PhysicsServer3D.AREA_PARAM_GRAVITY_VECTOR, Vector3.DOWN)
-	capture_mouse()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -25,7 +34,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		restart_level()
 	elif event.is_action_pressed("ui_cancel"):
 		release_mouse()
-	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+	elif event is InputEventMouseButton and event.pressed and not ui_open \
+			and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		capture_mouse()
+
+
+func set_ui_open(open: bool) -> void:
+	ui_open = open
+	if open:
+		release_mouse()
+	else:
 		capture_mouse()
 
 

@@ -533,3 +533,102 @@ version should I prototype first when you say go?**
 - (b) Surface types (ice, sand, rubber) changing grip.
 - (c) Checkpoints and a kill-zone system for real levels.
 - (d) Breakable objects and triggers (buttons, doors).
+
+---
+---
+
+# Part C – Level system and the Backyard Garden (2026-10-31, overnight)
+
+Branch: `garden-world` (made from `setup/foundation`, which now also
+holds your saved F1 tuning pass as its last commit).
+
+## 12. What was built
+
+**Level system** (I built this; no subagents)
+- `levels/level_list.gd` — the one list of levels: world, name, par time,
+  scene path. Three Backyard Garden entries.
+- `Levels` global (`src/core/level_manager.gd`) — loads levels, times the
+  run (the clock starts on your first movement input, stops at the goal),
+  shows "Level complete" with your time versus par, then loads the next
+  level after 3 s; after level 3 it wraps to level 1. Falling out restarts
+  the level after a short "Fell out!".
+- Keys: **R** restart, **1 / 2 / 3** jump to a level, **0** the test arena.
+- Every level is its own scene built from pieces. The level script
+  (`levels/level.gd`) adds the player at the StartPoint, the camera, the
+  HUD, the panels, and a safety-net FallZone at y = −10 if a level has none.
+- New pieces: `StartPoint`, `FallZone`, `SlickPatch` (lowers the ball's
+  grip and push while inside), `Rail`.
+- The HUD shows world + level name, the timer and par.
+- **Level bot** (`src/core/level_bot.gd`, `godot -- --drive=file.json`): a
+  bot that presses the real input actions to steer the ball through a
+  list of waypoints. A PASS line means the level is completable with the
+  real physics. `run_tests.sh` now drives every `tests/levels/*.json`.
+- Dev flags: `--level=N` (0 = arena), `--scene=res://path`.
+
+**Backyard Garden theme** (I built this)
+- `levels/garden/garden_theme.tscn` — sky, warm sun, light fog, and the
+  shared named materials (`GardenTheme.material("grass")` etc.). One place
+  to recolor the whole world.
+- Garden piece kit in `src/objects/garden/`, all code-built with separate
+  collision: `DirtTile`, `SidewalkSlab`, `GrassClump` (decorative or
+  solid), `GrassWall`, `FlowerStem` (bouncy cylinder, flower head far
+  above), `Pebble` (convex hull), `FlowerPot` (flat landable top),
+  `Puddle` (water + fall zone), `LeafPatch` (slick), `Hose` (chain of
+  capsules with a radius that can narrow, bendable, hump-able).
+- `levels/garden/garden_showcase.tscn` shows one of each
+  (`godot -- --scene=res://levels/garden/garden_showcase.tscn`).
+- Scale rule: the ball is one pea. Grass 2–4 m, stems 8–14 m, slabs 12 m.
+
+**Assets:** Kenney's download button is script-driven (a plain fetch
+returns a stub page), and Poly Pizza's garden models are CC-BY, so every
+garden piece is code-built. Nothing new in ASSET_CREDITS.md beyond that
+note. See Q13.
+
+## 13. How to make or edit a level
+
+1. **Copy a starter.** Duplicate any `levels/garden/level_*.tscn` (or open
+   it in Godot and Save As). A level scene must have: the root node with
+   `levels/level.gd` as its script, a `GardenTheme`, one `StartPoint`, one
+   `Goal`, and at least one `FallZone` below everything.
+2. **Place pieces.** In the Godot editor, drag scenes from
+   `src/objects/garden/` and `src/objects/` into the level and set their
+   properties in the Inspector (size, length, radius, color…). Every piece
+   builds its own look and collision from those properties, so you never
+   edit meshes or collision shapes by hand. Blocks and tiles are merged
+   into one physics body when the level starts, so you can tile floors
+   freely; overlap tiles slightly instead of leaving hairline gaps.
+3. **Conventions.** The StartPoint faces −Z and courses run toward −Z.
+   Place a tile with its top at y = 0 by setting position.y to −height/2.
+   Rotate a tile around X to make a ramp. Keep the path visible: the
+   camera sits close, so mark turns with tall pieces (grass walls,
+   flowers, pebbles).
+4. **Register it.** Add a line to `levels/level_list.gd` with the world,
+   name, par time and scene path. Order in that list = play order. The
+   main scene (`project.godot`) is level 1.
+5. **Prove it.** Write `tests/levels/level_N.json` with waypoints along
+   the intended route (format at the top of `src/core/level_bot.gd`) and
+   run `godot --headless -- --drive=$(pwd)/tests/levels/level_N.json`
+   from `ballants-game`. PASS = a human can do it. `./run_tests.sh` runs
+   every level's drive.
+6. **Look at it.** `godot -- --level=N --screenshot=/tmp/l.png --zoom=30
+   --camera-pitch=40` gives an overview picture.
+
+## 14. Acceptance criteria – level system
+
+- Start the game: it opens on *Backyard Garden – Sidewalk Crack*, with
+  the level name and `0:00.00  par 0:45.00` at the top. The clock stays at
+  zero until you first push a direction or jump, then counts up.
+- Press **2** or **3**: that level loads at once, clock reset to zero.
+  Press **0**: the free-roam test arena loads, no timer shown. Press
+  **1**: back to level 1.
+- Reach the goal ring: "Level complete!", your time, and either "Under
+  par!" or the par time appear; the clock stops; three seconds later the
+  next level loads. Finish level 3: level 1 loads.
+- Roll off the edge of any level: "Fell out!", and the level restarts
+  from the start point after about a second, clock reset.
+- Press **R** at any moment: the level restarts, props reset, clock reset.
+- In the test arena, reaching the goal shows "GOAL! Press R" and does not
+  load another level; falling off the arena's edge respawns in place.
+- Roll onto a leaf (level 2): the ball slides and steers lazily until it
+  leaves the leaf.
+- Terminal: `./run_tests.sh` lists one `[drive] PASS` line per level.

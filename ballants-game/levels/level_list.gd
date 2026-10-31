@@ -30,5 +30,10 @@ const LEVELS := [
 	},
 ]
 
+## The title area: title screen + garden playground; its giant ant hill
+## starts the first level. The game opens here (key T / controller View
+## button comes back).
+const TITLE := "res://levels/garden/title_meadow.tscn"
+
 ## The free-roam test environment (key 0). Not part of the level order.
 const TEST_ARENA := "res://levels/test_arena.tscn"

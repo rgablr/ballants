@@ -1,0 +1,9 @@
+{"level": -1, "timeout": 60, "speed": 8,
+ "waypoints": [
+  {"pos": [0, 0, 0], "speed": 6},
+  {"pos": [2, 0, -12], "speed": 7},
+  {"pos": [0, 0, -30], "speed": 9},
+  {"pos": [0, 0, -46], "speed": 7},
+  {"pos": [0, 0, -57], "speed": 5},
+  {"pos": [0, 0, -64], "speed": 4, "reach": 0.3}
+ ]}

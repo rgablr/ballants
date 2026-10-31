@@ -22,6 +22,16 @@ signal manually_turned(yaw_delta: float)
 ## What to follow. Set in the level scene.
 @export var target: Node3D
 
+## Title-screen showcase. While true the camera slowly circles the ant,
+## pulled back and a little higher, so the scenery around it shows. The
+## title area turns it off on the player's first input, and the camera
+## eases back to normal.
+var attract := false
+const ATTRACT_TURN_SPEED := 0.17     # radians per second around the ant
+const ATTRACT_DISTANCE := 7.5        # meters (normal is Tuning.camera_distance)
+const ATTRACT_PITCH := 14.0          # degrees looking down
+var _attract_blend := 0.0            # 0 = normal camera, 1 = full showcase
+
 var _yaw := 0.0     # left/right rotation, radians
 var _pitch := 0.0   # up/down rotation, radians (positive looks down)
 var _seconds_since_manual := 999.0
@@ -67,7 +77,7 @@ func shake(strength: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not attract:
 		var motion := event as InputEventMouseMotion
 		var invert := -1.0 if Tuning.invert_camera_y else 1.0
 		_turn_manually(-motion.relative.x * Tuning.mouse_sensitivity,
@@ -76,18 +86,24 @@ func _input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	_seconds_since_manual += delta
+	_attract_blend = move_toward(_attract_blend, 1.0 if attract else 0.0, delta * 0.7)
+	var showcase := smoothstep(0.0, 1.0, _attract_blend)
 	# Cheap to re-apply every frame, and it makes the F1 panel's changes live.
-	_arm.spring_length = Tuning.camera_distance
+	_arm.spring_length = lerpf(Tuning.camera_distance, ATTRACT_DISTANCE, showcase)
 	_update_fov(delta)
 	_update_shake(delta)
 
-	var stick := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down")
-	if stick != Vector2.ZERO:
-		var invert := -1.0 if Tuning.invert_camera_y else 1.0
-		_turn_manually(-stick.x * Tuning.stick_sensitivity * delta,
-				stick.y * Tuning.stick_sensitivity * delta * invert)
-
-	_auto_follow(delta)
+	if attract:
+		_yaw += ATTRACT_TURN_SPEED * delta
+		_pitch = lerp_angle(_pitch, deg_to_rad(ATTRACT_PITCH), 1.0 - exp(-delta * 1.5))
+		_apply_rotation()
+	else:
+		var stick := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down")
+		if stick != Vector2.ZERO:
+			var invert := -1.0 if Tuning.invert_camera_y else 1.0
+			_turn_manually(-stick.x * Tuning.stick_sensitivity * delta,
+					stick.y * Tuning.stick_sensitivity * delta * invert)
+		_auto_follow(delta)
 
 	# Once the ball drops into the ant hill the camera holds still, so the
 	# ball visibly disappears down the hole instead of the camera following

@@ -205,10 +205,11 @@ func _add_grains() -> void:
 	mesh.radial_segments = 6
 	mesh.rings = 3
 	mesh.material = GardenTheme.material("dirt")
-	for i in 40:
+	var scale_up := base_radius / 5.5   # bigger hills get more and bigger clods
+	for i in int(clampf(40.0 * scale_up * scale_up, 20.0, 600.0)):
 		var r := rng.randf_range(rim_radius + 0.2, base_radius * 0.95)
 		var angle := rng.randf() * TAU
-		var size := rng.randf_range(0.12, 0.3)
+		var size := rng.randf_range(0.12, 0.3) * sqrt(scale_up)
 		var grain := MeshInstance3D.new()
 		grain.mesh = mesh
 		grain.scale = Vector3(size, size * 0.7, size)

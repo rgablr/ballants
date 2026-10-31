@@ -5,6 +5,9 @@ extends StaticBody3D
 ## ball bounces off, leaves partway up, and a flower head far above.
 ## Collision is a plain cylinder for the stem only (the head is out of
 ## reach). Bounciness comes from the ball's own bounce setting.
+##
+## Every flower is in the "flower" group; flies land on them and bees visit
+## them (top_position() is where they land).
 
 @export var stem_radius := 0.7:
 	set(v):
@@ -27,8 +30,14 @@ var _built := false
 
 
 func _ready() -> void:
+	add_to_group("flower")
 	_built = true
 	_rebuild()
+
+
+## The middle of the flower head, where an insect would land (world space).
+func top_position() -> Vector3:
+	return global_position + Vector3.UP * (stem_height + 0.3 + stem_radius * 0.8)
 
 
 func _rebuild() -> void:

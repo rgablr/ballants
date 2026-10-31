@@ -1,0 +1,377 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://levels/garden/title_meadow.gd" id="1_level"]
+[ext_resource type="PackedScene" path="res://levels/garden/garden_theme.tscn" id="2_theme"]
+[ext_resource type="PackedScene" path="res://src/objects/start_point.tscn" id="3_start"]
+[ext_resource type="PackedScene" path="res://src/objects/ant_hill.tscn" id="4_hill"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/meadow_ground.tscn" id="5_ground"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/thick_grass.tscn" id="6_grass"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/flower_stem.tscn" id="7_flower"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/pebble.tscn" id="8_pebble"]
+[ext_resource type="PackedScene" path="res://src/objects/boulder.tscn" id="9_boulder"]
+[ext_resource type="PackedScene" path="res://src/objects/block.tscn" id="10_block"]
+[ext_resource type="PackedScene" path="res://src/objects/bounce_pad.tscn" id="11_pad"]
+[ext_resource type="PackedScene" path="res://src/objects/seesaw.tscn" id="12_seesaw"]
+[ext_resource type="PackedScene" path="res://src/objects/critters/ladybug.tscn" id="13_ladybug"]
+[ext_resource type="PackedScene" path="res://src/objects/critters/worm.tscn" id="14_worm"]
+[ext_resource type="PackedScene" path="res://src/objects/critters/spider.tscn" id="15_spider"]
+[ext_resource type="PackedScene" path="res://src/objects/critters/fly.tscn" id="16_fly"]
+[ext_resource type="PackedScene" path="res://src/objects/critters/bee.tscn" id="17_bee"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/grass_clump.tscn" id="18_clump"]
+
+[node name="TitleMeadow" type="Node3D"]
+script = ExtResource("1_level")
+level_name = ""
+
+[node name="GardenTheme" parent="." instance=ExtResource("2_theme")]
+position = Vector3(0, 0, 0)
+
+; The sculpted ground: clearing, funnel valley, hollow around the giant hill.
+[node name="MeadowGround" parent="." instance=ExtResource("5_ground")]
+position = Vector3(0, 0, 0)
+
+[node name="StartPoint" parent="." instance=ExtResource("3_start")]
+position = Vector3(0, 0, 9)
+
+; Dropping into this starts Level 1.
+[node name="GiantAntHill" parent="." instance=ExtResource("4_hill")]
+position = Vector3(0, 0, -64)
+base_radius = 26.0
+height = 8.0
+rim_radius = 5.0
+hole_radius = 1.6
+shaft_depth = 6.0
+segments = 72
+seed = 11
+enter_level = 0
+
+; Bash-through grass.
+[node name="ThickGrass1" parent="." instance=ExtResource("6_grass")]
+position = Vector3(-14, 0, 2)
+radius = 3.5
+blade_count = 18
+seed = 1
+
+[node name="ThickGrass2" parent="." instance=ExtResource("6_grass")]
+position = Vector3(-20, 0, -8)
+radius = 3.0
+blade_count = 14
+seed = 2
+
+[node name="ThickGrass3" parent="." instance=ExtResource("6_grass")]
+position = Vector3(13, 0, -4)
+radius = 3.0
+blade_count = 14
+seed = 3
+
+[node name="ThickGrass4" parent="." instance=ExtResource("6_grass")]
+position = Vector3(-8, 0, -18)
+radius = 2.5
+blade_count = 10
+seed = 4
+
+[node name="ThickGrass5" parent="." instance=ExtResource("6_grass")]
+position = Vector3(9, 0, -22)
+radius = 2.5
+blade_count = 10
+seed = 5
+
+[node name="ThickGrass6" parent="." instance=ExtResource("6_grass")]
+position = Vector3(2, 0, -12)
+radius = 2.0
+blade_count = 8
+seed = 6
+
+[node name="ThickGrass7" parent="." instance=ExtResource("6_grass")]
+position = Vector3(-11, 0, -34)
+radius = 3.0
+blade_count = 12
+seed = 7
+
+[node name="ThickGrass8" parent="." instance=ExtResource("6_grass")]
+position = Vector3(11, 0, -36)
+radius = 3.0
+blade_count = 12
+seed = 8
+
+[node name="ThickGrass9" parent="." instance=ExtResource("6_grass")]
+position = Vector3(-13, 0, -47)
+radius = 2.5
+blade_count = 10
+seed = 9
+
+[node name="ThickGrass10" parent="." instance=ExtResource("6_grass")]
+position = Vector3(13, 0, -47)
+radius = 2.5
+blade_count = 10
+seed = 10
+
+[node name="ThickGrass11" parent="." instance=ExtResource("6_grass")]
+position = Vector3(-20, 0, 16)
+radius = 3.0
+blade_count = 14
+seed = 11
+
+[node name="ThickGrass12" parent="." instance=ExtResource("6_grass")]
+position = Vector3(19, 0, 18)
+radius = 3.0
+blade_count = 12
+seed = 12
+
+; Giant flowers: flies perch on them, bees visit them.
+[node name="Flower1" parent="." instance=ExtResource("7_flower")]
+position = Vector3(-22, 0, 12)
+stem_height = 11.0
+stem_radius = 0.7
+petal_color = "petal_pink"
+
+[node name="Flower2" parent="." instance=ExtResource("7_flower")]
+position = Vector3(20, 0, 14)
+stem_height = 13.0
+stem_radius = 0.7
+petal_color = "petal_yellow"
+
+[node name="Flower3" parent="." instance=ExtResource("7_flower")]
+position = Vector3(-26, 0, -14)
+stem_height = 12.0
+stem_radius = 0.7
+petal_color = "petal_white"
+
+[node name="Flower4" parent="." instance=ExtResource("7_flower")]
+position = Vector3(24, 0, -12)
+stem_height = 10.0
+stem_radius = 0.7
+petal_color = "petal_purple"
+
+[node name="Flower5" parent="." instance=ExtResource("7_flower")]
+position = Vector3(-17, 0, -28)
+stem_height = 12.0
+stem_radius = 0.7
+petal_color = "petal_yellow"
+
+[node name="Flower6" parent="." instance=ExtResource("7_flower")]
+position = Vector3(18, 0, -30)
+stem_height = 11.0
+stem_radius = 0.7
+petal_color = "petal_pink"
+
+[node name="Flower7" parent="." instance=ExtResource("7_flower")]
+position = Vector3(-30, 0, -58)
+stem_height = 14.0
+stem_radius = 0.7
+petal_color = "petal_purple"
+
+[node name="Flower8" parent="." instance=ExtResource("7_flower")]
+position = Vector3(30, 0, -60)
+stem_height = 13.0
+stem_radius = 0.7
+petal_color = "petal_white"
+
+[node name="Flower9" parent="." instance=ExtResource("7_flower")]
+position = Vector3(-21, 0, -82)
+stem_height = 12.0
+stem_radius = 0.7
+petal_color = "petal_pink"
+
+[node name="Flower10" parent="." instance=ExtResource("7_flower")]
+position = Vector3(23, 0, -84)
+stem_height = 11.0
+stem_radius = 0.7
+petal_color = "petal_yellow"
+
+[node name="Flower11" parent="." instance=ExtResource("7_flower")]
+position = Vector3(-7, 0, 22)
+stem_height = 9.0
+stem_radius = 0.7
+petal_color = "petal_white"
+
+[node name="Flower12" parent="." instance=ExtResource("7_flower")]
+position = Vector3(8, 0, -8)
+stem_height = 8.0
+stem_radius = 0.7
+petal_color = "petal_purple"
+
+[node name="Pebble1" parent="." instance=ExtResource("8_pebble")]
+position = Vector3(-6, 0, -6)
+size = Vector3(2, 1.3, 1.6)
+
+[node name="Pebble2" parent="." instance=ExtResource("8_pebble")]
+position = Vector3(17, 0, 6)
+size = Vector3(2.6, 1.8, 2.2)
+
+[node name="Pebble3" parent="." instance=ExtResource("8_pebble")]
+position = Vector3(-25, 0, -2)
+size = Vector3(3, 2, 2.4)
+
+[node name="Pebble4" parent="." instance=ExtResource("8_pebble")]
+position = Vector3(6, 0, -41)
+size = Vector3(2.2, 1.4, 1.8)
+
+[node name="Pebble5" parent="." instance=ExtResource("8_pebble")]
+position = Vector3(-6, 0, -45)
+size = Vector3(1.8, 1.2, 1.5)
+
+[node name="Pebble6" parent="." instance=ExtResource("8_pebble")]
+position = Vector3(25, 0, -40)
+size = Vector3(3.4, 2.4, 2.8)
+
+[node name="Pebble7" parent="." instance=ExtResource("8_pebble")]
+position = Vector3(-27, 0, -44)
+size = Vector3(3, 2, 2.6)
+
+; Loose pebbles and acorns to shove around.
+[node name="PushPebble1" parent="." instance=ExtResource("9_boulder")]
+position = Vector3(6, 0.7, 3)
+radius = 0.6
+color = Color(0.6, 0.6, 0.58, 1)
+
+[node name="PushPebble2" parent="." instance=ExtResource("9_boulder")]
+position = Vector3(7.6, 0.7, 4.5)
+radius = 0.55
+color = Color(0.5, 0.5, 0.52, 1)
+
+[node name="PushPebble3" parent="." instance=ExtResource("9_boulder")]
+position = Vector3(-4, 0.7, -1)
+radius = 0.65
+color = Color(0.62, 0.6, 0.56, 1)
+
+[node name="Acorn1" parent="." instance=ExtResource("9_boulder")]
+position = Vector3(15, 0.6, -14)
+radius = 0.5
+color = Color(0.55, 0.36, 0.18, 1)
+
+[node name="Acorn2" parent="." instance=ExtResource("9_boulder")]
+position = Vector3(-10, 0.6, 10)
+radius = 0.45
+color = Color(0.5, 0.33, 0.16, 1)
+
+[node name="Acorn3" parent="." instance=ExtResource("9_boulder")]
+position = Vector3(-3, 0.6, -28)
+radius = 0.5
+color = Color(0.55, 0.36, 0.18, 1)
+
+; A fallen twig as a jump ramp.
+[node name="TwigRamp" parent="." instance=ExtResource("10_block")]
+position = Vector3(19, 0.55, -18)
+rotation_degrees = Vector3(-11, 20, 0)
+size = Vector3(2.2, 0.4, 9)
+color = Color(0.55, 0.4, 0.25, 1)
+
+[node name="BouncePad" parent="." instance=ExtResource("11_pad")]
+position = Vector3(-21, 0.05, -20)
+
+[node name="Seesaw" parent="." instance=ExtResource("12_seesaw")]
+position = Vector3(22, 0, 2)
+rotation_degrees = Vector3(0, 70, 0)
+
+; Bugs.
+[node name="Ladybug1" parent="." instance=ExtResource("13_ladybug")]
+position = Vector3(-12, 0.1, -2)
+
+[node name="Ladybug2" parent="." instance=ExtResource("13_ladybug")]
+position = Vector3(-16, 0.1, 6)
+
+[node name="Ladybug3" parent="." instance=ExtResource("13_ladybug")]
+position = Vector3(10, 0.1, -10)
+
+[node name="Ladybug4" parent="." instance=ExtResource("13_ladybug")]
+position = Vector3(4, 0.1, -30)
+
+[node name="Ladybug5" parent="." instance=ExtResource("13_ladybug")]
+position = Vector3(-9, 0.1, -40)
+
+[node name="Worm1" parent="." instance=ExtResource("14_worm")]
+position = Vector3(6, 0, 12)
+loop_radius = 3.5
+
+[node name="Worm2" parent="." instance=ExtResource("14_worm")]
+position = Vector3(-6, 0, -27)
+loop_radius = 3.0
+
+[node name="Worm3" parent="." instance=ExtResource("14_worm")]
+position = Vector3(4, 0, -52)
+loop_radius = 4.5
+
+[node name="Spider1" parent="." instance=ExtResource("15_spider")]
+position = Vector3(21, 0, -24)
+
+[node name="Spider2" parent="." instance=ExtResource("15_spider")]
+position = Vector3(-23, 0, -36)
+
+[node name="HangingSpider" parent="." instance=ExtResource("15_spider")]
+position = Vector3(-24, 11.5, -14)
+hanging = true
+hang_length = 7.0
+
+[node name="Fly1" parent="." instance=ExtResource("16_fly")]
+position = Vector3(-22, 4, 12)
+
+[node name="Fly2" parent="." instance=ExtResource("16_fly")]
+position = Vector3(20, 4, 14)
+
+[node name="Fly3" parent="." instance=ExtResource("16_fly")]
+position = Vector3(8, 4, -8)
+
+[node name="Fly4" parent="." instance=ExtResource("16_fly")]
+position = Vector3(-17, 4, -28)
+
+[node name="Fly5" parent="." instance=ExtResource("16_fly")]
+position = Vector3(-7, 4, 22)
+
+[node name="Bee1" parent="." instance=ExtResource("17_bee")]
+position = Vector3(-10, 4, 0)
+
+[node name="Bee2" parent="." instance=ExtResource("17_bee")]
+position = Vector3(12, 4, -20)
+
+[node name="Bee3" parent="." instance=ExtResource("17_bee")]
+position = Vector3(0, 4, -40)
+
+; Decorative grass on the berms.
+[node name="BermGrass1" parent="." instance=ExtResource("18_clump")]
+position = Vector3(-28, 0, 8)
+radius = 3.0
+blade_count = 20
+seed = 21
+
+[node name="BermGrass2" parent="." instance=ExtResource("18_clump")]
+position = Vector3(28, 0, -4)
+radius = 3.0
+blade_count = 20
+seed = 22
+
+[node name="BermGrass3" parent="." instance=ExtResource("18_clump")]
+position = Vector3(-26, 0, -26)
+radius = 3.0
+blade_count = 20
+seed = 23
+
+[node name="BermGrass4" parent="." instance=ExtResource("18_clump")]
+position = Vector3(27, 0, -24)
+radius = 3.0
+blade_count = 20
+seed = 24
+
+[node name="BermGrass5" parent="." instance=ExtResource("18_clump")]
+position = Vector3(-20, 0, -60)
+radius = 3.0
+blade_count = 20
+seed = 25
+
+[node name="BermGrass6" parent="." instance=ExtResource("18_clump")]
+position = Vector3(21, 0, -62)
+radius = 3.0
+blade_count = 20
+seed = 26
+
+[node name="BermGrass7" parent="." instance=ExtResource("18_clump")]
+position = Vector3(-8, 0, 30)
+radius = 3.0
+blade_count = 20
+seed = 27
+
+[node name="BermGrass8" parent="." instance=ExtResource("18_clump")]
+position = Vector3(10, 0, 28)
+radius = 3.0
+blade_count = 20
+seed = 28

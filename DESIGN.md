@@ -144,6 +144,16 @@ with momentum, level 3 *Garden Hose Bridge* teaches balance and careful
 speed. Each level's design notes live next to its scene in
 `ballants-game/levels/garden/`.
 
+### The title area
+
+The game opens in the **Title Meadow**: the title over a playable garden
+clearing. The camera circles the ant until the player moves; a sculpted
+funnel (berms, a gentle downhill, a dirt trail, never a wall) leads to a
+giant ant hill that starts Level 1. Around it: thick grass to bash
+through, bugs that react (ladybugs, worms, spiders, flies, bees), and
+loose pebbles and acorns. It teaches rolling, braking and jumping before
+any clock is running, the way the old test arena did, themed.
+
 ## 7. Art direction
 
 Low-poly, simple and consistent. Flat colors, soft sky, strong readable

@@ -20,6 +20,8 @@ signal level_loaded(index: int)
 signal run_started
 signal run_finished(time: float)
 signal run_failed
+## The ball dropped into an entrance hill (the title area's giant hill).
+signal entered_through_hill(level_index: int)
 
 ## Seconds to watch the ball sink into the hill before the wipe starts.
 const DROP_DELAY := 0.9
@@ -68,6 +70,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		load_level(2)
 	elif event.is_action_pressed("level_0"):
 		load_test_arena()
+	elif event.is_action_pressed("title_screen"):
+		load_title()
 
 
 ## True when a listed level is playing (false in the test arena).
@@ -92,6 +96,11 @@ func load_level(index: int) -> void:
 
 func load_next() -> void:
 	load_level((current_index + 1) % LevelList.LEVELS.size())
+
+
+func load_title() -> void:
+	current_index = -1
+	_change_scene(LevelList.TITLE)
 
 
 func load_test_arena() -> void:
@@ -176,6 +185,7 @@ func enter_level_through_hill(index: int) -> void:
 		return
 	_run_done = true
 	timer_running = false
+	entered_through_hill.emit(index)
 	var my_run := _run_id
 	await get_tree().create_timer(DROP_DELAY).timeout
 	if my_run != _run_id:

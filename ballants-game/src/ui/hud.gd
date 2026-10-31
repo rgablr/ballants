@@ -33,7 +33,7 @@ func _refresh_controls_text() -> void:
 				+ "Right stick click / G: recenter     A: jump     R: restart     F1: tuning     F2: debug")
 	else:
 		_controls.text = ("WASD / left stick: roll     Space / A: jump     "
-				+ "Mouse / right stick: camera     R: restart     1 2 3: levels     0: arena     "
+				+ "Mouse / right stick: camera     R: restart     1 2 3: levels     0: arena     T: title     "
 				+ "F1: tuning     F2: debug")
 
 

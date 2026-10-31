@@ -6,7 +6,7 @@ extends Node
 ##
 ## The JSON file:
 ## {
-##   "level": 1,                 1/2/3 = that level, 0 = test arena
+##   "level": 1,                 1/2/3 = that level, 0 = test arena, -1 = title area
 ##   "timeout": 90,              seconds before giving up
 ##   "speed": 9,                 default target speed (m/s)
 ##   "waypoints": [
@@ -49,6 +49,10 @@ func start(config: Dictionary) -> void:
 		_reached_goal = true
 		_goal_time = t)
 	Levels.run_failed.connect(func(): _falls += 1)
+	# The title area's giant hill counts as its goal.
+	Levels.entered_through_hill.connect(func(_index: int):
+		_reached_goal = true
+		_goal_time = _elapsed)
 
 
 func _physics_process(delta: float) -> void:

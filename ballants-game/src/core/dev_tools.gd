@@ -13,7 +13,8 @@ extends Node
 ##       jumps), prints PASS/FAIL checks, and quits. Exit code 0 = all passed.
 ##
 ##   godot -- --level=2
-##       Starts on that level (1/2/3) or the test arena (0). Combine with
+##       Starts on that level (1/2/3), the test arena (0) or the title
+##       area (-1, which is also where a normal start opens). Combine with
 ##       --screenshot, --zoom, --camera-yaw to picture a level.
 ##
 ##   godot --headless -- --drive=/full/path/level_1.json
@@ -98,7 +99,9 @@ func _ready() -> void:
 ## Switches to a level once the tree is up. 0 = arena, 1..n = list order.
 func _load_level_later(level: int) -> void:
 	await get_tree().process_frame
-	if level <= 0:
+	if level < 0:
+		Levels.load_title()
+	elif level == 0:
 		Levels.load_test_arena()
 	else:
 		Levels.load_level(level - 1)
@@ -127,7 +130,10 @@ func _run_drive(path: String) -> void:
 		await _save_screenshot(_screenshot_path.get_basename() + "_drop.png")
 		await get_tree().create_timer(Levels.DROP_DELAY * 0.5 + Levels.FADE_TIME + Levels.CONTINUE_DELAY + 0.6).timeout
 		await _save_screenshot(_screenshot_path.get_basename() + "_results.png")
-	if passed and Levels.is_in_level():
+	if passed and int(config.get("level", 1)) < 0:
+		await get_tree().create_timer(Levels.DROP_DELAY + Levels.FADE_TIME + 1.0).timeout
+		print("[drive] after entering the giant ant hill the game loaded level %d" % [Levels.current_index + 1])
+	elif passed and Levels.is_in_level():
 		# Confirm the level system moves on to the next level by itself.
 		var before := Levels.current_index
 		# Wait for the "press any button" prompt, press it like a player would.

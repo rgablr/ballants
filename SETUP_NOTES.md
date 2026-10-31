@@ -915,16 +915,171 @@ the level loads (picture or try one spot). A `--drive` run with
 - The hill is a plain cone; ants, an entrance trail, or grass around the
   base can come with the art pass.
 
-**Q18. The results screen should stay until:**
+**Q18. The results screen should stay until:** — *Answered: (b), a button press. Done in section 21.*
 - (a) 3 seconds pass, then the next level starts (current).
 - (b) you press a button (any of A / Space / Enter), with a "Press A"
   hint.
 - (c) 3 seconds, but a button skips the wait.
 
 **Q19. When the ball is caught mid-air over the hill (a fast approach),
-it is slowed and dropped in. Keep that, or:**
+it is slowed and dropped in. Keep that, or:** — *Answered: (b), the
+player must roll in themselves; once over the threshold the ball sinks.
+Done in section 21.*
 - (a) Keep: any approach finishes the level (current).
 - (b) Only a ball that actually rolls into the crater counts; a flyover
   lands past the hill and you come back.
 - (c) Keep, but add a visible "tractor" effect (dust ring, the hill
   pulses) so it reads as the hill grabbing the ball.
+
+## 21. Your playtest round: finish, ant walk, bounce bug, sky, title area
+
+**Q18 and Q19 (your answers).** The results screen now waits for you:
+"[press any button to continue]" pulses under your time and any key,
+controller button or mouse click moves on. It appears 0.6 s after the
+results so a button you were still holding can't skip them. The ant hill
+no longer grabs the ball out of the air. The threshold is checked against
+the ball's center: it must be over the hole (inside the lip) and down at
+crater height. Then the ball is taken out of the physics and sunk: it
+slides to the middle of the hole and drops out of sight. The hill's
+slope is now an S-curve: gentle at the foot, steepest in the middle,
+flat at the rim, so a ball arriving at a sensible speed tips into the
+crater. Measured: rolling in at 3.5, 6.9 and 8.2 m/s gets caught (center
+0.12–0.14 m above the rim, so genuinely in the crater); a full-speed run
+off level 1's downhill flies over and is not caught.
+
+**Ant walk.** The old walk cycled 1.6 times per meter, which is 22 steps a
+second at top speed, with feet only sliding back and forth. Now it is a
+gait (`assets/placeholders/ant_placeholder.gd`, constants at the top):
+- each back foot stays planted for 62% of the cycle, then lifts and
+  swings forward; knees bend forward
+- cadence 1.3–2.6 cycles per second (capped), longer strides when fast
+- arms swing opposite the legs; the body dips at each footfall and sways
+  toward the planted foot; antennae bob
+- standing still: breathing and the odd antenna twitch
+- above 9.5 m/s it crouches, shortens its steps and spreads its arms to
+  balance, like someone log-rolling
+- in the air the legs tuck up
+
+**The random bounce on straight rolls (fixed).** Measured with a new
+"pop" detector in the level bot: level 1 had 29 sudden upward kicks per
+run (44 at top speed), up to 5 m/s, all on flat sidewalk where angled
+slabs overlap on the curves. The physics engine catches the hidden
+corner of one slab under its neighbour. Fix (`seam_smoothing` in the
+tuning file, on): when the ball has been rolling on the ground and rays
+straight down confirm the floor is still the same flat plane, any sudden
+velocity away from that plane is removed. Ramps, crests, jumps and
+bounce pads are untouched (a jump/bounce pad gives a grace period). After:
+0 pops on flat ground in every level; the few left are real geometry
+(the foot of the downhill, the round garden hose, ramp crests). New
+physics test "angled overlapping slabs do not launch the ball": 2.23 m/s
+with smoothing off, 0.05 m/s with it on.
+
+**Objects with no collision (fixed) and the sky.** Those were the
+backdrop: the fence/bush/flower ring was centered on each level's
+origin, but the courses run 200 m from it, so giant flowers, bushes and
+a house ended up right beside the track. Now:
+- The sky is painted in code (`levels/garden/garden_sky.gdshader`): blue
+  gradient, the sun (lowered so you can see it), puffy clouds, and a hazy
+  neighbourhood on the horizon: rolling hills, a row of houses with
+  roofs, windows and chimneys, and tree clumps between them. No image
+  files, nothing AI-made.
+- The far scenery you liked (fence, bushes, giant trees) stays, but the
+  ring is centered on the course's collision and kept 70 m clear of
+  anything you can touch. The near giant flowers and the 3D house are
+  gone.
+
+**Title area ("Title Meadow", the game now opens here).**
+`levels/garden/title_meadow.tscn`. Until you touch anything, the camera
+slowly circles the ant, pulled back, showing the scenery; "BALLANTS" sits
+top-left with "move to play" pulsing at the bottom. First input: the
+camera eases back behind the ball, the HUD comes in, the title shrinks
+and the subtitle becomes "roll into the giant ant hill to start".
+- **The funnel.** The ground is one sculpted surface: a clearing at the
+  start, a valley that narrows and slopes gently downhill toward a giant
+  ant hill (52 m across, 8 m tall), and a round hollow around it. Grassy
+  berms rise on every side, so you drift back toward the middle. A worn
+  dirt trail runs down the valley as a hint. No walls, no strict path.
+- **Giant ant hill.** Same piece as the level finishes, with
+  `enter_level = 0`: drop in and the screen wipes to black and Level 1
+  loads (no results screen; there was nothing to time).
+- **Thick grass** (`src/objects/garden/thick_grass.gd`), 12 patches. Roll in
+  slowly and the blades bend away, push back on the ball and slow it
+  down, then spring upright. Hit one faster than 6 m/s and it snaps: the
+  broken blade tumbles away, dust puffs up, the ball loses 12% of its
+  speed. Blades grow back after 12 s. Measured: at 10 m/s the ball snaps
+  a line of 6 blades and comes out at 7.6 m/s; at 2.5 m/s holding forward
+  no blades snap, they bend up to 0.65 rad and the ball pushes through.
+- **Bugs** (`src/objects/critters/`, all built from shapes in code, at ant
+  scale):
+  - Ladybugs (5): wander with pattering legs; real physics bodies you can
+    bump and shove; roll at one fast and it pops its wing cases and hops
+    away.
+  - Worms (3): inch around loops in the dirt with a ripple down the body;
+    roll into one and it burrows, leaving a dirt mound, and resurfaces
+    elsewhere.
+  - Spiders (2 on the ground, 1 hanging from a flower on a silk thread):
+    eight jointed legs in an alternating gait; ground spiders scuttle
+    away when you come near; the hanging one climbs its thread.
+  - Flies (5): perch on flower heads rubbing their front legs; take off
+    when you approach, zig-zag around buzzing, land again.
+  - Bees (3): fly lazy arcs from flower to flower and hover in a little
+    figure-eight; jump into one and it spins off dizzy.
+- **Other toys:** shove-able pebbles and acorns, a twig ramp, a bounce
+  pad, a seesaw, solid giant flowers, static pebbles.
+- Placing things in the meadow: pieces stand on the sculpted ground when
+  it starts, so a piece's Y in the editor means "height above the
+  ground".
+
+**Keys.** **T** (or the controller's **View** button) goes back to the
+title area. Correction to what I told you earlier: on your controller,
+restart (R) is the **Menu/Start** button, not View.
+
+**Acceptance criteria (play):**
+- Launch: the title area, camera circling the ant, "BALLANTS" top-left,
+  "move to play" pulsing, no HUD. Leave it for 20 s: it keeps circling
+  and the ball stays put.
+- Push the stick / a key: the camera swings in behind the ball, the HUD
+  appears, the subtitle changes.
+- Roll slowly into thick grass: blades bend away, you slow down, they
+  spring back after. Ram it at speed: blades snap and fly, dust, you keep
+  going. Come back 12 s later: they've regrown.
+- Roll at a ladybug fast: it flies off. Into a worm: it burrows. Near a
+  ground spider: it runs. Near a flower with a fly: it takes off. Jump
+  into a bee: it spins.
+- Follow the dirt trail downhill to the giant hill, climb it, drop in:
+  black wipe, Level 1.
+- In a level, reach its hill at full speed: you fly over and land past
+  it. Come back slower and roll into the crater: the ball sinks, black
+  wipe, results, "[press any button to continue]". Nothing moves on until
+  you press.
+- Roll the level 1 curves at full speed: no random hops.
+- Look up and around in any level: sun, clouds, houses on the horizon; no
+  flowers or bushes next to the track that you can roll through.
+- The ant: walking looks like steps (feet lift and land, knees bend), not
+  a blur; at top speed it crouches and balances with arms out.
+- `./run_tests.sh`: 8 physics tests, 11 arena checks, 5 drives (3 levels,
+  the level 2 shortcut, and the title area into level 1) all PASS.
+
+**Known issues**
+- The bugs have no sounds yet (sound hooks only, as before).
+- Worms, spiders, flies and bees have no physical collision: they react
+  to the ball instead of blocking it. Ladybugs are the physical ones.
+- In the title area the ball can creep very slightly on the clearing's
+  gentle undulations while the camera circles.
+
+**Q20. Finishing level 3 should:**
+- (a) Loop to level 1 (current).
+- (b) Return to the title meadow.
+- (c) A "Backyard Garden complete" screen with all three times, then the
+  meadow.
+
+**Q21. The bugs in the meadow:**
+- (a) Fine as decoration with reactions (current).
+- (b) Make them collectibles (bump all 5 ladybugs, etc.) with a counter.
+- (c) Give some real physics (worms you can roll over like speed bumps,
+  bees you can knock down).
+
+**Q22. Thick grass resistance when pushing through slowly:**
+- (a) As is (bends, slows you a little).
+- (b) Stiffer: you really have to push, slow balls get turned aside.
+- (c) Softer: mostly visual.

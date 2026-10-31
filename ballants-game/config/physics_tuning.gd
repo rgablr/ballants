@@ -89,6 +89,13 @@ var turn_assist := 0.72
 ## jumps or bounce pads.
 var ground_stick := 0.37
 
+## Seam smoothing: removes the sudden "pop" a ball can get when it rolls
+## over the hidden edge where two flat floor pieces overlap. It only acts
+## when the ball has been rolling on the ground and the floor under it is
+## still the same flat plane; real ramps, crests, jumps and bounce pads
+## are left alone. true = on (recommended), false = raw physics.
+var seam_smoothing := true
+
 
 # ---------------------------------------------------------------- JUICE ----
 # Feedback effects. None of these change where the ball goes.

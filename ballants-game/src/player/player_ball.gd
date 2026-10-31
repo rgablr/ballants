@@ -50,6 +50,14 @@ var _input_direction := Vector3.ZERO   # world-space push direction this step
 var _applied_force := Vector3.ZERO     # what we pushed with this step
 var _jumped_this_step := false
 var _previous_velocity := Vector3.ZERO
+# Seam smoothing (see Tuning.seam_smoothing): how many physics steps in a
+# row the ball has been on the ground, and a short window after a jump or
+# bounce pad during which upward launches are left alone.
+var _grounded_steps := 0
+var _launch_grace := 0.0
+## How many seam pops were removed since the level started (debug overlay
+## and tests read this).
+var seam_pops_removed := 0
 
 # While the player holds "back", the control direction is frozen at the
 # camera angle they started with. That way the camera can swing around
@@ -130,6 +138,8 @@ func _on_camera_manually_turned(yaw_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if freeze:
+		return   # taken out of the physics (sinking into an ant hill)
 	_time_since_grounded += delta
 	_time_since_jump_pressed += delta
 	if Input.is_action_just_pressed("jump"):
@@ -286,6 +296,7 @@ func _try_jump() -> void:
 	var launch_speed := sqrt(2.0 * Tuning.gravity * Tuning.jump_height)
 	var stick_cancel := -_applied_force.y / mass * get_physics_process_delta_time()
 	apply_central_impulse(Vector3.UP * (launch_speed - linear_velocity.y + stick_cancel) * mass)
+	_launch_grace = 0.25
 	jumped.emit()
 	Sounds.jump()
 
@@ -322,6 +333,8 @@ func _play_squash(direction: Vector3, strength: float) -> void:
 ## Runs inside the physics engine each step; the only reliable place to read
 ## what the ball is touching.
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	_launch_grace = maxf(_launch_grace - state.step, 0.0)
+	_smooth_seams(state)
 	var was_grounded := _grounded
 	var grounded := false
 	for i in state.get_contact_count():
@@ -335,6 +348,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if grounded and state.linear_velocity.y > 2.0 and not was_grounded:
 		grounded = false
 	_grounded = grounded
+	_grounded_steps = _grounded_steps + 1 if grounded else 0
 	if _grounded:
 		_time_since_grounded = 0.0
 		if not was_grounded:
@@ -342,9 +356,45 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			Sounds.land(-_previous_velocity.y)
 
 
+## Something (a bounce pad, a spring...) is about to throw the ball upward
+## on purpose: don't treat it as a seam pop.
+func allow_launch(seconds := 0.3) -> void:
+	_launch_grace = maxf(_launch_grace, seconds)
+
+
+## Seam pops: the ball has been rolling on one flat plane, the plane under
+## it hasn't changed, yet it is suddenly moving away from it. That comes
+## from the physics engine catching the hidden edge where two overlapping
+## floor pieces meet. Remove the "away" part of the velocity. Rays straight
+## down (under the center, and a step ahead) read the real surface; if
+## either sees a different slope (a ramp starting, a crest), it's real
+## geometry and nothing is changed.
+func _smooth_seams(state: PhysicsDirectBodyState3D) -> void:
+	if not Tuning.seam_smoothing or _grounded_steps < 3 or _launch_grace > 0.0:
+		return
+	var plane := _ground_normal
+	var away := state.linear_velocity.dot(plane)
+	if away < 0.25:
+		return
+	var space := state.get_space_state()
+	var center := state.transform.origin
+	var ahead := Vector3(state.linear_velocity.x, 0.0, state.linear_velocity.z) * state.step * 2.0
+	for start in [center, center + ahead]:
+		var query := PhysicsRayQueryParameters3D.create(start, start - plane * (radius + 0.3))
+		query.exclude = [get_rid()]
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			return   # ground ends here: a real edge, leave it
+		if (hit.normal as Vector3).dot(plane) < 0.9994:   # more than ~2 degrees off
+			return
+	state.linear_velocity -= plane * away
+	seam_pops_removed += 1
+
+
 func respawn() -> void:
 	global_transform = _spawn_transform
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
 	_previous_velocity = Vector3.ZERO
+	_grounded_steps = 0
 	reset_physics_interpolation()   # no smear from the old spot to the new

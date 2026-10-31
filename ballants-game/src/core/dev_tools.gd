@@ -123,14 +123,17 @@ func _run_drive(path: String) -> void:
 		# One picture at the finish (ball dropping into the hill), one of the
 		# results screen a second after the wipe to black.
 		await _save_screenshot(_screenshot_path)
-		await get_tree().create_timer(Levels.DROP_DELAY * 0.75).timeout
+		await get_tree().create_timer(Levels.DROP_DELAY * 0.5).timeout
 		await _save_screenshot(_screenshot_path.get_basename() + "_drop.png")
-		await get_tree().create_timer(Levels.DROP_DELAY * 0.25 + Levels.FADE_TIME + 1.0).timeout
+		await get_tree().create_timer(Levels.DROP_DELAY * 0.5 + Levels.FADE_TIME + Levels.CONTINUE_DELAY + 0.6).timeout
 		await _save_screenshot(_screenshot_path.get_basename() + "_results.png")
 	if passed and Levels.is_in_level():
 		# Confirm the level system moves on to the next level by itself.
 		var before := Levels.current_index
-		await get_tree().create_timer(Levels.DROP_DELAY + Levels.FADE_TIME + Levels.COMPLETE_DELAY + 1.0).timeout
+		# Wait for the "press any button" prompt, press it like a player would.
+		await get_tree().create_timer(Levels.DROP_DELAY + Levels.FADE_TIME + Levels.CONTINUE_DELAY + 0.5).timeout
+		Transition.press_continue()
+		await get_tree().create_timer(1.0).timeout
 		print("[drive] after completing level %d the game loaded level %d" % [before + 1, Levels.current_index + 1])
 	get_tree().quit(0 if passed else 1)
 

@@ -5,9 +5,12 @@ extends Node
 ##     for the test arena)
 ##   - the run timer: starts on the first movement input, stops at the goal
 ##   - on goal (the ball drops into the ant hill): a moment to watch it
-##     fall, the screen wipes to black, the results show (message and
-##     time), then the next level loads under the black and the black
-##     lifts. After the last level it wraps to the first.
+##     sink, the screen wipes to black, the results show (message and
+##     time) with "press any button to continue"; on a press the next
+##     level loads under the black and the black lifts. After the last
+##     level it wraps to the first.
+##   - the title area's giant hill: dropping in wipes to black and loads
+##     level 1 (no results; there was no run to time)
 ##   - on fall-out (a FallZone, or dropping below the world): restarts
 ##   - keys 1/2/3 jump to a level, 0 loads the test arena, R restarts
 ##
@@ -18,12 +21,13 @@ signal run_started
 signal run_finished(time: float)
 signal run_failed
 
-## Seconds to watch the ball drop into the hill before the wipe starts.
-const DROP_DELAY := 0.6
+## Seconds to watch the ball sink into the hill before the wipe starts.
+const DROP_DELAY := 0.9
 ## Seconds the wipe to black takes, and the lift off the next level.
 const FADE_TIME := 0.5
-## Seconds the results stay on the black screen before moving on.
-const COMPLETE_DELAY := 3.0
+## Seconds the results show before "press any button" appears, so a button
+## still held from playing can't skip them by accident.
+const CONTINUE_DELAY := 0.6
 ## Seconds to show "Fell out!" before restarting.
 const FAIL_DELAY := 0.8
 
@@ -153,13 +157,32 @@ func _on_level_completed() -> void:
 	if my_run != _run_id:
 		return
 	Transition.show_complete(current_info(), run_time)
-	await get_tree().create_timer(COMPLETE_DELAY).timeout
+	await get_tree().create_timer(CONTINUE_DELAY).timeout
+	if my_run != _run_id:
+		return
+	await Transition.wait_for_continue()
 	if my_run != _run_id:
 		return
 	if is_in_level():
 		load_next()
 	else:
 		restart()
+
+
+## Called by an entrance hill (the title area's giant hill): watch the
+## ball sink, wipe to black, load the level, lift the black.
+func enter_level_through_hill(index: int) -> void:
+	if _run_done or _loading:
+		return
+	_run_done = true
+	timer_running = false
+	var my_run := _run_id
+	await get_tree().create_timer(DROP_DELAY).timeout
+	if my_run != _run_id:
+		return
+	await Transition.fade_out(FADE_TIME)
+	if my_run == _run_id:
+		load_level(index)
 
 
 func _movement_pressed() -> bool:

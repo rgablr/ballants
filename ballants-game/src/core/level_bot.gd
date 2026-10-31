@@ -32,6 +32,13 @@ var _falls := 0
 var _done := false
 var _reached_goal := false
 var _goal_time := 0.0
+## "Pops": the ball was on the ground, nobody pressed jump, and the next
+## step it was suddenly moving upward fast. On a smooth course that should
+## never happen; each one is reported with where it happened.
+const POP_SPEED := 1.2
+var pops: Array[String] = []
+var _was_grounded := false
+var _jump_frames := 0
 
 
 func start(config: Dictionary) -> void:
@@ -56,6 +63,8 @@ func _physics_process(delta: float) -> void:
 				% [_timeout, _index, _waypoints.size(), _falls])
 		return
 	var player := get_tree().get_first_node_in_group("player") as PlayerBall
+	if player:
+		_watch_for_pops(player)
 	if player == null or _index >= _waypoints.size():
 		_release_all()
 		return
@@ -102,6 +111,22 @@ func _drive(player: PlayerBall) -> void:
 	_press("move_left", maxf(-r, 0.0))
 
 
+func _watch_for_pops(player: PlayerBall) -> void:
+	_jump_frames = maxi(_jump_frames - 1, 0)
+	if Input.is_action_pressed("jump"):
+		_jump_frames = 20
+	var vy := player.linear_velocity.y
+	var near_hill := false
+	for hill in get_tree().get_nodes_in_group("ant_hill"):
+		var d := Vector2(hill.global_position.x - player.global_position.x, hill.global_position.z - player.global_position.z)
+		near_hill = near_hill or d.length() < hill.base_radius + 1.0
+	if _was_grounded and vy > POP_SPEED and _jump_frames == 0 and not Game.level_complete and not near_hill:
+		var p := player.global_position
+		var h := Vector2(player.linear_velocity.x, player.linear_velocity.z).length()
+		pops.append("(%.1f, %.2f, %.1f) up %.2f m/s at %.1f m/s" % [p.x, p.y, p.z, vy, h])
+	_was_grounded = player.is_grounded()
+
+
 func _position_of(entry) -> Vector3:
 	var p = entry.get("pos") if entry is Dictionary else entry
 	return Vector3(float(p[0]), float(p[1]), float(p[2]))
@@ -121,5 +146,8 @@ func _release_all() -> void:
 
 func _finish(passed: bool, summary: String) -> void:
 	_done = true
+	summary += "; %d pops" % pops.size()
+	for pop in pops:
+		summary += "\n[drive]   pop " + pop
 	_release_all()
 	finished.emit(passed, summary)

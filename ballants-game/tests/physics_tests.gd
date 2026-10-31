@@ -30,6 +30,7 @@ func _ready() -> void:
 	await test_ball_never_passes_through_thin_wall()
 	await test_ball_lands_on_thin_platform()
 	await test_floor_seams_do_not_launch_ball()
+	await test_angled_overlapping_slabs_do_not_launch_ball()
 	await test_ramp_crest_does_not_launch_ball()
 	await test_stacked_crates_settle_without_jitter()
 	print("[tests] %s: %d passed, %d failed" % ["ALL PASSED" if _failures == 0 else "FAILED", _passes, _failures])
@@ -119,6 +120,33 @@ func test_floor_seams_do_not_launch_ball() -> void:
 	_check("floor seams do not launch the ball", max_lift < 0.05 and max_vy < 0.5,
 			"max lift above floor %.3f m, max upward speed %.2f m/s (at z = %.2f)" % [max_lift, max_vy, pop_z])
 	_teardown()
+
+
+## The bug a playtest found: curves are built from slabs turned at angles
+## that overlap their neighbours. The hidden corners used to kick the ball
+## up as much as 5 m/s on flat ground. Rolls at top speed across a fan of
+## overlapping, rotated slabs, in several directions.
+func test_angled_overlapping_slabs_do_not_launch_ball() -> void:
+	var worst_vy := 0.0
+	var worst_detail := ""
+	for heading in [0.0, 17.0, 33.0, -24.0]:
+		_setup()
+		for i in 10:
+			_block(Vector3(sin(deg_to_rad(i * 9.0)) * 3.0, -0.5, -i * 3.5), Vector3(6, 1, 5), Vector3(0, i * 9.0, 0))
+		var player := _player(Vector3(0, 0.6, 2))
+		await _seconds(0.6)
+		var dir := Vector3(-sin(deg_to_rad(heading)), 0, -cos(deg_to_rad(heading)))
+		player.linear_velocity = dir * Tuning.max_speed
+		for i in 70:
+			await get_tree().physics_frame
+			if player.global_position.y < 0.3:
+				break   # rolled off the side of the fan
+			if player.linear_velocity.y > worst_vy:
+				worst_vy = player.linear_velocity.y
+				worst_detail = "heading %.0f deg at (%.1f, %.1f)" % [heading, player.global_position.x, player.global_position.z]
+		await _teardown()
+	_check("angled overlapping slabs do not launch the ball", worst_vy < 0.6,
+			"max upward speed %.2f m/s (%s)" % [worst_vy, worst_detail])
 
 
 ## Principle 4: cresting a ramp onto a platform should keep the ball on

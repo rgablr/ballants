@@ -13,6 +13,8 @@ func _on_body_entered(body: Node3D) -> void:
 	if body is not RigidBody3D:
 		return
 	var rigid := body as RigidBody3D
+	if rigid.has_method("allow_launch"):
+		rigid.allow_launch()
 	# Same trick as the jump: set vertical speed to exactly what's needed to
 	# reach the target height, whatever speed the body arrived with.
 	var launch_speed := sqrt(2.0 * Tuning.gravity * Tuning.bounce_pad_height)

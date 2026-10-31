@@ -10,23 +10,25 @@ extends StaticBody3D
 ##     hole, and a shaft below the hole the ball falls down
 ##   - the collision is a triangle mesh of exactly that surface, so what
 ##     you see is what you roll on (the shaft walls included)
-##   - an invisible catch zone over the crater (and down the shaft) notices
-##     the ball. A fast ball launches off the rim and would sail over the
-##     hole, so on entry the ball's speed is cut to a slow roll, it is
-##     told to collide with the hill only (not the ground the hill sits
-##     on), and it drops down the hole to the shaft floor. Game is told
-##     the level is complete and the level manager does the fade-to-black.
+##   - the THRESHOLD is an invisible zone just inside the hole's lip, no
+##     higher than a ball sitting in the crater. The player has to actually
+##     roll the ball into the crater; a ball flying over the hill passes
+##     above it and lands beyond, and they come back for another go.
+##   - once the ball crosses the threshold it is taken out of the physics
+##     and sunk: it slides to the middle of the hole and drops down the
+##     shaft out of sight. Game is told the level is complete (or, for a
+##     hill with enter_level set, that level loads) and the level manager
+##     does the fade-to-black.
 ##
-## Slope: about 30 degrees, so the ball climbs it from a standstill
-## (roll_acceleration beats gravity along the slope). The hole is wider
-## than the ball (ball radius 0.5 m) so it can never rest on the lip.
-##
-## Collision layers: the hill is on layers 1 and 2. A caught ball switches
-## its mask to layer 2 only, so it keeps bouncing off the shaft walls while
-## passing through the dirt bed underneath.
+## Shape: the slope follows an S-curve, gentle at the foot (no bump when
+## the ball arrives), steepest in the middle (about 30 degrees, which the
+## ball still climbs from a standstill), and flattening at the rim, so a
+## ball arriving at a sensible speed slows on top and tips into the crater.
+## The hole is wider than the ball (ball radius 0.5 m) so it can never rest
+## on the lip.
 
 ## Radius of the mound where it meets the ground (m).
-@export var base_radius := 4.5:
+@export var base_radius := 5.5:
 	set(v):
 		base_radius = v
 		_rebuild()
@@ -59,13 +61,21 @@ extends StaticBody3D
 	set(v):
 		seed = v
 		_rebuild()
+## -1 = this hill finishes the level (results screen). 0, 1, 2... = this
+## hill is an entrance: dropping in loads that level from the level list
+## (the title area's giant hill uses 0, the first level).
+@export var enter_level := -1
+
+## Seconds the ball takes to slide to the middle, then to sink out of sight.
+const SINK_CENTER_TIME := 0.25
+const SINK_DROP_TIME := 0.6
 
 var _built := false
 var _done := false
 
 
 func _ready() -> void:
-	collision_layer = 1 | 2
+	add_to_group("ant_hill")
 	_built = true
 	_rebuild()
 
@@ -75,15 +85,20 @@ func _ready() -> void:
 ## between the hill and the floor it sits on.
 func _profile() -> PackedVector2Array:
 	var crater_depth := 0.45
-	return PackedVector2Array([
-		Vector2(base_radius, -0.1),
-		Vector2(lerpf(base_radius, rim_radius, 0.36), height * 0.33),
-		Vector2(lerpf(base_radius, rim_radius, 0.72), height * 0.73),
-		Vector2(rim_radius, height),
-		Vector2(hole_radius, height - crater_depth),
-		Vector2(hole_radius, -shaft_depth),
-		Vector2(0.0, -shaft_depth),
-	])
+	var points := PackedVector2Array()
+	# The slope: an S-curve (smoothstep) from the foot to the rim.
+	var samples := 8
+	for i in samples + 1:
+		var t := float(i) / samples
+		var s := t * t * (3.0 - 2.0 * t)
+		points.append(Vector2(lerpf(base_radius, rim_radius, t), lerpf(-0.1, height, s)))
+	# The crater: a rounded bowl down to the lip of the hole.
+	points.append(Vector2(lerpf(rim_radius, hole_radius, 0.5), height - crater_depth * 0.35))
+	# The last three rows must stay in this order (the hole surface uses them).
+	points.append(Vector2(hole_radius, height - crater_depth))
+	points.append(Vector2(hole_radius, -shaft_depth))
+	points.append(Vector2(0.0, -shaft_depth))
+	return points
 
 
 func _rebuild() -> void:
@@ -160,7 +175,6 @@ func _rebuild() -> void:
 	add_child(collider)
 
 	_add_grains()
-	_add_sensor()
 
 
 ## A lighter dirt than the beds, so the hill reads as fresh-dug.
@@ -202,23 +216,26 @@ func _add_grains() -> void:
 		grains.add_child(grain)
 
 
-## The invisible catch zone: the air above the crater, the crater, and the
-## shaft. Entering it ends the level. It stops short of the rim so a ball
-## rolling around the outside slope is not caught.
-func _add_sensor() -> void:
-	var area := Area3D.new()
-	area.name = "Hole"
-	var cylinder := CylinderShape3D.new()
-	cylinder.radius = rim_radius - 0.6
-	var top := height + 4.0
-	cylinder.height = top + shaft_depth
-	var shape := CollisionShape3D.new()
-	shape.shape = cylinder
-	shape.position = Vector3(0, (top - shaft_depth) * 0.5, 0)
-	area.add_child(shape)
-	add_child(area)
-	if not Engine.is_editor_hint():
-		area.body_entered.connect(_on_body_entered)
+## The threshold, checked against the ball's CENTER every physics step: it
+## counts once the center is over the hole (inside the lip, with a little
+## overhang) and no higher than a ball resting in the crater. A ball flying
+## over the hill has its center well above that and is never caught.
+const THRESHOLD_OVERHANG := 0.25   # m past the lip the center may be
+const THRESHOLD_ABOVE_RIM := 0.15  # m above the rim the center may be
+
+
+func _physics_process(_delta: float) -> void:
+	if _done or Engine.is_editor_hint():
+		return
+	for node in get_tree().get_nodes_in_group("player"):
+		var ball := node as PlayerBall
+		if ball == null or ball.freeze:
+			continue
+		var local := ball.global_position - global_position
+		var across := Vector2(local.x, local.z).length()
+		if across <= hole_radius + THRESHOLD_OVERHANG and local.y <= height + THRESHOLD_ABOVE_RIM:
+			_on_ball_crossed(ball)
+			return
 
 
 ## Surface height at a distance from the middle (outside the hole).
@@ -247,19 +264,32 @@ static func _profile_normal(profile: PackedVector2Array, row: int) -> Vector2:
 	return n.normalized() if n != Vector2.ZERO else Vector2.UP
 
 
-func _on_body_entered(body: Node3D) -> void:
-	if _done or body is not PlayerBall:
-		return
+func _on_ball_crossed(ball: PlayerBall) -> void:
 	_done = true
-	var ball := body as RigidBody3D
-	# Cut the speed to a slow roll aimed a little toward the hole, drop any
-	# upward motion, and let it only collide with the hill from now on.
-	var v := ball.linear_velocity
-	var horizontal := Vector3(v.x, 0.0, v.z).limit_length(2.5)
-	var to_center := global_position - ball.global_position
-	to_center.y = 0.0
-	ball.linear_velocity = horizontal + to_center.limit_length(1.0) * 1.5 + Vector3.UP * minf(v.y, 0.0)
-	ball.angular_velocity *= 0.2
-	ball.collision_mask = 2
-	Game.complete_level()
+	_sink(ball)
+	if enter_level >= 0:
+		Levels.enter_level_through_hill(enter_level)
+	else:
+		Game.complete_level()
 	Sounds.goal()
+
+
+## Takes the ball out of the physics and slides it into the hole: to the
+## middle first, then straight down the shaft.
+func _sink(ball: RigidBody3D) -> void:
+	var spin := ball.angular_velocity
+	ball.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+	ball.set_deferred("freeze", true)
+	ball.linear_velocity = Vector3.ZERO
+	var middle := global_position + Vector3.UP * (height - 0.3)
+	var bottom := global_position + Vector3.UP * (-shaft_depth + 0.6)
+	var tween := create_tween()
+	tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
+	tween.tween_property(ball, "global_position", middle, SINK_CENTER_TIME) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(ball, "global_position", bottom, SINK_DROP_TIME) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# Keep it visibly rolling a little as it goes in.
+	tween.parallel().tween_method(func(t: float):
+		ball.rotate(spin.normalized() if spin.length() > 0.01 else Vector3.RIGHT, t * 0.08),
+		1.0, 0.0, SINK_DROP_TIME)

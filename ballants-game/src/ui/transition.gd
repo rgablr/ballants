@@ -7,6 +7,7 @@ extends CanvasLayer
 ## The level manager drives it:
 ##   await Transition.fade_out(0.5)        # screen wipes to black
 ##   Transition.show_complete(info, time)  # message + time on the black
+##   await Transition.wait_for_continue()  # "[press any button to continue]"
 ##   ...load the next level...
 ##   Transition.fade_in(0.5)               # black lifts off the new level
 
@@ -20,7 +21,13 @@ var _title: Label
 var _level: Label
 var _time: Label
 var _par: Label
+var _prompt: Label
 var _tween: Tween
+var _waiting := false
+var _prompt_time := 0.0
+
+## Fired when a button is pressed while the continue prompt is up.
+signal continue_pressed
 
 
 func _ready() -> void:
@@ -53,6 +60,12 @@ func _ready() -> void:
 	_level = _label(LINE_SIZE, Color(1, 1, 1, 0.8))
 	_time = _label(TIME_SIZE, Color.WHITE)
 	_par = _label(LINE_SIZE, Color(1, 1, 1, 0.8))
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 30)
+	_box.add_child(spacer)
+	_prompt = _label(24, Color(1, 0.95, 0.7))
+	_prompt.text = "[press any button to continue]"
+	_prompt.visible = false
 
 
 func _label(size: int, color: Color) -> Label:
@@ -114,6 +127,46 @@ func show_complete(info: Dictionary, time: float) -> void:
 
 func hide_complete() -> void:
 	_box.visible = false
+	_prompt.visible = false
+	_waiting = false
+
+
+## Shows "[press any button to continue]" and returns when any key,
+## controller button or mouse button is pressed.
+func wait_for_continue() -> void:
+	_prompt.visible = true
+	_prompt_time = 0.0
+	_waiting = true
+	await continue_pressed
+
+
+## Same as a player pressing a button (used by the test bot).
+func press_continue() -> void:
+	if _waiting:
+		_waiting = false
+		_prompt.visible = false
+		continue_pressed.emit()
+
+
+func _process(delta: float) -> void:
+	if _prompt.visible:
+		# Gentle pulse so it reads as waiting for you.
+		_prompt_time += delta
+		_prompt.modulate.a = 0.55 + 0.45 * (0.5 + 0.5 * cos(_prompt_time * 3.0))
+
+
+## While the results are up, every press belongs to this screen (so R or
+## a level key can't also fire underneath).
+func _input(event: InputEvent) -> void:
+	if not _box.visible:
+		return
+	var pressed: bool = (event is InputEventKey and event.pressed and not event.echo) \
+			or (event is InputEventJoypadButton and event.pressed) \
+			or (event is InputEventMouseButton and event.pressed)
+	if pressed or event is InputEventKey or event is InputEventJoypadButton:
+		get_viewport().set_input_as_handled()
+	if pressed:
+		press_continue()
 
 
 func _fade_to(alpha: float, duration: float) -> void:

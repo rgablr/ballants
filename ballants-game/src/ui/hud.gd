@@ -13,7 +13,8 @@ var _player: RigidBody3D
 func _ready() -> void:
 	_message.visible = false
 	_controls.text = ("WASD / left stick: roll     Space / A: jump     "
-			+ "Mouse / right stick: camera     R: restart     Esc: free the mouse")
+			+ "Mouse / right stick: camera     R: restart     Esc: free the mouse     "
+			+ "F1: tuning     F2: debug")
 	Game.level_completed.connect(_on_level_completed)
 
 

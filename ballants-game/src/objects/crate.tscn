@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/objects/physics_prop.gd" id="1_prop"]
+
+[node name="Crate" type="RigidBody3D"]
+script = ExtResource("1_prop")
+shape_type = 0
+size = Vector3(0.8, 0.8, 0.8)
+color = Color(0.62, 0.45, 0.28, 1)
+tuning_mass_name = "crate_mass"

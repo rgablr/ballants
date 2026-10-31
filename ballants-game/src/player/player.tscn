@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/player/player_ball.gd" id="1_ball"]
+[ext_resource type="Script" path="res://src/player/ant_rider.gd" id="2_ant"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ball"]
+radius = 0.5
+
+[node name="Player" type="RigidBody3D"]
+script = ExtResource("1_ball")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_ball")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="AntRider" type="Node3D" parent="." node_paths=PackedStringArray("ball")]
+top_level = true
+script = ExtResource("2_ant")
+ball = NodePath("..")
+model_scale = 1.3

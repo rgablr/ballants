@@ -56,8 +56,148 @@ static func material(name: String) -> StandardMaterial3D:
 	return m
 
 
+## Distance from this node to the garden fence (meters). The backdrop
+## (fence, bushes, trees, house) sits around this radius.
+@export var backdrop_radius := 160.0
+## Height of the lawn the whole level floats above. Visual only.
+@export var backdrop_lawn_y := -6.0
+## Turn the surrounding scenery off for small test scenes.
+@export var backdrop_enabled := true
+
+
 func _ready() -> void:
 	_build_sky_and_sun()
+	if backdrop_enabled:
+		_build_backdrop()
+
+
+## Scenery around the level so it isn't floating in a void: a giant lawn,
+## a picket fence ring, bushes, a few giant trees and a house silhouette.
+## None of it has collision; it is far outside any course.
+func _build_backdrop() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 42
+	var root := Node3D.new()
+	root.name = "Backdrop"
+	add_child(root)
+
+	# Lawn: a huge disc far below.
+	var lawn := MeshInstance3D.new()
+	var lawn_mesh := CylinderMesh.new()
+	lawn_mesh.top_radius = backdrop_radius * 1.3
+	lawn_mesh.bottom_radius = backdrop_radius * 1.3
+	lawn_mesh.height = 1.0
+	lawn_mesh.radial_segments = 48
+	lawn_mesh.material = material("grass")
+	lawn.mesh = lawn_mesh
+	lawn.position = Vector3(0, backdrop_lawn_y - 0.5, 0)
+	root.add_child(lawn)
+
+	# Picket fence ring: posts with two rails.
+	var post_count := 96
+	var fence_height := 24.0
+	var fence_y := backdrop_lawn_y
+	for i in post_count:
+		var angle := TAU * i / post_count
+		var pos := Vector3(cos(angle) * backdrop_radius, fence_y, sin(angle) * backdrop_radius)
+		var post := _box(root, pos + Vector3.UP * fence_height * 0.5, Vector3(2.0, fence_height, 2.0), "wood")
+		post.rotation.y = -angle
+		# Picket top: a small pyramid-ish cap.
+		var cap := _box(root, pos + Vector3.UP * (fence_height + 0.8), Vector3(2.4, 1.6, 2.4), "wood")
+		cap.rotation = Vector3(0, -angle, 0)
+		cap.scale = Vector3(1, 1, 1)
+	var rail_segments := post_count
+	for i in rail_segments:
+		var a0 := TAU * i / rail_segments
+		var a1 := TAU * (i + 1) / rail_segments
+		var p0 := Vector3(cos(a0) * backdrop_radius, 0, sin(a0) * backdrop_radius)
+		var p1 := Vector3(cos(a1) * backdrop_radius, 0, sin(a1) * backdrop_radius)
+		for h in [fence_height * 0.35, fence_height * 0.75]:
+			var rail := _box(root, (p0 + p1) * 0.5 + Vector3.UP * (fence_y + h), Vector3(1.0, 1.6, p0.distance_to(p1) + 1.0), "wood")
+			rail.look_at_from_position(rail.position, rail.position + (p1 - p0), Vector3.UP)
+
+	# Bushes just inside the fence.
+	for i in 40:
+		var angle := rng.randf() * TAU
+		var r := backdrop_radius * rng.randf_range(0.82, 0.96)
+		var pos := Vector3(cos(angle) * r, backdrop_lawn_y, sin(angle) * r)
+		var size := rng.randf_range(8.0, 16.0)
+		_sphere(root, pos + Vector3.UP * size * 0.4, size, Vector3(1.0, 0.75, 1.0), "grass_dark" if rng.randf() < 0.5 else "leaf")
+
+	# Giant trees outside the fence.
+	for i in 7:
+		var angle := TAU * i / 7.0 + rng.randf_range(-0.2, 0.2)
+		var r := backdrop_radius * rng.randf_range(1.05, 1.25)
+		var pos := Vector3(cos(angle) * r, backdrop_lawn_y, sin(angle) * r)
+		var trunk_height := rng.randf_range(60.0, 90.0)
+		_cylinder(root, pos + Vector3.UP * trunk_height * 0.5, 4.0, 6.0, trunk_height, "wood")
+		var canopy := rng.randf_range(36.0, 50.0)
+		_sphere(root, pos + Vector3.UP * (trunk_height + canopy * 0.3), canopy, Vector3(1.0, 0.8, 1.0), "leaf")
+		_sphere(root, pos + Vector3(canopy * 0.4, trunk_height + canopy * 0.1, 0), canopy * 0.7, Vector3.ONE, "grass_dark")
+
+	# A house silhouette far away on one side.
+	var house_pos := Vector3(0, backdrop_lawn_y, -backdrop_radius * 1.35)
+	_box(root, house_pos + Vector3.UP * 25.0, Vector3(90.0, 50.0, 60.0), "sidewalk")
+	var roof := MeshInstance3D.new()
+	var roof_mesh := PrismMesh.new()
+	roof_mesh.size = Vector3(100.0, 30.0, 70.0)
+	roof_mesh.material = material("pot_rim")
+	roof.mesh = roof_mesh
+	roof.position = house_pos + Vector3.UP * 65.0
+	root.add_child(roof)
+	var door := _box(root, house_pos + Vector3(0, 10.0, 30.5), Vector3(12.0, 20.0, 1.0), "wood")
+	door.scale = Vector3.ONE
+
+	# Scattered giant flowers on the lawn between the courses and the fence.
+	for i in 24:
+		var angle := rng.randf() * TAU
+		var r := backdrop_radius * rng.randf_range(0.55, 0.85)
+		var pos := Vector3(cos(angle) * r, backdrop_lawn_y, sin(angle) * r)
+		var height := rng.randf_range(10.0, 18.0)
+		_cylinder(root, pos + Vector3.UP * height * 0.5, 0.5, 0.7, height, "stem")
+		var colors := ["petal_pink", "petal_yellow", "petal_white", "petal_purple"]
+		_sphere(root, pos + Vector3.UP * height, 3.2, Vector3(1.0, 0.35, 1.0), colors[rng.randi() % colors.size()])
+		_sphere(root, pos + Vector3.UP * (height + 0.3), 1.1, Vector3.ONE, "flower_center")
+
+
+func _box(parent: Node3D, pos: Vector3, size: Vector3, material_name: String) -> MeshInstance3D:
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	mesh.material = material(material_name)
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.position = pos
+	parent.add_child(instance)
+	return instance
+
+
+func _sphere(parent: Node3D, pos: Vector3, diameter: float, scale_by: Vector3, material_name: String) -> MeshInstance3D:
+	var mesh := SphereMesh.new()
+	mesh.radius = diameter * 0.5
+	mesh.height = diameter
+	mesh.radial_segments = 10
+	mesh.rings = 5
+	mesh.material = material(material_name)
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.position = pos
+	instance.scale = scale_by
+	parent.add_child(instance)
+	return instance
+
+
+func _cylinder(parent: Node3D, pos: Vector3, top_radius: float, bottom_radius: float, height: float, material_name: String) -> MeshInstance3D:
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = top_radius
+	mesh.bottom_radius = bottom_radius
+	mesh.height = height
+	mesh.radial_segments = 8
+	mesh.material = material(material_name)
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.position = pos
+	parent.add_child(instance)
+	return instance
 
 
 func _build_sky_and_sun() -> void:

@@ -154,8 +154,15 @@ func _physics_process(delta: float) -> void:
 			respawn()
 
 
+## Where the ball is for drawing purposes this frame: between the last two
+## physics steps, so rendering at 120 Hz looks smooth with 60 Hz physics.
+func get_render_transform() -> Transform3D:
+	return get_global_transform_interpolated()
+
+
 func _process(_delta: float) -> void:
 	# Visual = body rotation, squashed along the impact axis in world space.
+	var render := get_render_transform()
 	var squash_basis := Basis.IDENTITY
 	if _squash > 0.001:
 		var a := _squash_axis
@@ -166,7 +173,7 @@ func _process(_delta: float) -> void:
 			Vector3(1.0 + bulge, 0, 0) + a * a.x * (flatten - bulge),
 			Vector3(0, 1.0 + bulge, 0) + a * a.y * (flatten - bulge),
 			Vector3(0, 0, 1.0 + bulge) + a * a.z * (flatten - bulge))
-	_visual_root.global_transform = Transform3D(squash_basis * global_basis, global_position)
+	_visual_root.global_transform = Transform3D(squash_basis * render.basis, render.origin)
 
 
 func _apply_movement() -> void:
@@ -329,3 +336,4 @@ func respawn() -> void:
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
 	_previous_velocity = Vector3.ZERO
+	reset_physics_interpolation()   # no smear from the old spot to the new

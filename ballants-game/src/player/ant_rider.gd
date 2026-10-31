@@ -92,7 +92,8 @@ func _process(delta: float) -> void:
 	if forward.length_squared() < 0.0001:
 		forward = Vector3.FORWARD
 	forward = forward.normalized()
-	global_transform = Transform3D(Basis.looking_at(forward, up), ball.global_position + up * _ball_radius())
+	var ball_center: Vector3 = ball.get_render_transform().origin if ball.has_method("get_render_transform") else ball.global_position
+	global_transform = Transform3D(Basis.looking_at(forward, up), ball_center + up * _ball_radius())
 
 	if _visual.has_method("set_walk_speed"):
 		_visual.set_walk_speed(speed)

@@ -143,7 +143,8 @@ func _update_shake(delta: float) -> void:
 
 
 func _focus_point() -> Vector3:
-	return target.global_position + Vector3.UP * Tuning.camera_height_offset
+	var center: Vector3 = target.get_render_transform().origin if target.has_method("get_render_transform") else target.global_position
+	return center + Vector3.UP * Tuning.camera_height_offset
 
 
 func _apply_rotation() -> void:

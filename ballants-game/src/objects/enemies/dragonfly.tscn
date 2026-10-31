@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/objects/enemies/dragonfly.gd" id="1_s"]
+
+[node name="Dragonfly" type="Node3D"]
+script = ExtResource("1_s")

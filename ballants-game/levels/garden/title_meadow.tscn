@@ -18,6 +18,10 @@
 [ext_resource type="PackedScene" path="res://src/objects/critters/fly.tscn" id="16_fly"]
 [ext_resource type="PackedScene" path="res://src/objects/critters/bee.tscn" id="17_bee"]
 [ext_resource type="PackedScene" path="res://src/objects/garden/grass_clump.tscn" id="18_clump"]
+[ext_resource type="PackedScene" path="res://src/objects/enemies/ground_beetle.tscn" id="19_gbeetle"]
+[ext_resource type="PackedScene" path="res://src/objects/enemies/tiger_beetle.tscn" id="20_tbeetle"]
+[ext_resource type="PackedScene" path="res://src/objects/enemies/antlion_pit.tscn" id="21_antlion"]
+[ext_resource type="PackedScene" path="res://src/objects/enemies/dragonfly.tscn" id="22_dragonfly"]
 
 [node name="TitleMeadow" type="Node3D"]
 script = ExtResource("1_level")
@@ -216,7 +220,7 @@ position = Vector3(25, 0, -40)
 size = Vector3(3.4, 2.4, 2.8)
 
 [node name="Pebble7" parent="." instance=ExtResource("8_pebble")]
-position = Vector3(-27, 0, -44)
+position = Vector3(-19, 0, -41)
 size = Vector3(3, 2, 2.6)
 
 ; Loose pebbles and acorns to shove around.
@@ -261,7 +265,7 @@ color = Color(0.55, 0.4, 0.25, 1)
 position = Vector3(-21, 0.05, -20)
 
 [node name="Seesaw" parent="." instance=ExtResource("12_seesaw")]
-position = Vector3(22, 0, 2)
+position = Vector3(11, 0, 21)
 rotation_degrees = Vector3(0, 70, 0)
 
 ; Bugs.
@@ -375,3 +379,27 @@ position = Vector3(10, 0, 28)
 radius = 3.0
 blade_count = 20
 seed = 28
+
+; ENEMIES (ant predators). Touch one and the ant is knocked off: back to the
+; spawn. Each guards its own patch away from the trail and warns before attacking.
+[node name="AntlionPit1" parent="." instance=ExtResource("21_antlion")]
+position = Vector3(25, 0, 8)
+
+[node name="AntlionPit2" parent="." instance=ExtResource("21_antlion")]
+position = Vector3(-30, 0, -47)
+
+[node name="GroundBeetle1" parent="." instance=ExtResource("19_gbeetle")]
+position = Vector3(-21, 0, -30)
+leash = 8.0
+
+[node name="GroundBeetle2" parent="." instance=ExtResource("19_gbeetle")]
+position = Vector3(23, 0, -46)
+leash = 8.0
+
+[node name="TigerBeetle1" parent="." instance=ExtResource("20_tbeetle")]
+position = Vector3(30, 0, -56)
+leash = 6.0
+
+[node name="Dragonfly1" parent="." instance=ExtResource("22_dragonfly")]
+position = Vector3(-20, 0, -10)
+leash = 10.0

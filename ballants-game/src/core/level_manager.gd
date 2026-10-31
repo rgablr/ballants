@@ -20,6 +20,9 @@ signal level_loaded(index: int)
 signal run_started
 signal run_finished(time: float)
 signal run_failed
+## Outside a level (title area, arena) a knock-off respawns you in place of
+## a restart; this fires once you're back at the spawn.
+signal knock_recovered
 ## The ball dropped into an entrance hill (the title area's giant hill).
 signal entered_through_hill(level_index: int)
 
@@ -32,6 +35,12 @@ const FADE_TIME := 0.5
 const CONTINUE_DELAY := 0.6
 ## Seconds to show "Fell out!" before restarting.
 const FAIL_DELAY := 0.8
+## Seconds to watch the ant tumble off the ball before restarting.
+const KNOCK_DELAY := 1.5
+
+## Why the last run failed, for the HUD ("Fell out!", "Knocked off!").
+var fail_reason := "Fell out!"
+var _knock_busy := false
 
 var current_index := -1
 ## This session's latest time for each level (index -> seconds), for the
@@ -121,16 +130,42 @@ func restart() -> void:
 ## Called by FallZone (or the ball falling below the world). Shows the
 ## fail message briefly, then restarts the level. In the test arena the
 ## ball just respawns instead (handled by the player).
-func fail() -> void:
+func fail(reason := "Fell out!", delay := FAIL_DELAY) -> void:
 	if _run_done or _loading:
 		return
 	_run_done = true
 	timer_running = false
+	fail_reason = reason
 	run_failed.emit()
 	var my_run := _run_id
-	await get_tree().create_timer(FAIL_DELAY).timeout
+	await get_tree().create_timer(delay).timeout
 	if my_run == _run_id:
 		restart()
+
+
+## An enemy knocked the ant off the ball. In a level: "Knocked off!" and
+## the level restarts from the spawn. Elsewhere (title area, test arena):
+## the screen dips to black and the ball is put back at its spawn point.
+func knocked_off() -> void:
+	if is_in_level():
+		fail("Knocked off!", KNOCK_DELAY)
+		return
+	if _knock_busy or _loading:
+		return
+	_knock_busy = true
+	fail_reason = "Knocked off!"
+	run_failed.emit()
+	var my_run := _run_id
+	await get_tree().create_timer(KNOCK_DELAY).timeout
+	if my_run == _run_id:
+		await Transition.fade_out(0.35)
+	if my_run == _run_id:
+		var player := get_tree().get_first_node_in_group("player")
+		if player and player.has_method("respawn"):
+			player.respawn()
+		knock_recovered.emit()
+		Transition.fade_in(0.35)
+	_knock_busy = false
 
 
 func _change_scene(path: String) -> void:

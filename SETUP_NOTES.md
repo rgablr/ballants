@@ -1067,19 +1067,100 @@ restart (R) is the **Menu/Start** button, not View.
 - In the title area the ball can creep very slightly on the clearing's
   gentle undulations while the camera circles.
 
-**Q20. Finishing level 3 should:**
+**Q20. Finishing level 3 should:** — *Answered: back to the title with a world-complete message. Done in section 22.*
 - (a) Loop to level 1 (current).
 - (b) Return to the title meadow.
 - (c) A "Backyard Garden complete" screen with all three times, then the
   meadow.
 
-**Q21. The bugs in the meadow:**
+**Q21. The bugs in the meadow:** — *Answered: they stay friendly; add ant predators as enemies. Done in section 22.*
 - (a) Fine as decoration with reactions (current).
 - (b) Make them collectibles (bump all 5 ladybugs, etc.) with a counter.
 - (c) Give some real physics (worms you can roll over like speed bumps,
   bees you can knock down).
 
-**Q22. Thick grass resistance when pushing through slowly:**
+**Q22. Thick grass resistance when pushing through slowly:** — *Answered: stiff, slows you, never bounces you aside. Done in section 22.*
 - (a) As is (bends, slows you a little).
 - (b) Stiffer: you really have to push, slow balls get turned aside.
 - (c) Softer: mostly visual.
+
+## 22. World complete, enemies, stiffer grass (your Q20–Q22 answers)
+
+**Q20 – after level 3.** Level 3's results, then a second card:
+"Backyard Garden complete!", this session's time for each of the three
+levels and the total, "[press any button to continue]", then the title
+meadow. (A level you didn't play this session shows a dash.)
+
+**Q22 – thick grass.** The grass now holds you back straight against the
+way you're rolling and never shoves you sideways. Measured, holding
+forward from 2.5 m/s: you come out of a patch at 4.0 m/s, against 7.6 m/s
+across open ground. Ramming at 6 m/s or more still snaps blades.
+
+**Q21 – enemies (ant predators).** The friendly bugs stay friendly. Four
+predators from your list, all built from shapes in code
+(`src/objects/enemies/`):
+- **Ground beetle** (2): a big glossy black beetle on long legs with
+  curved jaws. Patrols its patch; when it spots you (8 m) it **rears up
+  and opens its jaws** for 0.7 s, then charges in a straight line at
+  6 m/s. It can barely turn mid-charge, so sidestep. Then it rests.
+- **Tiger beetle** (1): metallic green, copper legs, huge eyes. Like the
+  real thing it sprints and stops: **crouch** 0.4 s, sprint 0.55 s at
+  9 m/s, stop and look 0.6 s, repeat. Change direction while it's
+  stopped. You can outrun it (top speed 14 m/s).
+- **Antlion pit** (2): a sand ring with a funnel; the antlion's head and
+  big jaws stick out at the bottom. Inside the funnel the sand slides you
+  toward the middle and it flicks sand at you; its **jaws open wide** the
+  moment you're over the rim. Reach the bottom and they snap. Roll back
+  out (a slog) or jump out; a fast ball can cross without stopping.
+- **Dragonfly** (1): a 2 m blue dragonfly patrolling a loop 6 m up. When
+  it spots you (12 m) it **stops, hovers and points its nose at you** for
+  a full second, then dives in a straight line at where you were. Move or
+  jump during the hover and it misses, pulls up and climbs back.
+
+Fairness rules every enemy follows: it has a home patch and never chases
+far out of it (you can always escape by leaving); it warns before
+attacking; it rests after an attack. They're all off to the sides of the
+meadow, away from the dirt trail: you can go straight to the giant hill
+without meeting one (the title drive test proves that path stays clear).
+
+**Getting knocked off.** Touching an enemy throws the ant off the ball:
+it flips through the air away from the enemy, lands on its back with its
+legs kicking, and "Knocked off!" shows. In a level, the level restarts
+from the start (like falling out). In the title meadow (and test arena)
+the screen dips to black and you're back at the spawn.
+
+Measured (each enemy with the ball parked in its patch): antlion pit
+1.2 s, ground beetle 0.3–1.5 s, tiger beetle 0.9–1.0 s, dragonfly 1.6–1.7 s
+to knock the ant off; the ball was back at the spawn every time. In
+level 1, a knock-off showed "Knocked off!" and restarted the level.
+
+Not built yet from your list: assassin bugs, phorid flies, eucharitid
+wasps, robber flies, bombardier beetles. Robber flies would be a variant
+of the dragonfly (perch, dart); bombardier beetles a beetle that sprays a
+hot cloud behind it. Say the word.
+
+**Acceptance criteria (play):**
+- Finish level 3: results, press, then "Backyard Garden complete!" with
+  times, press, and you're in the title meadow.
+- Thick grass: rolling in slowly, you plough through slowly and come out
+  straight; nothing bats you sideways.
+- Walk up to a ground beetle: it rears up with jaws open, then charges.
+  Sidestep: it runs past. Get hit: the ant flips off, lands on its back,
+  "Knocked off!", black dip, back at the spawn.
+- Tiger beetle: crouch, dash, stop, crouch, dash. Out-run it.
+- Antlion pit: over the rim the jaws open and you slide inward; push out
+  or jump out before the bottom.
+- Dragonfly: it stops overhead and points at you; move and it misses.
+- No enemy bothers you on the trail straight to the giant hill.
+- `./run_tests.sh`: all PASS (level 3's drive now ends in the title area).
+
+**Q23. Enemies in the three levels:**
+- (a) Only in the meadow for now (current).
+- (b) Add a few to each level now (a beetle on level 1's goal plateau, an
+  antlion pit in a wide part of level 2, a dragonfly over level 3's banks).
+- (c) Save them for World 2 and keep World 1 enemy-free as the tutorial.
+
+**Q24. Next predators from your list:**
+- (a) Bombardier beetle (sprays a cloud behind it; the cloud knocks you off).
+- (b) Robber fly (perches, darts at you fast in short hops).
+- (c) Assassin bug (slow stalker that ambushes from thick grass).

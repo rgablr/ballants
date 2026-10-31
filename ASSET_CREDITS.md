@@ -24,6 +24,7 @@ credit, but they are placeholders to be replaced:
 
 | Garden sky: gradient, sun, clouds, horizon houses/hills/trees | `levels/garden/garden_sky.gdshader` (drawn by a shader, no image) | Optional: a hand-painted or CC0 sky panorama |
 | Bugs: ladybug, worm, spider, fly, bee | `src/objects/critters/*.gd` | Optional: low-poly CC0 insect models; behaviour scripts stay |
+| Enemies: ground beetle, tiger beetle, antlion pit, dragonfly | `src/objects/enemies/*.gd` | Optional: low-poly CC0 insect models; behaviour scripts and hit distances stay |
 
 ## Searched but not used
 

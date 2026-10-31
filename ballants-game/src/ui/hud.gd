@@ -21,6 +21,7 @@ func _ready() -> void:
 	_refresh_controls_text()
 	Levels.run_finished.connect(_on_run_finished)
 	Levels.run_failed.connect(_on_run_failed)
+	Levels.knock_recovered.connect(func(): _message.visible = false)
 	Levels.level_loaded.connect(func(_index: int): _refresh_level_name())
 	Controls.gyro_device_changed.connect(func(_device: int): _refresh_controls_text())
 	_refresh_level_name()
@@ -104,5 +105,5 @@ func _on_run_finished(_time: float) -> void:
 
 
 func _on_run_failed() -> void:
-	_message.text = "Fell out!"
+	_message.text = Levels.fail_reason
 	_message.visible = true

@@ -9,6 +9,8 @@ extends Node3D
 ##   - it turns to face the direction of travel
 ##   - it asks the model to animate its legs faster the faster the ball rolls
 ##   - it squashes on landing and stretches on take-off
+##   - when an enemy knocks it off, it tumbles off the ball in an arc and
+##     lands on its back, legs kicking, until the respawn puts it back
 ##
 ## This node is marked "top level" so it ignores the ball's spinning and
 ## positions itself in world space every frame.
@@ -24,6 +26,14 @@ var _lean := Vector3.ZERO            # current lean, as a horizontal vector (len
 var _lean_velocity := Vector3.ZERO   # spring velocity of the lean
 var _previous_velocity := Vector3.ZERO
 var _bounce_tween: Tween
+# Knocked off: the tumble from where the ant was to where it lands.
+var _fallen := false
+var _fall_time := 0.0
+var _fall_from := Vector3.ZERO
+var _fall_to := Vector3.ZERO
+var _fall_axis := Vector3.RIGHT
+var _fall_basis := Basis()
+const FALL_DURATION := 0.8
 
 
 func _ready() -> void:
@@ -38,6 +48,10 @@ func _ready() -> void:
 			ball.landed.connect(_on_landed)
 		if ball.has_signal("jumped"):
 			ball.jumped.connect(_on_jumped)
+		if ball.has_signal("knocked_off"):
+			ball.knocked_off.connect(_on_knocked_off)
+		if ball.has_signal("respawned"):
+			ball.respawned.connect(_on_respawned)
 
 
 func _ball_radius() -> float:
@@ -71,6 +85,9 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if ball == null:
 		return
+	if _fallen:
+		_tumble(delta)
+		return
 
 	# Which way is "up" for the ant: straight up, tilted in the lean direction.
 	var up := Vector3.UP
@@ -99,6 +116,47 @@ func _process(delta: float) -> void:
 		_visual.set_walk_speed(speed)
 	if _visual.has_method("set_airborne") and ball.has_method("is_grounded"):
 		_visual.set_airborne(not ball.is_grounded() and not ball.is_coyote_active())
+
+
+func _on_knocked_off(direction: Vector3) -> void:
+	_fallen = true
+	_fall_time = 0.0
+	_fall_from = global_position
+	_fall_basis = global_transform.basis
+	_fall_axis = Vector3.UP.cross(direction).normalized()
+	if _fall_axis.length() < 0.5:
+		_fall_axis = Vector3.RIGHT
+	# Lands about 2.8 m away, on whatever ground is there.
+	var landing := _fall_from + direction * 2.8
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(landing + Vector3.UP * 3.0, landing + Vector3.DOWN * 20.0)
+	query.exclude = [ball.get_rid()]
+	var hit := space.intersect_ray(query)
+	landing.y = (hit.position as Vector3).y if not hit.is_empty() else _fall_from.y - 1.0
+	_fall_to = landing + Vector3.UP * 0.45   # upside down, its feet point up
+	if _bounce_tween:
+		_bounce_tween.kill()
+	_visual.scale = Vector3.ONE * model_scale
+
+
+## The arc off the ball, tumbling head over heels, then lying on its back
+## with legs kicking.
+func _tumble(delta: float) -> void:
+	_fall_time += delta
+	var t := clampf(_fall_time / FALL_DURATION, 0.0, 1.0)
+	var pos := _fall_from.lerp(_fall_to, t) + Vector3.UP * sin(t * PI) * 1.6
+	var spin := Basis(_fall_axis, lerpf(0.0, PI * 3.0, t))   # one and a half flips
+	global_transform = Transform3D(spin * _fall_basis, pos)
+	if _visual.has_method("set_walk_speed"):
+		_visual.set_walk_speed(6.0 if t >= 1.0 else 0.0)   # legs kicking in the air
+	if _visual.has_method("set_airborne"):
+		_visual.set_airborne(t < 1.0)
+
+
+func _on_respawned() -> void:
+	_fallen = false
+	_lean = Vector3.ZERO
+	_lean_velocity = Vector3.ZERO
 
 
 ## Squash on landing, then spring back.

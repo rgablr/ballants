@@ -20,6 +20,10 @@ extends RigidBody3D
 
 signal jumped
 signal landed
+## An enemy hit us: the ant is thrown off the ball (direction = which way).
+signal knocked_off(direction: Vector3)
+## Put back at the spawn point (after a knock-off in the title area/arena).
+signal respawned
 ## A sudden change of velocity: strength in m/s, direction the ball was
 ## pushed (unit vector), and roughly where it happened.
 signal impacted(strength: float, direction: Vector3, position: Vector3)
@@ -40,6 +44,10 @@ signal impacted(strength: float, direction: Vector3, position: Vector3)
 var surface_grip := 1.0
 
 var radius := 0.5
+
+## True from the moment an enemy knocks the ant off until the respawn.
+## The ball ignores input meanwhile.
+var knocked := false
 
 var _grounded := false
 var _ground_normal := Vector3.UP
@@ -142,7 +150,7 @@ func _physics_process(delta: float) -> void:
 		return   # taken out of the physics (sinking into an ant hill)
 	_time_since_grounded += delta
 	_time_since_jump_pressed += delta
-	if Input.is_action_just_pressed("jump"):
+	if Input.is_action_just_pressed("jump") and not knocked:
 		_time_since_jump_pressed = 0.0
 
 	_detect_impact(delta)
@@ -188,7 +196,7 @@ func _process(_delta: float) -> void:
 
 func _apply_movement() -> void:
 	var input: Vector2 = Controls.get_move_vector()
-	if Game.level_complete:
+	if Game.level_complete or knocked:
 		input = Vector2.ZERO   # in the ant hill: no climbing back out
 	var velocity_h := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
 	var speed_h := velocity_h.length()
@@ -391,10 +399,27 @@ func _smooth_seams(state: PhysicsDirectBodyState3D) -> void:
 	seam_pops_removed += 1
 
 
+## Called by enemies. Throws the ant off (the rider plays the tumble), gives
+## the ball a small shove away from the enemy, and tells the level manager,
+## which restarts the level (or, outside a level, respawns us).
+func knock_off(direction: Vector3) -> void:
+	if knocked or freeze or Game.level_complete:
+		return
+	knocked = true
+	var away := Vector3(direction.x, 0.0, direction.z)
+	away = away.normalized() if away.length() > 0.01 else Vector3.BACK
+	linear_velocity = linear_velocity * 0.25 + away * 3.0 + Vector3.UP * 2.0
+	knocked_off.emit(away)
+	Effects.impact(Tuning.impact_big, away, global_position)
+	Levels.knocked_off()
+
+
 func respawn() -> void:
+	knocked = false
 	global_transform = _spawn_transform
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
 	_previous_velocity = Vector3.ZERO
 	_grounded_steps = 0
 	reset_physics_interpolation()   # no smear from the old spot to the new
+	respawned.emit()

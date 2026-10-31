@@ -19,6 +19,7 @@ credit, but they are placeholders to be replaced:
 | Standing ant | `assets/placeholders/ant_placeholder.gd` | A low-poly ant, feet at origin, facing -Z, ideally rigged with a walk animation |
 | Dust burst | `src/effects/impact_burst.gd` | Optional: a nicer particle texture |
 | Level blocks, crates, dominoes | `src/objects/*.gd` | Optional: themed models; collision stays as-is |
+| Backyard Garden kit: grass clumps and walls, flower stems, pebbles, flower pot, puddle, leaf, hose, crack line, lawn | `src/objects/garden/*.gd`, colors in `levels/garden/garden_theme.gd` | Optional: low-poly CC0 garden models (Kenney Nature Kit is CC0 but its download is browser-only; see below) scaled to ant size; collision stays as-is |
 
 ## Searched but not used
 
@@ -32,3 +33,13 @@ sources (Kenney, Quaternius, Poly Pizza):
   (https://poly.pizza/m/9x6pGMV83jt).
 - **Kenney** has no 3D sports-ball or insect pack.
 - **Quaternius** has animal packs but no ant/insect pack.
+
+Checked again on 2026-10-31 for garden props (grass, flowers, stones):
+
+- **Kenney Nature Kit** (https://kenney.nl/assets/nature-kit) is CC0 and has
+  330 nature models, but the download button runs in the browser; a plain
+  fetch returns a stub page, so it could not be downloaded here. If you
+  download the zip yourself and drop the `.glb` files into
+  `ballants-game/assets/models/`, point the garden pieces at them through
+  the asset manifest.
+- **Poly Pizza** garden models are CC-BY, not CC0.

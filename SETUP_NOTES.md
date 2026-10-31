@@ -632,3 +632,160 @@ note. See Q13.
 - Roll onto a leaf (level 2): the ball slides and steers lazily until it
   leaves the leaf.
 - Terminal: `./run_tests.sh` lists one `[drive] PASS` line per level.
+
+## 15. The three levels (built by three subagents in parallel, then merged)
+
+Each level has its own design notes next to its scene
+(`ballants-game/levels/garden/level_N_notes.md`) with the full table of
+layout measurements and the physics values they depend on. The
+highlights:
+
+**Level 1 – Sidewalk Crack** (teaches speed and steering; bot time 28.8 s,
+par 45 s). A raised sidewalk, ~212 m to the ring: a 48 m fenced straight
+with a jagged crack to follow → a fenced 45° left (radius 24 m) → a 36 m
+fenced diagonal → an **open** 90° right (radius 20 m, no walls, curb
+lines) → a narrowing straight (12 m → 9 m wide) → the small challenge, an
+open 45° left of radius 15 m that does not fit at top speed → a fenced
+crest and a 20 m downhill (3 m drop) → a walled goal plateau. Falling off
+the sidewalk drops onto a lawn below the fall height. New reusable
+pieces: `CrackLine` (painted line through points), `CurvedGrassWall`,
+`Lawn`.
+
+**Level 2 – Flowerbed Slalom** (teaches turning with momentum; bot time
+30.2 s normal line, 26.6 s via the shortcut; par 60 s). A 190 m raised
+dirt bed between two water furrows. Twelve rows of three thick stems
+(radius 1.1 m) each leave a 4.2 m opening on alternating sides, so the
+ball swings ~7 m sideways between rows. Section 1: three rows 20 m apart,
+walls both sides. Section 2: four rows 13 m apart, wall on the left,
+water on the right. Section 3: five rows 11 m apart, water both sides,
+five leaf patches on the swing lines. Shortcut: rows 2 and 4 of section 3
+have a 1.8 m gap between stem surfaces, marked by white stems and a
+trodden-dirt strip; it skips three swings and saves ~3.5 s.
+
+**Level 3 – Garden Hose Bridge** (teaches balance and careful speed; bot
+time 21.6 s, par 75 s). A 78 m hose over a 32 × 81 m puddle: a 24 m wide
+straight (radius 2.0 m) → a gentle hump (+0.8 m over 9 m, draped over a
+pebble) → an S-bend of four 15° turns each way (bend radius 13.4 m) while
+narrowing to radius 1.1 → an 8 m narrow straight aimed at a flower pot →
+a 2 m jump up 0.5 m onto the pot (landing disc 5.6 m across) → a 0.5 m
+drop to the far bank and the ring. Tall flowers stand outside each bend
+so the close camera sees the turn coming.
+
+**Layout ↔ physics, the short version** (full tables in the notes files):
+- Curve radii everywhere come from `turn_assist` and `max_speed`: the
+  minimum comfortable turn radius is about v²/12.6 (15.5 m at top speed,
+  5 m at 8 m/s). Level 1's open curves (20 m and 15 m) and level 2's row
+  spacing (20 → 13 → 11 m, i.e. turn radii ~12 → 5 → 3.5 m) are set
+  against that.
+- Straight lengths come from `roll_acceleration` (0 → 14 m/s in ~14 m)
+  and `brake_multiplier` (14 → 0 in ~11 m).
+- Jump and gap sizes come from `jump_height` and `gravity` (launch
+  5.6 m/s, 1.13 s airtime on flat; the pot jump is 2 m across and 0.5 m
+  up, far inside the 1.4 m apex).
+- Fall heights come from `fall_respawn_y` (−2.5): every puddle's fall
+  zone sits above that so the "Fell out!" restart always fires first.
+- Hump and crest shapes come from `ground_stick` (0.37): rises of up to
+  ~1 m over 6 m hold the ball at cruising speed.
+- Stem thickness and knock-back come from `ball_bounce` (0.47).
+- Leaf behavior comes from the leaf `grip` (0.2) and `rolling_resistance`.
+- Landmark heights come from `camera_distance` (2.14 m, very close):
+  anything the player must see coming is 8–14 m tall.
+- **If you change any of those tuning values, re-run `./run_tests.sh`:**
+  the level drives will tell you which level stopped being completable.
+
+## 16. Acceptance criteria – the levels
+
+**Level 1**
+- From the start, hold W: the ball reaches top speed on the fenced
+  straight and the grass walls keep you on even without steering.
+- The first bend (fenced) is makeable at full speed without braking.
+- The open right-hander: enter at full speed and do nothing: you roll off
+  the outer edge, "Fell out!", restart. Steer from the entry: you make it.
+- The 15 m left near the end: at full speed you cannot hold it; ease off
+  to ~12 m/s or less and it fits.
+- The downhill adds speed by itself; the ring is 12 m onto the plateau
+  and the end wall stops an overshoot. Time for a first clean run: 35–60 s.
+
+**Level 2**
+- Rows cannot be passed anywhere except their opening (the 0.6 m gaps
+  between stems are too small for the ball).
+- Hit a stem head-on at speed: the ball bounces back about half as fast;
+  it does not stop dead or pass through.
+- Roll onto a leaf while turning: the turn stops happening until you
+  leave the leaf; set turns up before the leaf.
+- In section 2, a late right-hand swing ends in the water on the right
+  and restarts the level.
+- The shortcut gaps (white stems, dirt strip) are passable at speed if
+  you line up; taking both saves a few seconds.
+
+**Level 3**
+- The ball rolls from the dirt onto the hose with no bump.
+- Over the hump at a careful speed (≤ 6 m/s) the ball stays on; at full
+  speed it lifts off and usually lands in the water.
+- The S-bend is holdable at 4–6 m/s; drifting off either side lands in the
+  puddle, "Fell out!", restart.
+- From the narrow straight, a jump at 3–6 m/s lands on the pot's soil;
+  rolling off the end without jumping lands in the water.
+- Off the pot onto the far bank and through the ring. Finishing level 3
+  loads level 1.
+
+**All levels**
+- `./run_tests.sh` ends with `RESULT: all checks passed`, including one
+  `[drive] PASS` per level and "after completing level N the game loaded
+  level N+1" (level 3 → level 1).
+
+## 17. Known issues after Part C
+
+- **Camera distance 2.14 m** (from your saved tuning) is very close: you
+  see little of the road ahead, so the levels lean on tall landmarks. If
+  the levels feel blind, try `camera_distance` 4–6 and
+  `camera_height_offset` 1.0 in F1. The levels were built and tested
+  against your saved values.
+- **Inverted camera Y is on** in your saved tuning (`invert_camera_y`).
+- The garden is code-built shapes only; Kenney's CC0 Nature Kit would
+  improve it but must be downloaded in a browser (Q13).
+- Level 1's curves are flat (no banking) by design; the inner edges of
+  curved slabs show faint facets from the block segments.
+- Level 2's three stems per row merge into one bouquet from high above;
+  invisible from the ball's camera.
+- Level 3's hose radius blends linearly over the whole hose, so the "wide
+  straight" is already narrowing slightly before the bends. A per-point
+  radius would fix it if wanted.
+- Level 2's scene file contains `;` comment lines; Godot drops them if
+  you re-save the scene from the editor. Harmless.
+- One commit on `garden-world` ("Backyard Garden theme and piece kit") is
+  empty: its files landed in the commit before it. Message only; nothing
+  is missing.
+- Godot prints a few "Leaked instance dependency" warnings when a
+  headless run quits. Engine noise, not ours.
+
+## 18. New questions
+
+**Q13. Garden models. Kenney's Nature Kit is CC0 but needs a browser
+download. What do you want?**
+- (a) You download it (kenney.nl/assets/nature-kit → Download) and drop
+  the zip in `ballants-game/assets/models/`; I wire the flowers, grass and
+  stones in through the manifest, scaled to ant size.
+- (b) Keep the code-built garden; it reads fine for prototyping.
+- (c) You'll source or make garden models yourself later.
+
+**Q14. Camera for the garden levels (yours is 2.14 m, close):**
+- (a) Keep it; the levels' landmarks are enough.
+- (b) Move it back to 4–5 m and a bit higher for these courses.
+- (c) Make camera distance a per-level setting in the level list.
+
+**Q15. Par times (45 / 60 / 75 s; the bot does 29 / 30 / 22 s):**
+- (a) Keep them loose for now.
+- (b) Tighten to about 1.5× the bot time (45 / 45 / 35 s).
+- (c) Add medals: gold = bot time + 20%, silver = par, bronze = finish.
+
+**Q16. What happens after level 3?**
+- (a) Loop back to level 1 (as now).
+- (b) A "World complete" screen with all three times, then level 1.
+- (c) Go to the test arena.
+
+**Q17. Next for the level system:**
+- (a) Checkpoints inside levels (restart from the last one).
+- (b) A simple level-select menu (replacing the 1/2/3 keys).
+- (c) Best times saved to disk and shown on the HUD.
+- (d) A 4th garden level: you describe it, I build it.

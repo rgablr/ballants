@@ -81,7 +81,7 @@ func _build_sky_and_sun() -> void:
 	environment.ambient_light_sky_contribution = 0.8
 	environment.fog_enabled = true
 	environment.fog_light_color = Color(0.8, 0.9, 1.0)
-	environment.fog_density = 0.004
+	environment.fog_density = 0.002   # thin: far flowers must stay visible as landmarks
 	environment.fog_sky_affect = 0.2
 
 	var world_environment := WorldEnvironment.new()

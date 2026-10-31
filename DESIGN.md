@@ -129,9 +129,20 @@ doesn't jitter.
 ## 6. Level structure
 
 **Undecided: platform levels vs. open world.** The prototype supports
-both: the test arena is an open field with courses in it. See Q5 in
-SETUP_NOTES.md. The level kit (Blocks, CurvedTrack, PropSpawner, Goal,
-BouncePad, Seesaw) works either way.
+both: the test arena is an open field with courses in it, and the first
+world (Backyard Garden) is three linear courses with a start, a goal, a
+run timer and a par time, chained in order by the level system. See Q5
+in SETUP_NOTES.md. The level kit (Blocks, CurvedTrack, PropSpawner, the
+garden pieces, Goal, FallZone, SlickPatch, BouncePad, Seesaw) works
+either way.
+
+**World 1: Backyard Garden.** Seen from an ant's size: grass blades taller
+than the ball, flower stems like tree trunks, pebbles like boulders, a
+sidewalk like a highway, a hose like a bridge. Level 1 *Sidewalk Crack*
+teaches speed and steering, level 2 *Flowerbed Slalom* teaches turning
+with momentum, level 3 *Garden Hose Bridge* teaches balance and careful
+speed. Each level's design notes live next to its scene in
+`ballants-game/levels/garden/`.
 
 ## 7. Art direction
 

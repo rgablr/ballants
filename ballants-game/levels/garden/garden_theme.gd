@@ -56,29 +56,44 @@ static func material(name: String) -> StandardMaterial3D:
 	return m
 
 
-## Distance from this node to the garden fence (meters). The backdrop
-## (fence, bushes, trees, house) sits around this radius.
-@export var backdrop_radius := 160.0
+## The garden fence is placed this far (meters) beyond the farthest part
+## of the course, all the way round, so no scenery ever sits next to the
+## track. The ring is centered on the course, not on this node.
+@export var backdrop_margin := 70.0
+## The fence ring is never smaller than this radius (meters).
+@export var backdrop_min_radius := 140.0
 ## Height of the lawn the whole level floats above. Visual only.
 @export var backdrop_lawn_y := -6.0
 ## Turn the surrounding scenery off for small test scenes.
 @export var backdrop_enabled := true
 
 
+const SKY_SHADER := preload("res://levels/garden/garden_sky.gdshader")
+
+var backdrop_radius := 160.0   # worked out from the course in _build_backdrop
+var _center := Vector3.ZERO
+
+
 func _ready() -> void:
 	_build_sky_and_sun()
 	if backdrop_enabled:
-		_build_backdrop()
+		# Wait until every piece of the course exists, then measure it.
+		_build_backdrop.call_deferred()
 
 
-## Scenery around the level so it isn't floating in a void: a giant lawn,
-## a picket fence ring, bushes, a few giant trees and a house silhouette.
-## None of it has collision; it is far outside any course.
+## Scenery around the level so it isn't floating in a void: a giant lawn
+## far below, a picket fence ring, bushes inside the fence and giant trees
+## outside it. The houses, clouds and sun are painted on the sky (see
+## garden_sky.gdshader). None of the scenery has collision, so all of it
+## stays at least backdrop_margin meters from anything you can touch.
 func _build_backdrop() -> void:
+	_measure_course()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42
 	var root := Node3D.new()
 	root.name = "Backdrop"
+	root.top_level = true
+	root.position = Vector3(_center.x, 0.0, _center.z)
 	add_child(root)
 
 	# Lawn: a huge disc far below.
@@ -135,29 +150,32 @@ func _build_backdrop() -> void:
 		_sphere(root, pos + Vector3.UP * (trunk_height + canopy * 0.3), canopy, Vector3(1.0, 0.8, 1.0), "leaf")
 		_sphere(root, pos + Vector3(canopy * 0.4, trunk_height + canopy * 0.1, 0), canopy * 0.7, Vector3.ONE, "grass_dark")
 
-	# A house silhouette far away on one side.
-	var house_pos := Vector3(0, backdrop_lawn_y, -backdrop_radius * 1.35)
-	_box(root, house_pos + Vector3.UP * 25.0, Vector3(90.0, 50.0, 60.0), "sidewalk")
-	var roof := MeshInstance3D.new()
-	var roof_mesh := PrismMesh.new()
-	roof_mesh.size = Vector3(100.0, 30.0, 70.0)
-	roof_mesh.material = material("pot_rim")
-	roof.mesh = roof_mesh
-	roof.position = house_pos + Vector3.UP * 65.0
-	root.add_child(roof)
-	var door := _box(root, house_pos + Vector3(0, 10.0, 30.5), Vector3(12.0, 20.0, 1.0), "wood")
-	door.scale = Vector3.ONE
 
-	# Scattered giant flowers on the lawn between the courses and the fence.
-	for i in 24:
-		var angle := rng.randf() * TAU
-		var r := backdrop_radius * rng.randf_range(0.55, 0.85)
-		var pos := Vector3(cos(angle) * r, backdrop_lawn_y, sin(angle) * r)
-		var height := rng.randf_range(10.0, 18.0)
-		_cylinder(root, pos + Vector3.UP * height * 0.5, 0.5, 0.7, height, "stem")
-		var colors := ["petal_pink", "petal_yellow", "petal_white", "petal_purple"]
-		_sphere(root, pos + Vector3.UP * height, 3.2, Vector3(1.0, 0.35, 1.0), colors[rng.randi() % colors.size()])
-		_sphere(root, pos + Vector3.UP * (height + 0.3), 1.1, Vector3.ONE, "flower_center")
+## Finds the middle and size of everything solid in the level (every
+## collision shape on a physics body; trigger zones don't count), and sizes
+## the fence ring to clear it by backdrop_margin.
+func _measure_course() -> void:
+	var level := get_parent()
+	var box := AABB()
+	var first := true
+	if level:
+		for shape in level.find_children("*", "CollisionShape3D", true, false):
+			var cs := shape as CollisionShape3D
+			if cs.shape == null or not (cs.get_parent() is PhysicsBody3D) or is_ancestor_of(cs):
+				continue
+			var mesh := cs.shape.get_debug_mesh()
+			if mesh == null:
+				continue
+			var shape_box := cs.global_transform * mesh.get_aabb()
+			box = shape_box if first else box.merge(shape_box)
+			first = false
+	if first:
+		_center = global_position
+		backdrop_radius = backdrop_min_radius
+		return
+	_center = box.get_center()
+	var half := Vector2(box.size.x, box.size.z) * 0.5
+	backdrop_radius = maxf(half.length() + backdrop_margin, backdrop_min_radius)
 
 
 func _box(parent: Node3D, pos: Vector3, size: Vector3, material_name: String) -> MeshInstance3D:
@@ -204,12 +222,10 @@ func _build_sky_and_sun() -> void:
 	for child in get_children():
 		child.queue_free()
 
-	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color(0.4, 0.66, 0.98)
-	sky_material.sky_horizon_color = Color(0.82, 0.9, 1.0)
-	sky_material.ground_bottom_color = Color(0.3, 0.45, 0.25)
-	sky_material.ground_horizon_color = Color(0.82, 0.9, 1.0)
-	sky_material.sun_angle_max = 20.0
+	# The painted sky: gradient, sun, clouds, and the neighbourhood on the
+	# horizon. Colors and amounts are uniforms in garden_sky.gdshader.
+	var sky_material := ShaderMaterial.new()
+	sky_material.shader = SKY_SHADER
 	var sky := Sky.new()
 	sky.sky_material = sky_material
 
@@ -233,7 +249,9 @@ func _build_sky_and_sun() -> void:
 	sun.name = "Sun"
 	sun.light_color = Color(1.0, 0.96, 0.86)
 	sun.light_energy = 1.4
-	sun.rotation_degrees = Vector3(-55, 30, 0)
+	# Lower than overhead so the sun disc shows up in the sky when you look
+	# toward it, and shadows read well at ant scale.
+	sun.rotation_degrees = Vector3(-36, 32, 0)
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 150.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS

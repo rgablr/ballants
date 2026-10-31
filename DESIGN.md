@@ -59,7 +59,7 @@ around, and when you let go "forward" is simply the way you're now going.
 
 ## 4. Goals
 
-- **Per level:** reach the goal ring. Later: within a time, collecting
+- **Per level:** reach the ant hill and drop into its hole. Later: within a time, collecting
   things, or without the ant falling off (see questions).
 - **Per session:** master momentum. The learning curve is "I keep
   overshooting" → "I can feel how far I'll slide" → "I'm using momentum on

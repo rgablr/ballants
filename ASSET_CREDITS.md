@@ -19,6 +19,7 @@ credit, but they are placeholders to be replaced:
 | Standing ant | `assets/placeholders/ant_placeholder.gd` | A low-poly ant, feet at origin, facing -Z, ideally rigged with a walk animation |
 | Dust burst | `src/effects/impact_burst.gd` | Optional: a nicer particle texture |
 | Level blocks, crates, dominoes | `src/objects/*.gd` | Optional: themed models; collision stays as-is |
+| Ant hill (the finish) | `src/objects/ant_hill.gd` | Optional: a low-poly ant-hill model; the crater/hole shape and collision stay as-is |
 | Backyard Garden kit: grass clumps and walls, flower stems, pebbles, flower pot, puddle, leaf, hose, crack line, lawn | `src/objects/garden/*.gd`, colors in `levels/garden/garden_theme.gd` | Optional: low-poly CC0 garden models (Kenney Nature Kit is CC0 but its download is browser-only; see below) scaled to ant size; collision stays as-is |
 
 ## Searched but not used

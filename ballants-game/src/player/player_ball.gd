@@ -147,7 +147,7 @@ func _physics_process(delta: float) -> void:
 	_previous_velocity = linear_velocity
 	# Falling out of the world: in a listed level that fails the run (the
 	# level's FallZone normally catches it first); in the arena, respawn.
-	if global_position.y < Tuning.fall_respawn_y:
+	if global_position.y < Tuning.fall_respawn_y and not Game.level_complete:
 		if Levels.is_in_level():
 			Levels.fail()
 		else:
@@ -178,6 +178,8 @@ func _process(_delta: float) -> void:
 
 func _apply_movement() -> void:
 	var input: Vector2 = Controls.get_move_vector()
+	if Game.level_complete:
+		input = Vector2.ZERO   # in the ant hill: no climbing back out
 	var velocity_h := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
 	var speed_h := velocity_h.length()
 

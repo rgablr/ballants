@@ -28,6 +28,10 @@ extends Node
 ##   godot -- --zoom=2.5
 ##       Overrides the camera distance for this run (close-ups of the ant).
 ##
+##   godot -- --level=1 --teleport=-9.7,1,-180
+##       Puts the ball at that x,y,z right after the level loads, to picture
+##       or try one spot of a level without rolling there.
+##
 ##   godot -- --press=toggle_tuning_panel
 ##       Presses a named input action half a second after start (any action
 ##       from the Input Map). Handy with --screenshot to capture the F1/F2 panels.
@@ -69,6 +73,10 @@ func _ready() -> void:
 			_aim_camera_later(float(arg.get_slice("=", 1)), Tuning.camera_pitch_default)
 		elif arg.begins_with("--camera-pitch="):
 			Tuning.camera_pitch_default = float(arg.get_slice("=", 1))
+		elif arg.begins_with("--teleport="):
+			var parts := arg.get_slice("=", 1).split(",")
+			if parts.size() == 3:
+				_teleport_later(Vector3(float(parts[0]), float(parts[1]), float(parts[2])))
 		elif arg.begins_with("--press="):
 			_press_later(arg.get_slice("=", 1))
 		elif arg == "--save-roundtrip":
@@ -112,11 +120,17 @@ func _run_drive(path: String) -> void:
 	var passed: bool = result[0]
 	print("[drive] %s: level %d -- %s" % ["PASS" if passed else "FAIL", int(config.get("level", 1)), result[1]])
 	if not _screenshot_path.is_empty():
+		# One picture at the finish (ball dropping into the hill), one of the
+		# results screen a second after the wipe to black.
 		await _save_screenshot(_screenshot_path)
+		await get_tree().create_timer(Levels.DROP_DELAY * 0.75).timeout
+		await _save_screenshot(_screenshot_path.get_basename() + "_drop.png")
+		await get_tree().create_timer(Levels.DROP_DELAY * 0.25 + Levels.FADE_TIME + 1.0).timeout
+		await _save_screenshot(_screenshot_path.get_basename() + "_results.png")
 	if passed and Levels.is_in_level():
 		# Confirm the level system moves on to the next level by itself.
 		var before := Levels.current_index
-		await get_tree().create_timer(Levels.COMPLETE_DELAY + 1.0).timeout
+		await get_tree().create_timer(Levels.DROP_DELAY + Levels.FADE_TIME + Levels.COMPLETE_DELAY + 1.0).timeout
 		print("[drive] after completing level %d the game loaded level %d" % [before + 1, Levels.current_index + 1])
 	get_tree().quit(0 if passed else 1)
 
@@ -128,6 +142,17 @@ func _aim_camera_later(yaw_degrees: float, pitch_degrees: float) -> void:
 	for rig in get_tree().get_nodes_in_group("camera_rig"):
 		if rig.has_method("aim"):
 			rig.aim(deg_to_rad(yaw_degrees), deg_to_rad(pitch_degrees))
+
+
+func _teleport_later(point: Vector3) -> void:
+	await get_tree().create_timer(0.3).timeout
+	var player := get_tree().get_first_node_in_group("player") as RigidBody3D
+	if player:
+		player.global_position = point
+		player.linear_velocity = Vector3.ZERO
+		player.reset_physics_interpolation()
+		for rig in get_tree().get_nodes_in_group("camera_rig"):
+			rig.global_position = point
 
 
 func _press_later(action: String) -> void:

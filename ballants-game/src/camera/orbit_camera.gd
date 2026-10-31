@@ -89,7 +89,10 @@ func _process(delta: float) -> void:
 
 	_auto_follow(delta)
 
-	if target:
+	# Once the ball drops into the ant hill the camera holds still, so the
+	# ball visibly disappears down the hole instead of the camera following
+	# it into the dirt.
+	if target and not Game.level_complete:
 		var blend := 1.0 - exp(-delta * Tuning.camera_follow_speed)
 		global_position = global_position.lerp(_focus_point(), blend)
 

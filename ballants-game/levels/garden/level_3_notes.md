@@ -21,7 +21,7 @@ linearly from 2.0 m at the first point to 1.0 m at the last point.
 | 3 | S-bend, narrowing | z = -47 … -70 | Four 15-degree turns right then four back left (bend radius 13.4 m, points every 3.5 m). Radius 1.45 -> 1.1. Tall flowers stand on the banks outside each turn so the curve can be seen coming at camera distance 2.14 m. |
 | 4 | Narrow straight | z = -70 … -78, x = 13.3 | Radius 1.1 -> 1.0 (2 m wide). The pot is straight ahead. |
 | 5 | Jump to the pot | hose end z = -78.0, pot centre z = -82.8 | 2.0 m of water between the last hose point and the pot's collision rim; pot top 0.5 m above the hose top; landing disc 5.6 m across. |
-| 6 | Far bank and goal | z = -84.5 … -100.5, goal at `(13.3, 0, -93.5)` | Roll off the pot (0.5 m drop) onto dirt and through the ring. |
+| 6 | Far bank and goal | z = -84.5 … -100.5, goal at `(13.3, 0, -93.5)` | Roll off the pot (0.5 m drop) onto dirt and into the ant hill. |
 
 Falling anywhere off the hose lands in the `Puddle` (water at y = -1.6,
 32 x 81 m, FallZone just under the surface) which fails the run and

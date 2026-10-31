@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://levels/level.gd" id="1_level"]
 [ext_resource type="PackedScene" path="res://levels/garden/garden_theme.tscn" id="2_theme"]
 [ext_resource type="PackedScene" path="res://src/objects/start_point.tscn" id="3_start"]
-[ext_resource type="PackedScene" path="res://src/objects/goal.tscn" id="4_goal"]
+[ext_resource type="PackedScene" path="res://src/objects/ant_hill.tscn" id="4_goal"]
 [ext_resource type="PackedScene" path="res://src/objects/fall_zone.tscn" id="5_fall"]
 [ext_resource type="PackedScene" path="res://src/objects/garden/dirt_tile.tscn" id="6_dirt"]
 [ext_resource type="PackedScene" path="res://src/objects/garden/hose.tscn" id="7_hose"]
@@ -59,7 +59,7 @@ position = Vector3(13.29, -1.6, -82.83)
 height = 2.1
 top_radius = 2.6
 
-[node name="Goal" parent="." instance=ExtResource("4_goal")]
+[node name="AntHill" parent="." instance=ExtResource("4_goal")]
 position = Vector3(13.29, 0, -93.53)
 
 [node name="FlowerStart" parent="." instance=ExtResource("10_stem")]

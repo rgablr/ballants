@@ -4,8 +4,10 @@ extends Node
 ##   - knows which level is playing (an index into LevelList.LEVELS, or -1
 ##     for the test arena)
 ##   - the run timer: starts on the first movement input, stops at the goal
-##   - on goal: waits a moment, then loads the next level (wrapping to the
-##     first after the last)
+##   - on goal (the ball drops into the ant hill): a moment to watch it
+##     fall, the screen wipes to black, the results show (message and
+##     time), then the next level loads under the black and the black
+##     lifts. After the last level it wraps to the first.
 ##   - on fall-out (a FallZone, or dropping below the world): restarts
 ##   - keys 1/2/3 jump to a level, 0 loads the test arena, R restarts
 ##
@@ -16,7 +18,11 @@ signal run_started
 signal run_finished(time: float)
 signal run_failed
 
-## Seconds to show the "Level complete" message before moving on.
+## Seconds to watch the ball drop into the hill before the wipe starts.
+const DROP_DELAY := 0.6
+## Seconds the wipe to black takes, and the lift off the next level.
+const FADE_TIME := 0.5
+## Seconds the results stay on the black screen before moving on.
 const COMPLETE_DELAY := 3.0
 ## Seconds to show "Fell out!" before restarting.
 const FAIL_DELAY := 0.8
@@ -119,23 +125,41 @@ func _change_scene(path: String) -> void:
 	_run_done = false
 	Game.level_complete = false
 	Engine.time_scale = 1.0
+	var was_dark := Transition.is_dark()
 	get_tree().change_scene_to_file(path)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_loading = false
 	level_loaded.emit(current_index)
+	# Coming out of the results screen: lift the black off the new level.
+	# A plain restart or level key cuts straight to the level instead.
+	if was_dark:
+		Transition.fade_in(FADE_TIME)
+	else:
+		Transition.clear()
 
 
+## The finish sequence. Each wait checks the run is still the same one so
+## pressing R or a level key during it cancels the rest.
 func _on_level_completed() -> void:
 	timer_running = false
 	_run_done = true
 	run_finished.emit(run_time)
-	if not is_in_level():
-		return
 	var my_run := _run_id
+	await get_tree().create_timer(DROP_DELAY).timeout
+	if my_run != _run_id:
+		return
+	await Transition.fade_out(FADE_TIME)
+	if my_run != _run_id:
+		return
+	Transition.show_complete(current_info(), run_time)
 	await get_tree().create_timer(COMPLETE_DELAY).timeout
-	if my_run == _run_id:
+	if my_run != _run_id:
+		return
+	if is_in_level():
 		load_next()
+	else:
+		restart()
 
 
 func _movement_pressed() -> bool:

@@ -31,7 +31,7 @@ about 7 m sideways between rows: that is the slalom.
 | 1 "Wide weave" | -6 .. -66 | -16 (R), -36 (L), -56 (R) | 20 m | turf walls both sides (forgiving) | big lazy turns are enough; a leaf on the straight (z -26) shows what "slick" feels like with nothing at stake |
 | 2 "Tighter" | -66 .. -120 | -74 (L), -87 (R), -100 (L), -113 (R) | 13 m | wall on the left, water on the right | the right-hand openings are next to the water: a late or too-fast swing goes in. Leaf at (-1.5, -94) sits on the diagonal of a left swing, so the turn has to be set up before it |
 | 3 "Slalom proper" | -120 .. -176 | -126 (L), -137 (R*), -148 (L), -159 (R*), -170 (L) | 11 m | water both sides | the small end challenge: five swings at 11 m spacing with leaves at (2, -142), (-1.2, -153) and (3, -165). Rows marked * carry the shortcut gap |
-| Finish nook | -176 .. -192 | - | - | walls on three sides | the goal ring at (0, 0, -186), pebbles and grass as a safe pocket |
+| Finish nook | -176 .. -192 | - | - | walls on three sides | the ant hill (the finish) at (0, 0, -186), pebbles and grass as a safe pocket |
 
 "R" = opening on the right (+x), "L" = opening on the left (-x).
 Stem count: 36 slalom stems (12 rows x 3) plus 6 decorative stems on the

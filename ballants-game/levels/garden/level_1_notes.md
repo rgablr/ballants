@@ -28,10 +28,10 @@ seams meet by construction. Course runs from the start toward -Z.
 | C3 | The small challenge | left 45 deg, radius 15 m, 9 m wide, open edges; flowers outside, a big dark pebble inside | Must slow down a little or steer early; at top speed the turn does not fit |
 | S4 | Crest run | 8 m, 10 m wide, walls return | Safety returns; aim for the crest |
 | D | Downhill | 20 m run, 3 m drop (8.5 deg, 20.2 m of slab), walls both sides | Speed builds by itself; keep straight |
-| Goal | Plateau | 26 m x 14 m at y = 0, walls on three sides, goal ring 12 m in, flowers behind it | Roll through the ring; the end wall catches an overshoot |
+| Goal | Plateau | 26 m x 14 m at y = 0, walls on three sides, ant hill (the finish) 12 m in, flowers behind it | Roll into the ant hill; the end wall catches an overshoot |
 
 Path length: 48 + 18.8 + 36 + 31.4 + 12 + 14 + 11.8 + 8 + 20 + 12 = 212 m
-to the ring.
+to the ant hill.
 
 ## Layout measurements and the tuning values they depend on
 
@@ -53,7 +53,7 @@ distance 2.14 m. Ball radius 0.5 m.
 | Downhill | 20 m run, 3 m drop, 8.5 deg | gravity (g sin 8.5 deg = 1.47 m/s^2 adds ~3 m/s over the slope), ground_stick 0.37 | Gentle enough that the ball stays on the slab over the crest and does not launch at the bottom |
 | Crest / plateau overlap | flat slab extends 0.5 m past the crest; slope extends 0.5 m under the plateau | ball radius | No lip facing the ball at either seam (the upper surface always wins) |
 | Course height | 3 m above y = 0, lawn at y = -4 | fall_respawn_y -2.5 | The lawn is visual only; a ball that leaves the path passes -2.5 after a 6 m drop (about 1.1 s) and the run restarts. The FallZone (y = -8, 600 x 6 x 600) is the backstop |
-| Goal plateau | 26 m long | brake_multiplier (stopping from 14 m/s ~ 11 m), ball_bounce | Room to stop after the ring; the end wall and bounce keep an overshoot on the plateau |
+| Goal plateau | 26 m long | brake_multiplier (stopping from 14 m/s ~ 11 m), ball_bounce | Room to stop after the ant hill; the end wall and bounce keep an overshoot on the plateau |
 | Flower / pebble markers | 10-14 m stems outside every bend, 3-5 m pebbles | camera_distance 2.14 (little view ahead) | Tall pieces are visible above the walls and over the crest before the bend itself is |
 | Bot waypoints | every 8 m, 9 m/s straights, 7 m/s C2, 6 m/s C3, 8 m/s downhill | same as above | tests/levels/level_1.json |
 

@@ -9,7 +9,7 @@
 [ext_resource type="PackedScene" path="res://src/objects/boulder.tscn" id="7_boulder"]
 [ext_resource type="PackedScene" path="res://src/objects/seesaw.tscn" id="8_seesaw"]
 [ext_resource type="PackedScene" path="res://src/objects/bounce_pad.tscn" id="9_pad"]
-[ext_resource type="PackedScene" path="res://src/objects/goal.tscn" id="10_goal"]
+[ext_resource type="PackedScene" path="res://src/objects/ant_hill.tscn" id="10_goal"]
 [ext_resource type="PackedScene" path="res://src/ui/tuning_panel.tscn" id="11_tuning"]
 [ext_resource type="PackedScene" path="res://src/ui/debug_overlay.tscn" id="12_debug"]
 [ext_resource type="Script" path="res://src/objects/curved_track.gd" id="13_curve"]
@@ -88,8 +88,10 @@ position = Vector3(0, 1.5, -24)
 size = Vector3(10, 1, 10)
 color = Color(0.76, 0.73, 0.67, 1)
 
-[node name="Goal" parent="NorthGoalCourse" instance=ExtResource("10_goal")]
-position = Vector3(0, 2, -26)
+[node name="AntHill" parent="NorthGoalCourse" instance=ExtResource("10_goal")]
+position = Vector3(0, 2, -24)
+base_radius = 3.5
+height = 1.2
 
 [node name="BounceWall" parent="NorthGoalCourse" instance=ExtResource("5_block")]
 position = Vector3(-7, 1, -16)

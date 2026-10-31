@@ -76,7 +76,8 @@ ballants-game/
     objects/physics_prop.gd  Pushable box/sphere (crate.tscn, boulder.tscn)
     objects/seesaw.tscn      Plank on a hinge
     objects/bounce_pad.*     Launches whatever rolls on it
-    objects/goal.*           Spinning ring; finishing it ends the level
+    objects/ant_hill.*       The finish: a dirt mound with a hole to drop into
+    ui/transition.gd         Global: fade to black + "Level complete" results
     ui/hud.*                 On-screen text
   levels/
     level.gd                 Shared script for every level
@@ -102,20 +103,21 @@ ballants-game/
 
 ### How things talk to each other
 
-- The **level scene** holds a `Player`, a `CameraRig`, a `HUD`, a `Goal`, and
+- The **level scene** holds a `Player`, a `CameraRig`, a `HUD`, an `AntHill`, and
   the course pieces. The Player is told which CameraRig to use; the CameraRig
   is told which Player to follow. (Both set in the level's Inspector.)
 - The **Player** reads the camera's facing to decide which way "forward" is,
   so turning the camera turns the controls.
-- The **Goal** tells the global `Game` the level is complete. `Game` fires a
-  signal. The **HUD** hears the signal and shows "GOAL!". The Goal and HUD
-  never reference each other, so either can be changed alone.
+- The **AntHill** tells the global `Game` the level is complete. `Game`
+  fires a signal. The level manager hears it, fades the screen to black
+  (the `Transition` global) and shows the results. The hill, HUD and
+  Transition never reference each other, so each can be changed alone.
 - `Game` also listens for the restart key and reloads the level.
 
 ### Adding things without breaking things
 
 - **New level:** duplicate `test_arena.tscn`, rearrange the Blocks, keep the
-  Player/CameraRig/HUD/Goal nodes. Set it as the main scene in Project
+  Player/CameraRig/HUD/AntHill nodes. Set it as the main scene in Project
   Settings to play it.
 - **New obstacle type:** new scene in `src/objects/`. If it's solid and
   still, start from `Block`; if it moves, start from `PhysicsProp`; if it
@@ -225,8 +227,9 @@ godot -- --camera-yaw=180 --camera-pitch=35   # aim the camera at start
   speed is hard; drifting off drops you to the ground.
 
 **Goal and restart**
-- Roll through the gold ring on the raised platform: it turns green and
-  "GOAL! Press R to play again" appears in the middle of the screen.
+- Roll up the ant hill on the raised platform and drop into its hole: the
+  screen fades to black, "GOAL!" and your time show, and the arena reloads.
+  (Section 20 has the current finish sequence.)
 - Press R at any time: the level reloads, crates and boulder return to
   their start positions, the ball is back at the start, the message is gone.
 - Roll off the edge of the green ground and fall: after about a second the
@@ -589,7 +592,7 @@ note. See Q13.
 1. **Copy a starter.** Duplicate any `levels/garden/level_*.tscn` (or open
    it in Godot and Save As). A level scene must have: the root node with
    `levels/level.gd` as its script, a `GardenTheme`, one `StartPoint`, one
-   `Goal`, and at least one `FallZone` below everything.
+   `AntHill` (the finish), and at least one `FallZone` below everything.
 2. **Place pieces.** In the Godot editor, drag scenes from
    `src/objects/garden/` and `src/objects/` into the level and set their
    properties in the Inspector (size, length, radius, color…). Every piece
@@ -621,14 +624,16 @@ note. See Q13.
 - Press **2** or **3**: that level loads at once, clock reset to zero.
   Press **0**: the free-roam test arena loads, no timer shown. Press
   **1**: back to level 1.
-- Reach the goal ring: "Level complete!", your time, and either "Under
-  par!" or the par time appear; the clock stops; three seconds later the
-  next level loads. Finish level 3: level 1 loads.
+- Drop into the ant hill: the clock stops, the screen wipes to black,
+  "Level complete!", your time and the par verdict show; three seconds
+  later the next level fades in. Finish level 3: level 1 loads.
+  (Changed in section 20; the ring goal is gone.)
 - Roll off the edge of any level: "Fell out!", and the level restarts
   from the start point after about a second, clock reset.
 - Press **R** at any moment: the level restarts, props reset, clock reset.
-- In the test arena, reaching the goal shows "GOAL! Press R" and does not
-  load another level; falling off the arena's edge respawns in place.
+- In the test arena, the ant hill shows "GOAL!" and your time on the black
+  screen, then the arena reloads; falling off the arena's edge respawns in
+  place.
 - Roll onto a leaf (level 2): the ball slides and steers lazily until it
   leaves the leaf.
 - Terminal: `./run_tests.sh` lists one `[drive] PASS` line per level.
@@ -842,3 +847,84 @@ one that reports motion sensors.
 **If the tilt axis is wrong** (e.g. tilting forward steers): the sensor
 axes of a combined Joy-Con pair may be remapped by the OS. Tell me what
 you see and I'll switch the axis; it is one line in `controls.gd`.
+
+## 20. Finishing a level: the ant hill and the wipe to black
+
+**What changed.** The spinning gold ring is gone. Every level (and the test
+arena) now ends at an **ant hill**: a cone of fresh-dug dirt with a dark
+hole in the top. Roll up the slope, drop into the hole, and the level is
+done. `src/objects/goal.*` was deleted; `src/objects/ant_hill.*` replaces it
+in all four scenes.
+
+**The sequence** (all timings are constants at the top of
+`src/core/level_manager.gd`):
+
+1. The ball enters the catch zone over the crater. The clock stops. The
+   ball's speed is cut to a slow roll so it can't skip across the hole, and
+   it drops down a 3 m shaft inside the hill. The camera holds still so
+   you watch the ball disappear. Input is ignored from here.
+2. **0.6 s** later the screen wipes to black over **0.5 s**.
+3. On the black: "Level complete!", the world and level name, your time
+   (big), and "Under par by …" or "Par … (… over)". In the arena:
+   "GOAL!" and the time.
+4. **3 s** later the next level loads behind the black and the black lifts
+   over 0.5 s. After level 3, level 1. In the arena, the arena reloads.
+5. R or a level key at any point in the sequence cancels the rest and cuts
+   straight to that level (no fade).
+
+**The hill** (`ant_hill.gd`, built in code, numbers in the Inspector):
+
+| Number | Default | Why |
+|---|---|---|
+| base_radius | 4.5 m | Footprint; fits every finish area (level 1's crack was shortened 2.5 m so it doesn't run under the hill) |
+| height | 1.3 m | Slope ≈ 30°. With `roll_acceleration` 10.5 vs gravity-along-slope 5.0, the ball climbs it from a standstill |
+| rim_radius | 2.0 m | The crater's edge; a shallow bowl funnels from here to the hole |
+| hole_radius | 1.05 m | Wider than the ball (0.5 m) so it can never sit on the lip |
+| shaft_depth | 3.0 m | Where the ball ends up, out of sight |
+
+*Why the catch zone is in the air above the crater, not just in the hole:*
+at 8 m/s the ball launches off the rim like a ramp and sails clean over
+a 2 m hole (the bot did exactly that on level 1). So the zone is a
+cylinder over the bowl; any ball crossing it is caught, slowed, and
+dropped. The hill is on collision layers 1 and 2; a caught ball collides
+with layer 2 only, so it falls down the shaft but through the dirt bed
+the hill stands on. The shaft walls still hold it.
+
+**New dev flags.** `--teleport=x,y,z` puts the ball somewhere right after
+the level loads (picture or try one spot). A `--drive` run with
+`--screenshot` now saves three pictures: the finish, the ball mid-drop
+(`_drop.png`), and the results screen (`_results.png`).
+
+**Acceptance criteria (play):**
+- Approach any level's hill slowly: the ball rolls up, tips into the
+  crater and falls into the dark hole; the camera stays put.
+- Approach it at full speed: same result, no flying over, no bounce out.
+- The timer on screen freezes the moment the ball is caught; the same time
+  shows on the black results screen.
+- The black screen holds about 3 s, then the next level fades in from
+  black. Level 3 leads to level 1.
+- Press R while the results are up: the current level restarts at once.
+- Test arena: the hill on the raised platform does the same but shows
+  "GOAL!" and reloads the arena.
+- `./run_tests.sh`: 7 physics tests, 11 arena checks, 4 level drives all
+  PASS; each drive prints that the next level loaded.
+
+**Known issues**
+- The level-complete screen is plain text on black for now (as asked).
+  No sound hook fires beyond `Sounds.goal()`.
+- The hill is a plain cone; ants, an entrance trail, or grass around the
+  base can come with the art pass.
+
+**Q18. The results screen should stay until:**
+- (a) 3 seconds pass, then the next level starts (current).
+- (b) you press a button (any of A / Space / Enter), with a "Press A"
+  hint.
+- (c) 3 seconds, but a button skips the wait.
+
+**Q19. When the ball is caught mid-air over the hill (a fast approach),
+it is slowed and dropped in. Keep that, or:**
+- (a) Keep: any approach finishes the level (current).
+- (b) Only a ball that actually rolls into the crater counts; a flyover
+  lands past the hill and you come back.
+- (c) Keep, but add a visible "tractor" effect (dust ring, the hill
+  pulses) so it reads as the hill grabbing the ball.

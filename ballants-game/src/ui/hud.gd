@@ -1,7 +1,7 @@
 extends CanvasLayer
 ## HUD -- the text drawn over the game: controls reminder, current speed,
-## level name, run timer, and the big center messages (level complete,
-## fell out, goal in the arena).
+## level name, run timer, and the "Fell out!" message. (The level-complete
+## results are drawn by the Transition global on its black screen.)
 ## The font comes from the asset manifest (applied game-wide by Assets).
 
 @onready var _controls: Label = $Controls
@@ -97,14 +97,10 @@ func _refresh_level_name() -> void:
 		_level_name.text = level.level_name if level and "level_name" in level else ""
 
 
-func _on_run_finished(time: float) -> void:
-	if Levels.is_in_level():
-		var info := Levels.current_info()
-		var verdict := "Under par!" if time <= info.par_time else "Par is %s" % Levels.format_time(info.par_time)
-		_message.text = "Level complete!\n%s\n%s" % [Levels.format_time(time), verdict]
-	else:
-		_message.text = "GOAL!\nPress R to play again"
-	_message.visible = true
+## The results are drawn by Transition on the black screen; here the timer
+## just freezes at the finishing time.
+func _on_run_finished(_time: float) -> void:
+	_message.visible = false
 
 
 func _on_run_failed() -> void:

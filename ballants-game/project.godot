@@ -24,6 +24,7 @@ Sounds="*res://src/core/sound_hooks.gd"
 Effects="*res://src/core/effects.gd"
 Levels="*res://src/core/level_manager.gd"
 Controls="*res://src/core/controls.gd"
+Transition="*res://src/ui/transition.gd"
 DevTools="*res://src/core/dev_tools.gd"
 
 [display]

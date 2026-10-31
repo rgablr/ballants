@@ -23,6 +23,10 @@ extends Node3D
 
 const BALL_RADIUS := 0.5
 
+## What the death message calls this enemy ("A ground beetle attacked you!").
+func enemy_name() -> String:
+	return "bug"
+
 var _home := Vector3.ZERO
 var _time := 0.0
 
@@ -58,7 +62,7 @@ func check_hit(point: Vector3, radius: float) -> bool:
 		return false
 	if ball.global_position.distance_to(point) > radius + BALL_RADIUS:
 		return false
-	ball.knock_off(ball.global_position - point)
+	ball.knock_off(ball.global_position - point, enemy_name())
 	return true
 
 

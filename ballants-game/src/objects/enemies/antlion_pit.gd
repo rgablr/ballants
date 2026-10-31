@@ -148,7 +148,7 @@ func _physics_process(delta: float) -> void:
 			_flick_sand(delta, ball)
 			if across < jaw_reach:
 				_snap = 0.4
-				ball.knock_off(ball.global_position - global_position)
+				ball.knock_off(ball.global_position - global_position, "antlion")
 	# The jaws: open wide while you're in the funnel, snap shut on a catch,
 	# otherwise twitch slowly.
 	var want := 0.9 if inside else 0.25 + 0.08 * sin(_time * 1.5)

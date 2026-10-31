@@ -47,6 +47,17 @@ const BALANCE_FULL := 12.5
 const CROUCH := 0.035
 # --- In the air -----------------------------------------------------------
 const TUCK := 0.05              # feet pull up this far while airborne
+const FLAIL_RATE := 13.0        # how fast legs kick and arms wave in the air (rad/s)
+# --- Crawling (top speed) -------------------------------------------------
+# At 75% of top speed and up the ant drops onto all six legs and scuttles
+# along the top of the ball, body flat; it stands back up when it slows.
+const CRAWL_PITCH := 1.3        # how far the body tips forward (radians, ~75°)
+const CRAWL_BACK := 0.2         # body slides back so it lies on top of the ball (m)
+const CRAWL_LOWER := 0.06       # and drops this much (m)
+const CRAWL_CADENCE := 1.6      # extra leg-cycle speed when crawling (x)
+# --- Teetering (sharp turns) ----------------------------------------------
+const TEETER_SWAY := 0.25       # side-to-side body wobble (radians)
+const TEETER_RATE := 10.0       # wobble speed (rad/s)
 
 const HIP_OFFSET := Vector3(0.045, 0.21, 0.03)   # back-leg hip, right side (x mirrored for left)
 const FOOT_REST := Vector3(0.12, 0.0, 0.02)      # where a back foot rests, right side
@@ -60,6 +71,9 @@ var _speed := 0.0               # smoothed speed, so the gait never jerks
 var _air := 0.0                 # 0 = on the ball, 1 = airborne pose
 var _airborne := false
 var _time := 0.0
+var _crawl := 0.0               # 0 = standing, 1 = on all six legs
+var _crawl_target := 0.0
+var _teeter := 0.0
 
 var _body: Node3D
 var _legs: Array[Dictionary] = []   # each: {side, femur, tibia}
@@ -80,6 +94,18 @@ func set_airborne(airborne: bool) -> void:
 	_airborne = airborne
 
 
+## Optional: 1 = crawl on all six legs (top speed), 0 = stand. The model
+## blends between the two over about a third of a second.
+func set_crawl(amount: float) -> void:
+	_crawl_target = clampf(amount, 0.0, 1.0)
+
+
+## Optional: 0..1, how close to falling off in a sharp turn (wobbles and
+## windmills its arms).
+func set_teeter(amount: float) -> void:
+	_teeter = clampf(amount, 0.0, 1.0)
+
+
 ## Radius of the ball the ant stands on, in this model's units.
 func set_ball_radius(ball_radius: float) -> void:
 	_ball_radius = max(ball_radius, 0.05)
@@ -89,40 +115,46 @@ func _process(delta: float) -> void:
 	_time += delta
 	_speed = lerpf(_speed, _walk_speed, 1.0 - exp(-delta * 6.0))
 	_air = move_toward(_air, 1.0 if _airborne else 0.0, delta * 6.0)
+	_crawl = move_toward(_crawl, _crawl_target, delta * 3.0)
+	var crawl := smoothstep(0.0, 1.0, _crawl)
 	var walking := clampf((_speed - IDLE_SPEED) / 1.0, 0.0, 1.0)
 	var run := clampf(_speed / RUN_SPEED, 0.0, 1.0)
-	var balance := smoothstep(BALANCE_SPEED, BALANCE_FULL, _speed)
-	var amount := walking * (1.0 - _air)
-	var cadence := lerpf(CADENCE_SLOW, CADENCE_FAST, run) * (1.0 - balance * 0.35)
+	var balance := smoothstep(BALANCE_SPEED, BALANCE_FULL, _speed) * (1.0 - crawl)
+	var ground := 1.0 - _air
+	var amount := walking * ground
+	var cadence := lerpf(CADENCE_SLOW, CADENCE_FAST, run) * (1.0 - balance * 0.35) * lerpf(1.0, CRAWL_CADENCE, crawl)
 	if not Engine.is_editor_hint():
 		_walk_phase = fposmod(_walk_phase + delta * cadence * walking, 1.0)
 	var stride := lerpf(STRIDE_SLOW, STRIDE_FAST, run) * (1.0 - balance * 0.5) * amount
+	var flail := _time * FLAIL_RATE
+	var wobble := sin(_time * TEETER_RATE) * TEETER_SWAY * _teeter * ground
 
 	# Body: dips at each footfall, rolls toward the planted foot, leans
-	# forward with speed, crouches when balancing, breathes when idle.
+	# forward with speed, crouches when balancing, breathes when idle;
+	# tips flat onto the ball when crawling; wobbles when teetering.
 	var dip := 0.5 + 0.5 * cos(TAU * 2.0 * (_walk_phase - STANCE * 0.5))
 	var breathe := sin(_time * 2.2) * 0.006 * (1.0 - walking)
-	_body.position.y = -dip * BOB * amount - CROUCH * balance + breathe + _air * 0.02
-	_body.rotation.x = -LEAN * run * walking - 0.1 * balance - 0.15 * _air
-	_body.rotation.z = sin(TAU * (_walk_phase - STANCE * 0.5)) * SWAY * amount * (1.0 - balance)
+	_body.position.y = -dip * BOB * amount - CROUCH * balance + breathe + _air * 0.02 - CRAWL_LOWER * crawl
+	_body.position.z = CRAWL_BACK * crawl
+	_body.rotation.x = lerpf(-LEAN * run * walking - 0.1 * balance - 0.15 * _air, -CRAWL_PITCH, crawl)
+	_body.rotation.z = sin(TAU * (_walk_phase - STANCE * 0.5)) * SWAY * amount * (1.0 - balance) * (1.0 - crawl) + wobble
 	_body.rotation.y = sin(TAU * _walk_phase) * 0.05 * amount
 
-	# Back legs: planted, then lifted and swung forward.
+	# Back legs: planted, then lifted and swung forward. In the air they
+	# kick wildly. Crawling, the feet reach further back.
 	for i in _legs.size():
 		var leg: Dictionary = _legs[i]
 		var side: float = leg.side
 		var p := fposmod(_walk_phase + 0.5 * i, 1.0)
-		var z := 0.0
-		var lift := 0.0
-		if p < STANCE:
-			z = lerpf(-stride, stride, p / STANCE)             # planted, sliding back
-		else:
-			var u := (p - STANCE) / (1.0 - STANCE)
-			z = lerpf(stride, -stride, smoothstep(0.0, 1.0, u))  # swinging forward
-			lift = sin(u * PI) * LIFT * amount
-		var spread := 0.025 * balance
-		var foot := Vector3((FOOT_REST.x + spread) * side, 0.0, FOOT_REST.z + z)
+		var step := _step(p)
+		var z := -step.x * stride
+		var lift := step.y * LIFT * amount
+		var spread := 0.025 * balance + 0.03 * crawl
+		var foot := Vector3((FOOT_REST.x + spread + 0.06 * crawl) * side, 0.0, FOOT_REST.z + z + 0.07 * crawl)
 		foot.y = _height_on_ball(foot.x, foot.z) + lift + TUCK * _air
+		if _air > 0.0:
+			var kick := Vector3(0.0, 0.05 + 0.05 * cos(flail + i * PI), sin(flail + i * PI) * 0.09)
+			foot = foot.lerp(Vector3(FOOT_REST.x * side * 1.3, 0.04, FOOT_REST.z) + kick, _air)
 		var hip: Vector3 = _body.to_global(Vector3(HIP_OFFSET.x * side, HIP_OFFSET.y, HIP_OFFSET.z))
 		hip = to_local(hip)
 		var knee := _solve_knee(hip, foot, side)
@@ -130,22 +162,51 @@ func _process(delta: float) -> void:
 		_set_rod(leg.tibia, knee, foot)
 
 	# Arms: swing opposite the same-side leg; spread out to balance at
-	# speed; thrown up in the air.
+	# speed. Crawling, they become legs (tripod gait: right-front and
+	# left-middle step with the right back leg). In the air they wave
+	# about. Teetering, they windmill.
 	for arm in _arms:
 		var side: float = arm.side
+		var front: bool = arm.front
+		var pivot: Node3D = arm.pivot
 		var leg_phase := _walk_phase + (0.0 if side > 0.0 else 0.5)
 		var swing := -sin(TAU * leg_phase) * ARM_SWING * amount * (1.0 - balance * 0.6)
-		var pivot: Node3D = arm.pivot
-		var front: bool = arm.front
-		pivot.rotation.x = swing * (0.6 if front else 1.0) + 0.6 * _air
-		pivot.rotation.z = side * (0.9 * balance + 0.5 * _air + (0.08 * sin(_time * 1.7) if not front else 0.0))
+		var stand_x := swing * (0.6 if front else 1.0)
+		var stand_z := side * (0.9 * balance + (0.08 * sin(_time * 1.7) if not front else 0.0))
+		# Crawling: tripod gait.
+		var tripod := fposmod(_walk_phase + (0.0 if (side > 0.0) == front else 0.5), 1.0)
+		var crawl_step := _step(tripod)
+		var crawl_x := (0.15 if front else 1.3) + crawl_step.x * 0.35 * amount
+		var crawl_z := side * (0.15 + crawl_step.y * 0.35 * amount)
+		var x := lerpf(stand_x, crawl_x, crawl)
+		var z := lerpf(stand_z, crawl_z, crawl)
+		# Teetering: arms out, windmilling.
+		x += sin(_time * 9.0 + side) * 0.9 * _teeter * ground
+		z += side * 0.9 * _teeter * ground
+		# In the air: waving wildly over its head.
+		var air_x := -1.6 + sin(flail * 0.9 + side * 1.3 + (0.8 if front else 0.0)) * 1.1
+		var air_z := side * (0.7 + 0.4 * sin(flail * 1.1 + (1.0 if front else 0.0)))
+		pivot.rotation.x = lerpf(x, air_x, _air)
+		pivot.rotation.z = lerpf(z, air_z, _air)
 
-	# Antennae: bob with each step, twitch now and then when idle.
+	# Antennae: bob with each step, twitch now and then when idle, swept
+	# forward when crawling, thrashing in the air.
 	var twitch := maxf(sin(_time * 0.9) - 0.92, 0.0) * 6.0 * (1.0 - walking)
 	for i in _antennae.size():
 		var a := _antennae[i]
-		a.rotation.x = sin(TAU * 2.0 * _walk_phase - 0.8) * 0.18 * amount + sin(_time * 1.3 + i) * 0.06 + twitch * 0.4 - 0.4 * _air
+		a.rotation.x = sin(TAU * 2.0 * _walk_phase - 0.8) * 0.18 * amount + sin(_time * 1.3 + i) * 0.06 \
+				+ twitch * 0.4 + 0.6 * crawl + _air * (sin(flail * 1.3 + i) * 0.5 - 0.3)
 		a.rotation.z = (1.0 if i == 0 else -1.0) * (0.05 + 0.1 * run * walking)
+
+
+## Where a foot is in its cycle: x = fore/aft position (1 = fully forward,
+## -1 = fully back), y = how lifted it is (0..1). Planted for STANCE of the
+## cycle (sliding from front to back), then lifted and swung forward.
+func _step(phase: float) -> Vector2:
+	if phase < STANCE:
+		return Vector2(lerpf(1.0, -1.0, phase / STANCE), 0.0)
+	var u := (phase - STANCE) / (1.0 - STANCE)
+	return Vector2(lerpf(-1.0, 1.0, smoothstep(0.0, 1.0, u)), sin(u * PI))
 
 
 ## Height of the ball's surface at a horizontal offset from the top.
@@ -169,7 +230,9 @@ func _solve_knee(hip: Vector3, foot: Vector3, side: float) -> Vector3:
 	# Distance along hip->foot where the knee sits, and how far off that line.
 	var along := (FEMUR * FEMUR - TIBIA * TIBIA + distance * distance) / (2.0 * distance)
 	var off := sqrt(max(FEMUR * FEMUR - along * along, 0.0))
-	var pole := Vector3(side * 0.55, 0.35, -0.75).normalized()   # knees forward and a little out
+	# Standing: knees forward and a little out. Crawling: up and out, like
+	# an insect's.
+	var pole := Vector3(side * 0.55, 0.35, -0.75).lerp(Vector3(side * 0.8, 0.9, 0.2), smoothstep(0.0, 1.0, _crawl)).normalized()
 	var perpendicular := (pole - direction * pole.dot(direction))
 	if perpendicular.length_squared() < 0.0001:
 		perpendicular = Vector3.UP

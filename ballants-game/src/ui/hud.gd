@@ -22,6 +22,8 @@ func _ready() -> void:
 	Levels.run_finished.connect(_on_run_finished)
 	Levels.run_failed.connect(_on_run_failed)
 	Levels.knock_recovered.connect(func(): _message.visible = false)
+	Levels.player_hit.connect(func(_attacker: String): _flash_hit())
+	_build_hit_border()
 	Levels.level_loaded.connect(func(_index: int): _refresh_level_name())
 	Controls.gyro_device_changed.connect(func(_device: int): _refresh_controls_text())
 	_refresh_level_name()
@@ -102,6 +104,35 @@ func _refresh_level_name() -> void:
 ## just freezes at the finishing time.
 func _on_run_finished(_time: float) -> void:
 	_message.visible = false
+
+
+var _hit_border: ColorRect
+var _hit_tween: Tween
+
+## A red glow around the edges of the screen, used when an enemy hits you.
+func _build_hit_border() -> void:
+	_hit_border = ColorRect.new()
+	_hit_border.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_hit_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://src/ui/hit_border.gdshader")
+	mat.set_shader_parameter("strength", 0.0)
+	_hit_border.material = mat
+	_hit_border.visible = false
+	add_child(_hit_border)
+	move_child(_hit_border, 0)
+
+
+## Snaps the red border on, then fades it out over a second and a half.
+func _flash_hit() -> void:
+	var mat := _hit_border.material as ShaderMaterial
+	_hit_border.visible = true
+	if _hit_tween:
+		_hit_tween.kill()
+	_hit_tween = create_tween()
+	_hit_tween.tween_method(func(v: float): mat.set_shader_parameter("strength", v), 1.0, 0.0, 1.6) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_hit_tween.tween_callback(func(): _hit_border.visible = false)
 
 
 func _on_run_failed() -> void:

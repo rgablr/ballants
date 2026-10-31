@@ -136,11 +136,11 @@ var jump_height := 1.59
 
 ## Jump "forgiveness" after rolling off an edge: for this many seconds after
 ## leaving the ground you can still jump. Makes edges feel fair. Keep tiny.
-var coyote_time := 0.12
+var coyote_time := 0.115
 
 ## Jump "forgiveness" before landing: if you press jump this many seconds
 ## before touching down, the jump still happens on landing. Keep tiny.
-var jump_buffer_time := 0.1187
+var jump_buffer_time := 0.12
 
 ## How steep a surface can be and still count as "ground" you can jump from.
 ## 1.0 = only perfectly flat. 0.5 = up to about 60 degrees. 0 = even walls.
@@ -154,13 +154,13 @@ var camera_distance := 2.14
 
 ## The camera looks at a point this far above the ball's center (meters), so
 ## the ball sits a bit below the middle of the screen and you see more ahead.
-var camera_height_offset := 0.34
+var camera_height_offset := 0.685
 
 ## Starting camera angle in degrees: 0 = level with the ball, 90 = top-down.
-var camera_pitch_default := 26.45
+var camera_pitch_default := 4.85
 
 ## Limits for how far the player can tilt the camera up or down (degrees).
-var camera_pitch_min := 1.8
+var camera_pitch_min := -27.9
 var camera_pitch_max := 73.2025
 
 ## How tightly the camera follows the ball. Higher = stiffer and more

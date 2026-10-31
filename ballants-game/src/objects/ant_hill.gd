@@ -72,6 +72,7 @@ const SINK_DROP_TIME := 0.6
 
 var _built := false
 var _done := false
+var _lip_row := 0
 
 
 func _ready() -> void:
@@ -94,8 +95,12 @@ func _profile() -> PackedVector2Array:
 		points.append(Vector2(lerpf(base_radius, rim_radius, t), lerpf(-0.1, height, s)))
 	# The crater: a rounded bowl down to the lip of the hole.
 	points.append(Vector2(lerpf(rim_radius, hole_radius, 0.5), height - crater_depth * 0.35))
-	# The last three rows must stay in this order (the hole surface uses them).
+	# The hole: the lip, a ring a little way down (where the shaft has
+	# already gone black, so the darkness starts right under the lip), then
+	# the floor far below.
+	_lip_row = points.size()
 	points.append(Vector2(hole_radius, height - crater_depth))
+	points.append(Vector2(hole_radius, height - crater_depth - 0.5))
 	points.append(Vector2(hole_radius, -shaft_depth))
 	points.append(Vector2(0.0, -shaft_depth))
 	return points
@@ -110,6 +115,7 @@ func _rebuild() -> void:
 	var profile := _profile()
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
+	var colors := PackedColorArray()
 	var indices := PackedInt32Array()
 
 	# Spin the profile: one ring of points per profile row.
@@ -124,11 +130,14 @@ func _rebuild() -> void:
 			var c := cos(angle)
 			var sn := sin(angle)
 			vertices.append(Vector3(p.x * c, p.y, p.x * sn))
+			# Inside the hole: a touch of dark earth at the lip, pure black
+			# below, so the hole reads as a bottomless void.
+			colors.append(Color(0.07, 0.05, 0.035) if row == _lip_row else Color.BLACK)
 			normals.append(Vector3(n2.x * c, n2.y, n2.x * sn).normalized())
 	# Two surfaces: the sunlit mound (slope and crater) and the dark hole
 	# (shaft walls and floor), so the hole reads as a hole from a distance.
 	var hole_indices := PackedInt32Array()
-	var shaft_row := rows - 3   # the row where the shaft wall starts
+	var shaft_row := _lip_row   # the row where the shaft wall starts
 	for row in rows - 1:
 		for s in segments:
 			var a := row * (segments + 1) + s
@@ -150,6 +159,7 @@ func _rebuild() -> void:
 		arrays.resize(Mesh.ARRAY_MAX)
 		arrays[Mesh.ARRAY_VERTEX] = vertices
 		arrays[Mesh.ARRAY_NORMAL] = normals
+		arrays[Mesh.ARRAY_COLOR] = colors
 		arrays[Mesh.ARRAY_INDEX] = pair[0]
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 		mesh.surface_set_material(mesh.get_surface_count() - 1, pair[1])
@@ -182,13 +192,16 @@ func _dirt_material() -> StandardMaterial3D:
 	return GardenTheme.material("dirt_light")
 
 
-## Near-black for the inside of the hole; shared by every hill.
+## The inside of the hole: unlit (no sunlight or sky light can brighten
+## it) and colored per vertex, fading to pure black. Shared by every hill.
 static var _hole_material_cache: StandardMaterial3D
 func _hole_material() -> StandardMaterial3D:
 	if _hole_material_cache == null:
 		_hole_material_cache = StandardMaterial3D.new()
-		_hole_material_cache.albedo_color = Color(0.12, 0.08, 0.05)
-		_hole_material_cache.roughness = 1.0
+		_hole_material_cache.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_hole_material_cache.vertex_color_use_as_albedo = true
+		_hole_material_cache.vertex_color_is_srgb = true
+		_hole_material_cache.disable_receive_shadows = true
 	return _hole_material_cache
 
 

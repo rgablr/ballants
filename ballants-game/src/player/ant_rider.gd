@@ -8,6 +8,9 @@ extends Node3D
 ##     on a springy lean that wobbles before it settles
 ##   - it turns to face the direction of travel
 ##   - it asks the model to animate its legs faster the faster the ball rolls
+##   - at 75% of top speed it tells the model to drop onto all six legs and
+##     crawl; it stands back up below about 68% (the gap stops flickering)
+##   - in sharp turns it sways and windmills like it's about to fall off
 ##   - it squashes on landing and stretches on take-off
 ##   - when an enemy knocks it off, it tumbles off the ball in an arc and
 ##     lands on its back, legs kicking, until the respawn puts it back
@@ -26,6 +29,17 @@ var _lean := Vector3.ZERO            # current lean, as a horizontal vector (len
 var _lean_velocity := Vector3.ZERO   # spring velocity of the lean
 var _previous_velocity := Vector3.ZERO
 var _bounce_tween: Tween
+var _crawling := false
+var _teeter := 0.0
+var _teeter_time := 0.0
+var _lateral := 0.0         # sideways acceleration this step (m/s²), from turning
+
+## Crawl at or above this fraction of top speed; stand up below the second.
+const CRAWL_ON := 0.75
+const CRAWL_OFF := 0.68
+## Sideways acceleration (m/s²) where teetering starts, and where it's full.
+const TEETER_START := 7.0
+const TEETER_FULL := 16.0
 # Knocked off: the tumble from where the ant was to where it lands.
 var _fallen := false
 var _fall_time := 0.0
@@ -65,6 +79,13 @@ func _physics_process(delta: float) -> void:
 	var acceleration := (velocity - _previous_velocity) / delta
 	_previous_velocity = velocity
 	var acceleration_h := Vector3(acceleration.x, 0.0, acceleration.z)
+	# How hard we're turning: acceleration across the direction of travel.
+	var velocity_h := Vector3(velocity.x, 0.0, velocity.z)
+	if velocity_h.length() > 2.0:
+		var along := velocity_h.normalized()
+		_lateral = (acceleration_h - along * acceleration_h.dot(along)).length()
+	else:
+		_lateral = 0.0
 
 	# Where the lean WANTS to be: against the acceleration (thrown back when
 	# speeding up, forward when braking, outward in turns), plus a lean
@@ -103,6 +124,12 @@ func _process(delta: float) -> void:
 		var blend := 1.0 - exp(-delta * Tuning.ant_turn_speed)
 		_facing = _facing.lerp(velocity_h / speed, blend).normalized()
 
+	# Teetering: the whole ant rocks side to side over the ball.
+	_teeter_time += delta
+	if _teeter > 0.001:
+		var forward_axis := Vector3(_facing.x, 0.0, _facing.z).normalized()
+		up = up.rotated(forward_axis, sin(_teeter_time * 7.0) * 0.28 * _teeter)
+
 	# Build the ant's orientation from "up" and "facing", keeping them at right
 	# angles so the model isn't skewed.
 	var forward := _facing - up * _facing.dot(up)
@@ -114,6 +141,21 @@ func _process(delta: float) -> void:
 
 	if _visual.has_method("set_walk_speed"):
 		_visual.set_walk_speed(speed)
+	# Crawl at high speed (with a gap so it doesn't flicker at the edge).
+	var fraction := speed / maxf(Tuning.max_speed, 0.1)
+	if fraction >= CRAWL_ON:
+		_crawling = true
+	elif fraction < CRAWL_OFF:
+		_crawling = false
+	if _visual.has_method("set_crawl"):
+		_visual.set_crawl(1.0 if _crawling else 0.0)
+	# Teeter in sharp turns: comes on quickly, fades slowly.
+	var want := clampf((_lateral - TEETER_START) / (TEETER_FULL - TEETER_START), 0.0, 1.0)
+	if ball.has_method("is_grounded") and not ball.is_grounded():
+		want = 0.0
+	_teeter = move_toward(_teeter, want, delta * (6.0 if want > _teeter else 1.5))
+	if _visual.has_method("set_teeter"):
+		_visual.set_teeter(_teeter)
 	if _visual.has_method("set_airborne") and ball.has_method("is_grounded"):
 		_visual.set_airborne(not ball.is_grounded() and not ball.is_coyote_active())
 

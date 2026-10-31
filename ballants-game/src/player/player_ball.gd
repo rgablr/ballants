@@ -402,7 +402,7 @@ func _smooth_seams(state: PhysicsDirectBodyState3D) -> void:
 ## Called by enemies. Throws the ant off (the rider plays the tumble), gives
 ## the ball a small shove away from the enemy, and tells the level manager,
 ## which restarts the level (or, outside a level, respawns us).
-func knock_off(direction: Vector3) -> void:
+func knock_off(direction: Vector3, attacker := "") -> void:
 	if knocked or freeze or Game.level_complete:
 		return
 	knocked = true
@@ -411,7 +411,7 @@ func knock_off(direction: Vector3) -> void:
 	linear_velocity = linear_velocity * 0.25 + away * 3.0 + Vector3.UP * 2.0
 	knocked_off.emit(away)
 	Effects.impact(Tuning.impact_big, away, global_position)
-	Levels.knocked_off()
+	Levels.knocked_off(attacker)
 
 
 func respawn() -> void:

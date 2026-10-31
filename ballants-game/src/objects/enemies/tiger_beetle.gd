@@ -22,6 +22,10 @@ var _body: Node3D
 var _legs: Array[Dictionary] = []
 
 
+func enemy_name() -> String:
+	return "tiger beetle"
+
+
 func _ready() -> void:
 	super._ready()
 	sight = maxf(sight, 11.0)

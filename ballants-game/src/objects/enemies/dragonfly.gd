@@ -24,6 +24,10 @@ var _body: Node3D
 var _wings: Array[Node3D] = []
 
 
+func enemy_name() -> String:
+	return "dragonfly"
+
+
 func _ready() -> void:
 	super._ready()
 	sight = maxf(sight, 12.0)

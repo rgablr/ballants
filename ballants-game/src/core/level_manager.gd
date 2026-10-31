@@ -23,6 +23,8 @@ signal run_failed
 ## Outside a level (title area, arena) a knock-off respawns you in place of
 ## a restart; this fires once you're back at the spawn.
 signal knock_recovered
+## An enemy hit the player (the HUD flashes a red border).
+signal player_hit(attacker: String)
 ## The ball dropped into an entrance hill (the title area's giant hill).
 signal entered_through_hill(level_index: int)
 
@@ -146,14 +148,19 @@ func fail(reason := "Fell out!", delay := FAIL_DELAY) -> void:
 ## An enemy knocked the ant off the ball. In a level: "Knocked off!" and
 ## the level restarts from the spawn. Elsewhere (title area, test arena):
 ## the screen dips to black and the ball is put back at its spawn point.
-func knocked_off() -> void:
+func knocked_off(attacker := "") -> void:
+	player_hit.emit(attacker)
+	var reason := "Knocked off!"
+	if not attacker.is_empty():
+		var article := "An" if attacker[0].to_lower() in "aeiou" else "A"
+		reason = "%s %s attacked you!" % [article, attacker]
 	if is_in_level():
-		fail("Knocked off!", KNOCK_DELAY)
+		fail(reason, KNOCK_DELAY)
 		return
 	if _knock_busy or _loading:
 		return
 	_knock_busy = true
-	fail_reason = "Knocked off!"
+	fail_reason = reason
 	run_failed.emit()
 	var my_run := _run_id
 	await get_tree().create_timer(KNOCK_DELAY).timeout

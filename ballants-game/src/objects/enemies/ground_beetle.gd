@@ -23,6 +23,10 @@ var _jaws: Array[Node3D] = []
 var _legs: Array[Dictionary] = []
 
 
+func enemy_name() -> String:
+	return "ground beetle"
+
+
 func _ready() -> void:
 	super._ready()
 	_heading = randf() * TAU

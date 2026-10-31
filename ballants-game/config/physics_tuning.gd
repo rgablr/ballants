@@ -188,6 +188,29 @@ var stick_sensitivity := 2.7687
 var invert_camera_y := true
 
 
+# ------------------------------------------------------- GYRO STEERING ----
+# Joy-Con / DualSense / Switch Pro style: left stick forward = accelerate,
+# back = brake, and TILTING the controller left/right steers (like a
+# steering wheel). Switches on by itself when a controller with motion
+# sensors is connected. Press the right stick in (or G) to recenter.
+
+## Use the controller's tilt for steering when it has motion sensors.
+var gyro_steering := true
+
+## Tilt angle (degrees) that counts as full steering lock.
+var gyro_max_tilt_degrees := 35.0
+
+## Tilt smaller than this (degrees) is ignored, so a steady hand goes straight.
+var gyro_deadzone_degrees := 3.0
+
+## How quickly the steering follows the tilt. Higher = snappier, lower =
+## smoother but laggier.
+var gyro_smoothing := 14.0
+
+## Flip if tilting left steers right.
+var gyro_invert := false
+
+
 # -------------------------------------------------------- ANT (VISUAL) ----
 # These only change how the ant LOOKS on the ball. They don't affect physics.
 
@@ -284,6 +307,9 @@ const RANGES := {
 	"shake_decay": [1.0, 30.0],
 	"hit_pause": [0.0, 0.3],
 	"camera_fov_speed_boost": [0.0, 40.0],
+	"gyro_max_tilt_degrees": [10.0, 80.0],
+	"gyro_deadzone_degrees": [0.0, 15.0],
+	"gyro_smoothing": [2.0, 40.0],
 	"ant_lean_per_accel": [0.0, 0.15],
 	"ant_input_lean": [0.0, 0.5],
 	"ant_max_lean": [0.0, 1.2],

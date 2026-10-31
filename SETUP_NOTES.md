@@ -789,3 +789,56 @@ download. What do you want?**
 - (b) A simple level-select menu (replacing the 1/2/3 keys).
 - (c) Best times saved to disk and shown on the HUD.
 - (d) A 4th garden level: you describe it, I build it.
+
+## 19. Fluidity, backdrop and Joy-Con tilt steering (added after your playtest)
+
+**Fluidity.** Physics interpolation is on: physics still steps 60 times a
+second, but the ball, ant and camera are drawn at smooth in-between
+positions, so a 120 Hz display no longer shows the ball jumping in steps.
+If the game still feels *heavy* rather than *jerky*, that is
+`roll_acceleration` (your saved 10.5; 16–22 is snappier) — F1.
+
+**Backdrop.** Every garden level now sits inside scenery: a lawn far
+below, a picket fence ring, bushes, giant trees, a house, giant flowers.
+Settings on the GardenTheme node: `backdrop_radius`, `backdrop_lawn_y`,
+`backdrop_enabled`.
+
+**Tilt steering (Joy-Con, Switch Pro, DualSense, DualShock 4).** This
+Godot build reads controller motion sensors natively (verified). Scheme,
+on by itself when such a controller is connected (`gyro_steering` in F1):
+
+| Action | Control |
+|---|---|
+| Accelerate | Left stick forward |
+| Brake (never reverse) | Left stick back |
+| Steer | Tilt the controller left / right, like a steering wheel |
+| Recenter the tilt | Click the right stick, or **G** |
+| Jump | A |
+
+A small yellow bar at the bottom of the screen shows the tilt the game is
+reading, with the controller's name and the angle in degrees. Tuning:
+`gyro_max_tilt_degrees` (full lock), `gyro_deadzone_degrees`,
+`gyro_smoothing`, `gyro_invert`.
+
+**Pairing Joy-Cons on a Mac.** System Settings → Bluetooth; hold the small
+round sync button on the Joy-Con's rail until the lights run, then pair.
+Pair the right Joy-Con (it has the sensors we read); pairing both is
+fine. If macOS shows them as two controllers, the game picks the first
+one that reports motion sensors.
+
+**Acceptance criteria (needs a controller; I could only verify the code):**
+- With a Joy-Con connected, the control hint at the top changes to the
+  tilt scheme and the yellow tilt bar appears at the bottom.
+- Hold the controller the way you like and click the right stick (or
+  press G): the bar centers.
+- Tilt right: the bar's knob moves right and the ball curves right while
+  rolling. If it curves left, turn on `gyro_invert` in F1 and tell me.
+- Push the left stick forward: the ball accelerates the way it is
+  heading. Pull back: it slows to a stop and does not reverse.
+- A small wobble of the hand (under 3°) does not steer.
+- Unplug / turn off the controller: the hint returns to keyboard text and
+  WASD works as before.
+
+**If the tilt axis is wrong** (e.g. tilting forward steers): the sensor
+axes of a combined Joy-Con pair may be remapped by the OS. Tell me what
+you see and I'll switch the axis; it is one line in `controls.gd`.

@@ -177,17 +177,28 @@ func _process(_delta: float) -> void:
 
 
 func _apply_movement() -> void:
-	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var holding_back := input.y > 0.5
-	if holding_back and not _control_yaw_frozen:
-		_frozen_yaw = _camera_yaw()
-	_control_yaw_frozen = holding_back
-	if input == Vector2.ZERO:
-		_input_direction = Vector3.ZERO
-		return
+	var input: Vector2 = Controls.get_move_vector()
+	var velocity_h := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
+	var speed_h := velocity_h.length()
+
+	# With tilt steering, "back" on the stick means BRAKE (push against the
+	# motion), never reverse; steering comes in as the x component.
+	var brake := 0.0
+	if Controls.gyro_active():
+		brake = maxf(input.y, 0.0)
+		input.y = minf(input.y, 0.0)
+		_control_yaw_frozen = false
+	else:
+		var holding_back := input.y > 0.5
+		if holding_back and not _control_yaw_frozen:
+			_frozen_yaw = _camera_yaw()
+		_control_yaw_frozen = holding_back
+
 	var direction := _camera_relative(input)
+	if brake > 0.0 and speed_h > 0.3:
+		direction = (direction - velocity_h / speed_h * brake).limit_length(1.0)
 	_input_direction = direction
-	if direction == Vector3.ZERO:
+	if direction.length_squared() < 0.0001:
 		return
 
 	var strength := Tuning.roll_acceleration * mass
@@ -196,8 +207,6 @@ func _apply_movement() -> void:
 	else:
 		strength *= surface_grip
 
-	var velocity_h := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
-	var speed_h := velocity_h.length()
 	if speed_h > 0.5:
 		var heading := velocity_h / speed_h
 		var along := direction.dot(heading)

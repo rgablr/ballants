@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/objects/garden/lawn.gd" id="1_lawn"]
+
+[node name="Lawn" type="Node3D"]
+script = ExtResource("1_lawn")

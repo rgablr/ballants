@@ -11,3 +11,9 @@ extends Node3D
 ## plus any Blocks and props that make up the course.
 
 @export var level_name := "Untitled level"
+
+
+func _ready() -> void:
+	# Fold every Block's collision into one body so tile seams are seamless
+	# to the physics engine (see static_merger.gd).
+	StaticMerger.merge(self)

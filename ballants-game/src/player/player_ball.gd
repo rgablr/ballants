@@ -49,6 +49,9 @@ func _ready() -> void:
 	# Needed so _integrate_forces can see what we're touching.
 	contact_monitor = true
 	max_contacts_reported = 8
+	# Continuous collision: the engine sweeps the ball along its path each
+	# step, so at high speed it can't skip through a thin wall or floor.
+	continuous_cd = true
 
 	_visual_root.add_child(Assets.instantiate_model("ball"))
 

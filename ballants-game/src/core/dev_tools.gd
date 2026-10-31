@@ -4,6 +4,10 @@ extends Node
 ##
 ## Open a terminal in the ballants-game folder and run:
 ##
+##   godot --headless -- --tests
+##       Runs the physics test suite in tests/physics_tests.gd (throwaway
+##       worlds, no level) and quits. Exit code 0 = all passed.
+##
 ##   godot -- --autotest
 ##       Plays the level by itself for a few seconds (rolls forward, jumps),
 ##       prints PASS/FAIL checks, and quits. Exit code 0 = all passed.
@@ -32,7 +36,10 @@ var _failures := 0
 func _ready() -> void:
 	var autotest := false
 	for arg in OS.get_cmdline_user_args():
-		if arg == "--autotest":
+		if arg == "--tests":
+			get_tree().change_scene_to_file.call_deferred("res://tests/physics_tests.tscn")
+			return
+		elif arg == "--autotest":
 			autotest = true
 		elif arg.begins_with("--screenshot="):
 			_screenshot_path = arg.get_slice("=", 1)

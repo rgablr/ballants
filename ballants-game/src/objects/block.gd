@@ -18,6 +18,10 @@ extends StaticBody3D
 		color = value
 		_refresh()
 
+## Leave on for anything that never moves. StaticMerger folds the collision
+## of all such blocks into one body so the ball rolls over seams smoothly.
+@export var merge_collision := true
+
 var _mesh_instance: MeshInstance3D
 var _collision: CollisionShape3D
 var _material: StandardMaterial3D

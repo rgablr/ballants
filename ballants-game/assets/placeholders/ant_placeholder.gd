@@ -79,6 +79,8 @@ var _body: Node3D
 var _legs: Array[Dictionary] = []   # each: {side, femur, tibia}
 var _arms: Array[Dictionary] = []   # each: {pivot, side, front}
 var _antennae: Array[Node3D] = []
+## One material per recolorable part (see set_part_color).
+var _part_materials := {}
 
 
 func _ready() -> void:
@@ -104,6 +106,13 @@ func set_crawl(amount: float) -> void:
 ## windmills its arms).
 func set_teeter(amount: float) -> void:
 	_teeter = clampf(amount, 0.0, 1.0)
+
+
+## Optional: recolors one part: "head", "thorax", "abdomen", "antennae",
+## "legs" (all six) or "eyes". Used by the customize menu.
+func set_part_color(part: String, color: Color) -> void:
+	if _part_materials.has(part):
+		(_part_materials[part] as StandardMaterial3D).albedo_color = color
 
 
 ## Radius of the ball the ant stands on, in this model's units.
@@ -240,20 +249,26 @@ func _solve_knee(hip: Vector3, foot: Vector3, side: float) -> Vector3:
 
 
 func _build() -> void:
-	var body := _material(BODY_COLOR)
+	var head := _material(BODY_COLOR)
+	var thorax := _material(BODY_COLOR)
+	var abdomen_mat := _material(BODY_COLOR)
+	var antenna_mat := _material(DARK_COLOR)
 	var dark := _material(DARK_COLOR)
 	var eye := _material(EYE_COLOR)
+	eye.roughness = 0.25
+	_part_materials = {"head": head, "thorax": thorax, "abdomen": abdomen_mat,
+			"antennae": antenna_mat, "legs": dark, "eyes": eye}
 
 	# Everything except the back legs hangs off _body so it can bob and lean.
 	_body = Node3D.new()
 	add_child(_body)
 
 	# Abdomen: tilted egg pointing down and back.
-	var abdomen := _sphere(_body, Vector3(0.0, 0.17, 0.07), 0.08, Vector3(1.0, 1.0, 1.45), body)
+	var abdomen := _sphere(_body, Vector3(0.0, 0.17, 0.07), 0.08, Vector3(1.0, 1.0, 1.45), abdomen_mat)
 	abdomen.rotation_degrees.x = 40.0
 	# Thorax (middle) and head.
-	_sphere(_body, Vector3(0.0, 0.3, -0.01), 0.06, Vector3.ONE, body)
-	_sphere(_body, Vector3(0.0, 0.42, -0.05), 0.07, Vector3.ONE, body)
+	_sphere(_body, Vector3(0.0, 0.3, -0.01), 0.06, Vector3.ONE, thorax)
+	_sphere(_body, Vector3(0.0, 0.42, -0.05), 0.07, Vector3.ONE, head)
 	# Eyes.
 	_sphere(_body, Vector3(0.035, 0.44, -0.105), 0.016, Vector3.ONE, eye)
 	_sphere(_body, Vector3(-0.035, 0.44, -0.105), 0.016, Vector3.ONE, eye)
@@ -262,7 +277,7 @@ func _build() -> void:
 		var antenna := Node3D.new()
 		antenna.position = Vector3(side * 0.02, 0.47, -0.07)
 		_body.add_child(antenna)
-		_rod(antenna, Vector3.ZERO, Vector3(side * 0.04, 0.11, -0.07), 0.008, dark)
+		_rod(antenna, Vector3.ZERO, Vector3(side * 0.04, 0.11, -0.07), 0.008, antenna_mat)
 		_antennae.append(antenna)
 
 	for side in [1.0, -1.0]:

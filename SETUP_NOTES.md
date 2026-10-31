@@ -1164,3 +1164,50 @@ hot cloud behind it. Say the word.
 - (a) Bombardier beetle (sprays a cloud behind it; the cloud knocks you off).
 - (b) Robber fly (perches, darts at you fast in short hops).
 - (c) Assassin bug (slow stalker that ambushes from thick grass).
+
+## 23. Big title, hit feedback, void holes, ant moves, customize menu
+
+- **Title.** "BALL" over "ANTS", sized from the window to fill the
+  top-left quarter of the screen. When you start it shrinks into the
+  corner (0.7 s). The prompt also says "C / Y: customize your ant".
+- **Getting hit.** A red glow around the screen edges that fades out
+  over 1.6 s, and "A ground beetle attacked you!" (or tiger beetle,
+  antlion, dragonfly) in the middle.
+- **Ant hill holes.** The inside of every hole is unlit and fades to pure
+  black just under the lip, so it reads as a bottomless void.
+- **Ant: jumping.** In the air the legs kick and the arms wave over its
+  head (and the antennae thrash).
+- **Ant: crawling.** At 75% of top speed and up it drops onto all six
+  legs: body flat along the top of the ball, front and middle legs
+  stepping in a tripod gait with the back legs, knees up like an insect.
+  It stands back up below 68% (the gap stops it flickering between the
+  two at one speed).
+- **Ant: sharp turns.** The harder you turn (sideways acceleration from
+  7 m/s², full at 16), the more it rocks side to side over the ball and
+  windmills its arms, like it's about to fall off. Comes on fast, fades
+  slowly.
+- **Customize menu.** C (keyboard) or Y (controller), anywhere; the game
+  pauses. Your ant appears big in the middle of the screen, standing on
+  its ball and slowly turning. Beside each part, at that part's height, a
+  row with arrows: Antennae, Eyes, Head, Thorax, Abdomen, Legs; under the
+  ball, Ball. The selected part glows on the ant.
+  - Up/Down choose, Left/Right change, B / Esc / C close. Mouse clicks on
+    the arrows work too.
+  - Body parts: 13 colors. Antennae and legs: 9. Eyes: 7.
+  - Balls (all perfect spheres, so physics is unchanged): soccer ball,
+    basketball, volleyball, beach ball, tennis ball, baseball, bowling
+    ball, 8-ball, golf ball, playground ball. All drawn in code.
+  - Changes apply instantly to your ant and ball in the game, and are
+    saved on your computer (kept next time you play).
+
+**Acceptance criteria (play):**
+- Launch: the title fills the top-left quarter; move and it shrinks away.
+- Get hit by any enemy: red edges fading out, "A <insect> attacked you!".
+- Look into an ant hill hole: black void.
+- Jump: legs kicking, arms waving. Roll at near top speed: the ant drops
+  onto six legs and scuttles; slow down and it stands up. Turn hard at
+  speed: it wobbles and windmills.
+- Press C / Y: the customize screen; change every part and the ball;
+  close; your ant and ball look like that in the game. Quit and relaunch:
+  still the same.
+- `./run_tests.sh`: all PASS.

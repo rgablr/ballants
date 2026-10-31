@@ -101,7 +101,11 @@ func _ready() -> void:
 	# The visual follows the body by hand (see _process) so it can be
 	# squashed in world space without touching the collision sphere.
 	_visual_root.top_level = true
-	_visual_root.add_child(Assets.instantiate_model("ball"))
+	var ball_model := Assets.instantiate_model("ball")
+	_visual_root.add_child(ball_model)
+	# The player's chosen ball style (customize menu), kept up to date.
+	Cosmetics.apply_to_ball(ball_model)
+	Cosmetics.changed.connect(func(): Cosmetics.apply_to_ball(ball_model))
 
 	# The exported camera_rig is assigned before _ready, so hook it up now.
 	camera_rig = camera_rig

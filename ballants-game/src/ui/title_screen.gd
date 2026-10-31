@@ -36,14 +36,14 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(func():
 		if not _started:
 			_fit_title())
-	_prompt = _label(self, "move to play", 30, Color(1.0, 0.95, 0.7))
+	_prompt = _label(self, "move to play\nC / Y: customize your ant", 30, Color(1.0, 0.95, 0.7))
 	_prompt.anchor_left = 0.5
 	_prompt.anchor_right = 0.5
 	_prompt.anchor_top = 1.0
 	_prompt.anchor_bottom = 1.0
 	_prompt.offset_left = -300
 	_prompt.offset_right = 300
-	_prompt.offset_top = -110
+	_prompt.offset_top = -130
 	_prompt.offset_bottom = -70
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 

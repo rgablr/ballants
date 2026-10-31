@@ -55,6 +55,9 @@ func _ready() -> void:
 	_visual = Assets.instantiate_model("ant")
 	_visual.scale = Vector3.ONE * model_scale
 	add_child(_visual)
+	# The player's chosen colors (customize menu), kept up to date.
+	Cosmetics.apply_to_ant(_visual)
+	Cosmetics.changed.connect(func(): Cosmetics.apply_to_ant(_visual))
 	if _visual.has_method("set_ball_radius"):
 		_visual.set_ball_radius(_ball_radius() / model_scale)
 	if ball:

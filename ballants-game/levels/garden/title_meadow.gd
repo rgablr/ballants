@@ -46,7 +46,7 @@ func _stand_on_ground() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _started:
+	if _started or event.is_action("customize"):
 		return
 	var pressed: bool = (event is InputEventKey and event.pressed and not event.echo \
 			and event.keycode != KEY_F1 and event.keycode != KEY_F2) \

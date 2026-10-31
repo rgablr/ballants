@@ -132,19 +132,21 @@ func test_ramp_crest_does_not_launch_ball() -> void:
 	var player := _player(Vector3(0, 0.6, 6))
 	await _seconds(0.8)
 	Input.action_press("move_forward")
-	var max_lift := 0.0
+	var max_up_speed := 0.0
 	var reached_top := false
 	for i in 300:
 		await get_tree().physics_frame
 		var p := player.global_position
 		if p.z < -20.0:
 			reached_top = true
-			max_lift = maxf(max_lift, p.y - 2.0 - player.radius)
+			max_up_speed = maxf(max_up_speed, player.linear_velocity.y)
 		if p.z < -30.0:
 			break
 	Input.action_release("move_forward")
-	_check("ramp crest does not launch the ball", reached_top and max_lift < 0.25,
-			"reached top: %s, max lift above platform %.3f m" % [reached_top, max_lift])
+	# Judged by upward SPEED, not height, so the limit means the same thing
+	# whatever gravity is set to (3 m/s is a 25 cm hop at gravity 18).
+	_check("ramp crest does not launch the ball", reached_top and max_up_speed < 3.0,
+			"reached top: %s, max upward speed after crest %.2f m/s (limit 3.0)" % [reached_top, max_up_speed])
 	_teardown()
 
 

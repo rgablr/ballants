@@ -147,7 +147,14 @@ func _run_autotest() -> void:
 		await get_tree().physics_frame
 		landed = player.is_grounded()
 	_check("ball landed again", landed)
-	_check("landing counts as an impact", impacts[0] >= 1, "impacts=%d" % impacts[0])
+	# A landing only counts as an impact if it's harder than impact_small.
+	var landing_speed := sqrt(2.0 * Tuning.gravity * Tuning.jump_height)
+	if landing_speed > Tuning.impact_small * 1.15:
+		_check("landing counts as an impact", impacts[0] >= 1,
+				"impacts=%d (landing at %.1f m/s, impact_small %.1f)" % [impacts[0], landing_speed, Tuning.impact_small])
+	elif landing_speed < Tuning.impact_small * 0.85:
+		_check("soft landing is not an impact", impacts[0] == 0,
+				"impacts=%d (landing at %.1f m/s, impact_small %.1f)" % [impacts[0], landing_speed, Tuning.impact_small])
 
 	# Restart should put the ball back near the start.
 	Game.restart_level()

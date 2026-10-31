@@ -25,15 +25,19 @@ signal manually_turned(yaw_delta: float)
 var _yaw := 0.0     # left/right rotation, radians
 var _pitch := 0.0   # up/down rotation, radians (positive looks down)
 var _seconds_since_manual := 999.0
+var _shake := 0.0   # current screen-shake strength, meters
+var _fov_current := 70.0
 
 @onready var _arm: SpringArm3D = $SpringArm3D
 @onready var _camera: Camera3D = $SpringArm3D/Camera3D
 
 
 func _ready() -> void:
+	add_to_group("camera_rig")
 	_pitch = deg_to_rad(Tuning.camera_pitch_default)
 	_arm.spring_length = Tuning.camera_distance
-	_camera.fov = Tuning.camera_fov
+	_fov_current = Tuning.camera_fov
+	_camera.fov = _fov_current
 	if target:
 		global_position = _focus_point()
 		if target is CollisionObject3D:
@@ -45,6 +49,11 @@ func _ready() -> void:
 ## The rig's current left/right angle, in radians.
 func get_yaw() -> float:
 	return _yaw
+
+
+## Kicks off a screen shake of the given size (meters). Decays on its own.
+func shake(strength: float) -> void:
+	_shake = maxf(_shake, strength)
 
 
 func _input(event: InputEvent) -> void:
@@ -59,7 +68,8 @@ func _process(delta: float) -> void:
 	_seconds_since_manual += delta
 	# Cheap to re-apply every frame, and it makes the F1 panel's changes live.
 	_arm.spring_length = Tuning.camera_distance
-	_camera.fov = Tuning.camera_fov
+	_update_fov(delta)
+	_update_shake(delta)
 
 	var stick := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down")
 	if stick != Vector2.ZERO:
@@ -98,6 +108,28 @@ func _auto_follow(delta: float) -> void:
 	_yaw = lerp_angle(_yaw, desired_yaw, blend)
 	_pitch = lerp(_pitch, deg_to_rad(Tuning.camera_pitch_default), blend)
 	_apply_rotation()
+
+
+## Field of view widens with speed so going fast looks fast.
+func _update_fov(delta: float) -> void:
+	var target_fov: float = Tuning.camera_fov
+	if target is RigidBody3D:
+		var v: Vector3 = (target as RigidBody3D).linear_velocity
+		var speed_fraction: float = clampf(Vector2(v.x, v.z).length() / Tuning.max_speed, 0.0, 1.0)
+		target_fov += Tuning.camera_fov_speed_boost * speed_fraction
+	_fov_current = lerpf(_fov_current, target_fov, 1.0 - exp(-delta * 6.0))
+	_camera.fov = _fov_current
+
+
+## Random camera offset that dies away, for impacts.
+func _update_shake(delta: float) -> void:
+	if _shake < 0.001:
+		_camera.h_offset = 0.0
+		_camera.v_offset = 0.0
+		return
+	_camera.h_offset = randf_range(-_shake, _shake)
+	_camera.v_offset = randf_range(-_shake, _shake)
+	_shake *= exp(-delta * Tuning.shake_decay)
 
 
 func _focus_point() -> Vector3:

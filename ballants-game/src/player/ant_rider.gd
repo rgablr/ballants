@@ -1,9 +1,11 @@
 extends Node3D
 ## ANT RIDER -- keeps the ant visual standing on top of the ball.
 ##
-## The ant is NOT part of the physics. It is a picture that follows the ball:
-##   - it stands on the ball's surface, sliding away from the top when the
-##     ball speeds up or slows down, so it looks like it's balancing
+## The ant is NOT part of the physics. It is a picture that follows the ball
+## and is the main way the player READS momentum:
+##   - it leans toward where you're pushing the instant you push (intent)
+##   - it is thrown against sudden speed-ups, braking and turns (momentum),
+##     on a springy lean that wobbles before it settles
 ##   - it turns to face the direction of travel
 ##   - it asks the model to animate its legs faster the faster the ball rolls
 ##   - it squashes on landing and stretches on take-off
@@ -18,7 +20,8 @@ extends Node3D
 
 var _visual: Node3D
 var _facing := Vector3.FORWARD
-var _lean := Vector3.ZERO       # smoothed horizontal acceleration
+var _lean := Vector3.ZERO            # current lean, as a horizontal vector (length = radians)
+var _lean_velocity := Vector3.ZERO   # spring velocity of the lean
 var _previous_velocity := Vector3.ZERO
 var _bounce_tween: Tween
 
@@ -48,19 +51,32 @@ func _physics_process(delta: float) -> void:
 	var acceleration := (velocity - _previous_velocity) / delta
 	_previous_velocity = velocity
 	var acceleration_h := Vector3(acceleration.x, 0.0, acceleration.z)
-	_lean = _lean.lerp(acceleration_h, 1.0 - exp(-delta * Tuning.ant_lean_smoothing))
+
+	# Where the lean WANTS to be: against the acceleration (thrown back when
+	# speeding up, forward when braking, outward in turns), plus a lean
+	# toward the direction being pushed.
+	var target := -acceleration_h * Tuning.ant_lean_per_accel
+	if ball.has_method("get_input_direction"):
+		target += ball.get_input_direction() * Tuning.ant_input_lean
+	target = target.limit_length(Tuning.ant_max_lean)
+
+	# Spring toward the target. Under-damped on purpose so it wobbles.
+	var stiffness: float = Tuning.ant_lean_stiffness
+	var damping: float = Tuning.ant_lean_damping
+	_lean_velocity += ((target - _lean) * stiffness - _lean_velocity * damping) * delta
+	_lean += _lean_velocity * delta
+	_lean = _lean.limit_length(Tuning.ant_max_lean)
 
 
 func _process(delta: float) -> void:
 	if ball == null:
 		return
 
-	# Which way is "up" for the ant: straight up, tilted away from the
-	# direction the ball is accelerating (it gets left behind, then catches up).
+	# Which way is "up" for the ant: straight up, tilted in the lean direction.
 	var up := Vector3.UP
-	var lean_amount: float = clamp(_lean.length() * Tuning.ant_lean_per_accel, 0.0, Tuning.ant_max_lean)
+	var lean_amount := _lean.length()
 	if lean_amount > 0.001:
-		var axis := _lean.normalized().cross(Vector3.UP).normalized()
+		var axis := Vector3.UP.cross(_lean / lean_amount).normalized()
 		up = Vector3.UP.rotated(axis, lean_amount)
 
 	# Face the direction of travel, smoothly.

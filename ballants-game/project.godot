@@ -20,6 +20,8 @@ config/icon="res://icon.svg"
 Tuning="*res://config/physics_tuning.gd"
 Assets="*res://assets/asset_manifest.gd"
 Game="*res://src/core/game.gd"
+Sounds="*res://src/core/sound_hooks.gd"
+Effects="*res://src/core/effects.gd"
 DevTools="*res://src/core/dev_tools.gd"
 
 [display]

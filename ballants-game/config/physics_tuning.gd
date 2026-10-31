@@ -36,8 +36,8 @@ var fall_respawn_y := -8.0
 
 ## Weight of the ball (with the ant). Heavier = pushes crates harder, but
 ## roll_acceleration below is "per kilogram", so weight alone won't change
-## how fast you accelerate.
-var ball_mass := 1.0
+## how fast you accelerate. Keep it well above the crates so they scatter.
+var ball_mass := 2.0
 
 ## How quickly you pick up speed when you hold a direction. Higher = snappier
 ## response. Lower = more "Super Monkey Ball" momentum, where you have to plan
@@ -71,6 +71,54 @@ var ball_friction := 1.0
 
 ## How bouncy the ball is when it hits something. 0 = thud, 1 = superball.
 var ball_bounce := 0.15
+
+
+# ------------------------------------------------- FEEL (FAKE PHYSICS) ----
+# Small cheats on top of real physics so steering feels immediate while
+# the ball still carries its weight. Super Monkey Ball does the same.
+
+## Extra steering help: how much stronger a push is when it points ACROSS
+## your current motion rather than along it. 0 = pure physics. 1 = sideways
+## pushes are twice as strong. Turns start right away, momentum still
+## carries you.
+var turn_assist := 0.6
+
+## Pulls the ball toward the ground while it rolls fast, so it hugs ramps
+## and crests instead of popping off them. Given as a fraction of gravity
+## at top speed (it scales down at lower speeds). 0 = off. Does not affect
+## jumps or bounce pads.
+var ground_stick := 0.6
+
+
+# ---------------------------------------------------------------- JUICE ----
+# Feedback effects. None of these change where the ball goes.
+
+## A sudden speed change (m/s, in one physics step) at least this big counts
+## as a small impact: dust puff + ball squash.
+var impact_small := 4.0
+
+## A sudden speed change at least this big is a BIG impact: adds screen
+## shake and a hit-pause.
+var impact_big := 10.0
+
+## How much the ball flattens on a big impact. 0.25 = squashes to 75%.
+var ball_squash := 0.25
+
+## How long the ball takes to spring back to round, in seconds.
+var ball_squash_time := 0.3
+
+## Screen shake size for a big impact, in meters of camera wobble.
+var shake_strength := 0.25
+
+## How quickly the shake dies away. Higher = shorter shake.
+var shake_decay := 9.0
+
+## Freeze-frame length on a big impact, in seconds. 0 = off.
+var hit_pause := 0.06
+
+## How many degrees wider the camera's field of view gets at top speed.
+## Makes speed feel like speed.
+var camera_fov_speed_boost := 12.0
 
 
 # ----------------------------------------------------------------- JUMP ----
@@ -143,16 +191,24 @@ var invert_camera_y := false
 # -------------------------------------------------------- ANT (VISUAL) ----
 # These only change how the ant LOOKS on the ball. They don't affect physics.
 
-## How far the ant slides across the top of the ball when the ball speeds up
-## or slows down, so it looks like it's struggling to keep its balance.
-## 0 = ant always stays glued to the very top.
-var ant_lean_per_accel := 0.035
+## How far the ant is thrown across the top of the ball when the ball
+## speeds up, brakes or turns (it leans AGAINST the change, showing
+## momentum). 0 = ant always stays glued to the very top.
+var ant_lean_per_accel := 0.045
+
+## How far the ant leans TOWARD where you're pushing, the instant you push.
+## This is the "I'm about to go that way" tell. Radians; 0 = off.
+var ant_input_lean := 0.15
 
 ## Maximum lean angle in radians (0.6 is about 35 degrees).
 var ant_max_lean := 0.6
 
-## How quickly the lean settles. Higher = twitchier, lower = lazier.
-var ant_lean_smoothing := 8.0
+## The lean is a spring. Stiffness = how fast it reacts (higher = snappier).
+var ant_lean_stiffness := 80.0
+
+## Spring damping: LOWER = more wobble after a sudden change. Around 6 is
+## a visible wobble; 18 is almost none.
+var ant_lean_damping := 7.0
 
 ## How quickly the ant turns to face the direction of travel.
 var ant_turn_speed := 10.0
@@ -167,11 +223,17 @@ var ant_land_bounce_time := 0.35
 
 # --------------------------------------------------- INTERACTIVE OBJECTS ----
 
-## Weight of a pushable crate. Lighter than the ball = easy to shove around.
-var crate_mass := 0.6
+## Weight of a pushable crate. Much lighter than the ball = flies when hit.
+var crate_mass := 0.4
+
+## Weight of the small light boxes scattered in fields. Very light = snappy.
+var light_box_mass := 0.15
+
+## Weight of a domino tile.
+var domino_mass := 0.3
 
 ## Weight of a loose boulder. Heavier than the ball = it shoves YOU around.
-var boulder_mass := 2.5
+var boulder_mass := 4.0
 
 ## Weight of a seesaw plank.
 var seesaw_plank_mass := 1.5
@@ -212,13 +274,27 @@ const RANGES := {
 	"camera_auto_follow_min_speed": [0.0, 10.0],
 	"mouse_sensitivity": [0.0005, 0.01],
 	"stick_sensitivity": [0.5, 8.0],
+	"turn_assist": [0.0, 2.0],
+	"ground_stick": [0.0, 2.0],
+	"impact_small": [0.5, 20.0],
+	"impact_big": [1.0, 40.0],
+	"ball_squash": [0.0, 0.6],
+	"ball_squash_time": [0.05, 1.0],
+	"shake_strength": [0.0, 1.0],
+	"shake_decay": [1.0, 30.0],
+	"hit_pause": [0.0, 0.3],
+	"camera_fov_speed_boost": [0.0, 40.0],
 	"ant_lean_per_accel": [0.0, 0.15],
+	"ant_input_lean": [0.0, 0.5],
 	"ant_max_lean": [0.0, 1.2],
-	"ant_lean_smoothing": [1.0, 30.0],
+	"ant_lean_stiffness": [5.0, 300.0],
+	"ant_lean_damping": [1.0, 30.0],
 	"ant_turn_speed": [1.0, 30.0],
 	"ant_land_squash": [0.0, 0.6],
 	"ant_land_bounce_time": [0.05, 1.0],
 	"crate_mass": [0.05, 5.0],
+	"light_box_mass": [0.02, 2.0],
+	"domino_mass": [0.05, 3.0],
 	"boulder_mass": [0.1, 20.0],
 	"seesaw_plank_mass": [0.1, 10.0],
 	"bounce_pad_height": [0.5, 15.0],

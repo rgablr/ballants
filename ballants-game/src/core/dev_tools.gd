@@ -84,11 +84,18 @@ func _run_autotest() -> void:
 		_finish()
 		return
 	_check("ball settled on ground", player.is_grounded(), "y=%.2f" % player.global_position.y)
+	var impacts := [0]
+	if player.has_signal("impacted"):
+		player.impacted.connect(func(_s, _d, _p): impacts[0] += 1)
 
 	# Roll backward (toward the camera) for 1.5 seconds: that side of the
 	# test arena is open ground, so nothing gets in the way.
 	Input.action_press("move_back")
-	await get_tree().create_timer(1.5).timeout
+	await get_tree().create_timer(0.35).timeout
+	if not _screenshot_path.is_empty():
+		await _save_screenshot(_screenshot_path.get_basename() + "_accel.png")
+	await get_tree().create_timer(1.15).timeout
+	_check("no false impacts while rolling on flat ground", impacts[0] == 0, "impacts=%d" % impacts[0])
 	var vel := player.linear_velocity
 	var speed := Vector2(vel.x, vel.z).length()
 	_check("ball rolls when pushed", speed > 3.0, "speed=%.2f m/s" % speed)
@@ -106,14 +113,28 @@ func _run_autotest() -> void:
 	Input.action_release("jump")
 	var apex := start_y
 	var t := 0.0
+	var landing_shot_taken := false
+	impacts[0] = 0
 	while t < 1.2:
 		await get_tree().physics_frame
 		t += get_physics_process_delta_time()
 		apex = max(apex, player.global_position.y)
+		if t > 0.3 and player.is_grounded() and not landing_shot_taken:
+			landing_shot_taken = true
+			if not _screenshot_path.is_empty():
+				await get_tree().create_timer(0.08).timeout
+				await _save_screenshot(_screenshot_path.get_basename() + "_landing.png")
 	var height := apex - start_y
 	_check("jump height matches tuning", abs(height - Tuning.jump_height) < 0.35,
 			"got %.2f m, wanted %.2f m" % [height, Tuning.jump_height])
-	_check("ball landed again", player.is_grounded())
+	var landed := player.is_grounded()
+	for i in 40:   # allow a small bounce to settle
+		if landed:
+			break
+		await get_tree().physics_frame
+		landed = player.is_grounded()
+	_check("ball landed again", landed)
+	_check("landing counts as an impact", impacts[0] >= 1, "impacts=%d" % impacts[0])
 
 	# Restart should put the ball back near the start.
 	Game.restart_level()

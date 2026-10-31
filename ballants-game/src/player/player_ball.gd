@@ -4,17 +4,25 @@ extends RigidBody3D
 ##
 ## Movement is physics-driven: holding a direction applies a steady push, so
 ## the ball keeps its momentum and takes time to turn or stop (the Super
-## Monkey Ball feel). All numbers come from config/physics_tuning.gd.
+## Monkey Ball feel). On top of the real physics sit a few small cheats
+## (turn assist, ground stick) that make steering feel immediate. All
+## numbers come from config/physics_tuning.gd.
 ##
 ## Responsibilities:
 ##   - read movement input and push the ball relative to the camera
 ##   - detect the ground and handle jumping (with coyote time + jump buffer)
+##   - notice impacts (landings, wall hits) and report them for feedback
+##   - squash the ball's visual on impact (visual only; collision is a
+##     perfect sphere at all times)
 ##   - respawn when it falls out of the world
 ##   - load the ball's visual model from the asset manifest
 ## The ant on top is purely visual and lives in ant_rider.gd.
 
 signal jumped
 signal landed
+## A sudden change of velocity: strength in m/s, direction the ball was
+## pushed (unit vector), and roughly where it happened.
+signal impacted(strength: float, direction: Vector3, position: Vector3)
 
 ## The camera rig that decides which way "forward" is. Set in the level scene.
 @export var camera_rig: Node3D
@@ -26,12 +34,21 @@ var _ground_normal := Vector3.UP
 var _time_since_grounded := 999.0
 var _time_since_jump_pressed := 999.0
 var _spawn_transform: Transform3D
+var _input_direction := Vector3.ZERO   # world-space push direction this step
+var _applied_force := Vector3.ZERO     # what we pushed with this step
+var _jumped_this_step := false
+var _previous_velocity := Vector3.ZERO
 
 # While the player holds "back", the control direction is frozen at the
 # camera angle they started with. That way the camera can swing around
 # behind the reversing ball without the controls flipping mid-swing.
 var _control_yaw_frozen := false
 var _frozen_yaw := 0.0
+
+# Visual squash: amount (0 = round) and the axis it flattens along.
+var _squash := 0.0
+var _squash_axis := Vector3.UP
+var _squash_tween: Tween
 
 @onready var _collision: CollisionShape3D = $CollisionShape3D
 @onready var _visual_root: Node3D = $Visual
@@ -53,14 +70,13 @@ func _ready() -> void:
 	# step, so at high speed it can't skip through a thin wall or floor.
 	continuous_cd = true
 
+	# The visual follows the body by hand (see _process) so it can be
+	# squashed in world space without touching the collision sphere.
+	_visual_root.top_level = true
 	_visual_root.add_child(Assets.instantiate_model("ball"))
 
 	if camera_rig and camera_rig.has_signal("manually_turned"):
 		camera_rig.manually_turned.connect(_on_camera_manually_turned)
-
-
-func _on_camera_manually_turned(yaw_delta: float) -> void:
-	_frozen_yaw += yaw_delta
 
 
 ## Copies the values the physics engine needs from the tuning file. Called
@@ -85,18 +101,49 @@ func is_coyote_active() -> bool:
 	return not _grounded and _time_since_grounded <= Tuning.coyote_time
 
 
+## The direction the player is currently pushing, in world space (zero
+## length when idle). The ant uses this to lean before the ball responds.
+func get_input_direction() -> Vector3:
+	return _input_direction
+
+
+func _on_camera_manually_turned(yaw_delta: float) -> void:
+	_frozen_yaw += yaw_delta
+
+
 func _physics_process(delta: float) -> void:
 	_time_since_grounded += delta
 	_time_since_jump_pressed += delta
 	if Input.is_action_just_pressed("jump"):
 		_time_since_jump_pressed = 0.0
 
+	_detect_impact(delta)
+	_applied_force = Vector3.ZERO
+	_jumped_this_step = false
+
 	_apply_movement()
 	_apply_rolling_resistance()
+	_apply_ground_stick()
 	_try_jump()
 
+	_previous_velocity = linear_velocity
 	if global_position.y < Tuning.fall_respawn_y:
 		respawn()
+
+
+func _process(_delta: float) -> void:
+	# Visual = body rotation, squashed along the impact axis in world space.
+	var squash_basis := Basis.IDENTITY
+	if _squash > 0.001:
+		var a := _squash_axis
+		var flatten := -_squash
+		var bulge := _squash * 0.5
+		# Scale by (1 - squash) along the axis, (1 + bulge) across it.
+		squash_basis = Basis(
+			Vector3(1.0 + bulge, 0, 0) + a * a.x * (flatten - bulge),
+			Vector3(0, 1.0 + bulge, 0) + a * a.y * (flatten - bulge),
+			Vector3(0, 0, 1.0 + bulge) + a * a.z * (flatten - bulge))
+	_visual_root.global_transform = Transform3D(squash_basis * global_basis, global_position)
 
 
 func _apply_movement() -> void:
@@ -106,8 +153,10 @@ func _apply_movement() -> void:
 		_frozen_yaw = _camera_yaw()
 	_control_yaw_frozen = holding_back
 	if input == Vector2.ZERO:
+		_input_direction = Vector3.ZERO
 		return
 	var direction := _camera_relative(input)
+	_input_direction = direction
 	if direction == Vector3.ZERO:
 		return
 
@@ -118,17 +167,23 @@ func _apply_movement() -> void:
 	var velocity_h := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
 	var speed_h := velocity_h.length()
 	if speed_h > 0.5:
-		var along := direction.dot(velocity_h / speed_h)
+		var heading := velocity_h / speed_h
+		var along := direction.dot(heading)
+		var across := direction - heading * along
 		if along < 0.0:
 			# Pushing against our motion: braking help.
 			strength *= Tuning.brake_multiplier
 		elif speed_h >= Tuning.max_speed:
 			# At top speed: drop the part of the push that would make us
 			# faster, keep the part that steers.
-			direction -= (velocity_h / speed_h) * along
+			direction = across
 			if direction.length_squared() < 0.0001:
 				return
-	apply_central_force(direction * strength)
+		# Turn assist: the sideways part of the push gets a boost so turns
+		# begin at once, while the forward momentum is untouched.
+		direction += across * Tuning.turn_assist
+	_applied_force = direction * strength
+	apply_central_force(_applied_force)
 
 
 ## A gentle drag on horizontal speed only, so the ball coasts to a stop
@@ -137,7 +192,21 @@ func _apply_rolling_resistance() -> void:
 	if not _grounded:
 		return
 	var velocity_h := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
-	apply_central_force(-velocity_h * Tuning.rolling_resistance * mass)
+	var force := -velocity_h * Tuning.rolling_resistance * mass
+	_applied_force += force
+	apply_central_force(force)
+
+
+## Pushes the ball onto the surface it's rolling on, harder the faster it
+## goes, so it follows ramp crests instead of launching off them.
+func _apply_ground_stick() -> void:
+	if not _grounded or Tuning.ground_stick <= 0.0:
+		return
+	var speed_h := Vector2(linear_velocity.x, linear_velocity.z).length()
+	var amount: float = clampf(speed_h / Tuning.max_speed, 0.0, 1.0)
+	var force := -_ground_normal * Tuning.gravity * Tuning.ground_stick * amount * mass
+	_applied_force += force
+	apply_central_force(force)
 
 
 func _camera_yaw() -> float:
@@ -167,11 +236,44 @@ func _try_jump() -> void:
 	_time_since_grounded = 999.0
 	_time_since_jump_pressed = 999.0
 	_grounded = false
+	_jumped_this_step = true
 	# Upward speed needed to reach jump_height, then set our vertical speed
-	# to exactly that so every jump is the same height.
+	# to exactly that so every jump is the same height. Cancel any ground
+	# stick applied this step so it can't shorten the jump.
 	var launch_speed := sqrt(2.0 * Tuning.gravity * Tuning.jump_height)
-	apply_central_impulse(Vector3.UP * (launch_speed - linear_velocity.y) * mass)
+	var stick_cancel := -_applied_force.y / mass * get_physics_process_delta_time()
+	apply_central_impulse(Vector3.UP * (launch_speed - linear_velocity.y + stick_cancel) * mass)
 	jumped.emit()
+	Sounds.jump()
+
+
+## Compares this step's velocity with the last one. After removing what
+## gravity and our own pushes account for, anything left is a collision.
+func _detect_impact(delta: float) -> void:
+	if _jumped_this_step:
+		return
+	var expected := _previous_velocity + Vector3.DOWN * Tuning.gravity * delta + _applied_force / mass * delta
+	var surprise := linear_velocity - expected
+	var strength := surprise.length()
+	if strength < Tuning.impact_small:
+		return
+	var direction := surprise / strength
+	var position := global_position - direction * radius
+	impacted.emit(strength, direction, position)
+	_play_squash(direction, strength)
+	Effects.impact(strength, direction, position)
+
+
+## Flattens the visual along the impact direction, then springs back.
+func _play_squash(direction: Vector3, strength: float) -> void:
+	var amount: float = Tuning.ball_squash * clampf(strength / Tuning.impact_big, 0.3, 1.0)
+	_squash_axis = direction
+	_squash = amount
+	if _squash_tween:
+		_squash_tween.kill()
+	_squash_tween = create_tween()
+	_squash_tween.tween_property(self, "_squash", 0.0, Tuning.ball_squash_time) \
+			.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 
 ## Runs inside the physics engine each step; the only reliable place to read
@@ -194,9 +296,11 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		_time_since_grounded = 0.0
 		if not was_grounded:
 			landed.emit()
+			Sounds.land(-_previous_velocity.y)
 
 
 func respawn() -> void:
 	global_transform = _spawn_transform
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
+	_previous_velocity = Vector3.ZERO

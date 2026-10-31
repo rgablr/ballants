@@ -25,3 +25,4 @@ func _on_body_entered(body: Node3D) -> void:
 	material.albedo_color = Color(0.35, 0.9, 0.4)
 	material.emission = Color(0.2, 0.8, 0.3)
 	Game.complete_level()
+	Sounds.goal()

@@ -6,6 +6,21 @@
 [ext_resource type="PackedScene" path="res://src/objects/goal.tscn" id="4_goal"]
 [ext_resource type="PackedScene" path="res://src/objects/fall_zone.tscn" id="5_fall"]
 [ext_resource type="PackedScene" path="res://src/objects/garden/dirt_tile.tscn" id="6_dirt"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/flower_stem.tscn" id="7_stem"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/leaf_patch.tscn" id="8_leaf"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/grass_wall.tscn" id="9_wall"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/grass_clump.tscn" id="10_grass"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/pebble.tscn" id="11_pebble"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/puddle.tscn" id="12_puddle"]
+[ext_resource type="PackedScene" path="res://src/objects/block.tscn" id="13_block"]
+
+[sub_resource type="StandardMaterial3D" id="mat_trail"]
+albedo_color = Color(0.66, 0.52, 0.34, 1)
+roughness = 1.0
+
+[sub_resource type="BoxMesh" id="mesh_trail"]
+material = SubResource("mat_trail")
+size = Vector3(1.2, 0.03, 1)
 
 [node name="Level2FlowerbedSlalom" type="Node3D"]
 script = ExtResource("1_level")
@@ -16,11 +31,597 @@ level_name = "Flowerbed Slalom"
 [node name="StartPoint" parent="." instance=ExtResource("3_start")]
 position = Vector3(0, 0, 3)
 
-[node name="Ground" parent="." instance=ExtResource("6_dirt")]
-position = Vector3(0, -0.5, 0)
+; Start pad: z +10 .. -6
+[node name="BedStart" parent="." instance=ExtResource("6_dirt")]
+position = Vector3(0, -0.5, 2)
+size = Vector3(15, 1, 16.2)
+
+; Section 1 'wide weave': z -6 .. -66, walls both sides
+[node name="BedSection1" parent="." instance=ExtResource("6_dirt")]
+position = Vector3(0, -0.5, -36)
+size = Vector3(15, 1, 60.2)
+
+; Section 2 'tighter': z -66 .. -120, wall on the left, water on the right
+[node name="BedSection2" parent="." instance=ExtResource("6_dirt")]
+position = Vector3(-0.5, -0.5, -93)
+size = Vector3(14, 1, 54.2)
+
+; Section 3 'slalom proper': z -120 .. -176, water both sides, shortcut gaps
+[node name="BedSection3" parent="." instance=ExtResource("6_dirt")]
+position = Vector3(0, -0.5, -148)
+size = Vector3(13, 1, 56.2)
+
+; Finish nook: z -176 .. -192
+[node name="BedFinish" parent="." instance=ExtResource("6_dirt")]
+position = Vector3(0, -0.5, -184)
+size = Vector3(15, 1, 16.2)
+
+; Dark soil under the bed (narrower than the bed so there is no ledge to land on)
+[node name="BedBase" parent="." instance=ExtResource("13_block")]
+position = Vector3(0, -2.25, -91)
+size = Vector3(11, 2.5, 206)
+color = Color(0.36, 0.25, 0.15, 1)
+
+; Lawn far below the bed; anything that lands here is below fall_respawn_y anyway
+[node name="Lawn" parent="." instance=ExtResource("13_block")]
+position = Vector3(0, -2.3, -91)
+size = Vector3(200, 1, 260)
+color = Color(0.3, 0.58, 0.22, 1)
+
+; Wet soil seen through the water
+[node name="FurrowSoilLeft" parent="." instance=ExtResource("13_block")]
+position = Vector3(-18.5, -2.2, -91)
+size = Vector3(24, 1, 210)
+color = Color(0.3, 0.22, 0.14, 1)
+
+; Water furrow: touching it fails the run
+[node name="PuddleLeft" parent="." instance=ExtResource("12_puddle")]
+position = Vector3(-18.5, -1.5, -91)
+size = Vector2(24, 210)
+
+; Wet soil seen through the water
+[node name="FurrowSoilRight" parent="." instance=ExtResource("13_block")]
+position = Vector3(18.5, -2.2, -91)
+size = Vector3(24, 1, 210)
+color = Color(0.3, 0.22, 0.14, 1)
+
+; Water furrow: touching it fails the run
+[node name="PuddleRight" parent="." instance=ExtResource("12_puddle")]
+position = Vector3(18.5, -1.5, -91)
+size = Vector2(24, 210)
+
+; Section 1 + start: turf walls both sides (forgiving)
+[node name="WallLeft1" parent="." instance=ExtResource("9_wall")]
+position = Vector3(-7, 0, -28)
+length = 76.0
+seed = 11
+
+[node name="WallRight1" parent="." instance=ExtResource("9_wall")]
+position = Vector3(7, 0, -28)
+length = 76.0
+seed = 23
+
+[node name="WallBack" parent="." instance=ExtResource("9_wall")]
+position = Vector3(0, 0, 9.5)
+rotation_degrees = Vector3(0, 90, 0)
+length = 15.0
+seed = 5
+
+; Section 2: wall on the left only
+[node name="WallLeft2" parent="." instance=ExtResource("9_wall")]
+position = Vector3(-7, 0, -93)
+length = 54.0
+seed = 31
+
+; Finish nook walls
+[node name="WallLeftFinish" parent="." instance=ExtResource("9_wall")]
+position = Vector3(-7, 0, -184)
+length = 16.0
+seed = 41
+
+[node name="WallRightFinish" parent="." instance=ExtResource("9_wall")]
+position = Vector3(7, 0, -184)
+length = 16.0
+seed = 43
+
+[node name="WallEnd" parent="." instance=ExtResource("9_wall")]
+position = Vector3(0, 0, -191.5)
+rotation_degrees = Vector3(0, 90, 0)
+length = 15.0
+seed = 47
+
+; Row 1 (z -16): opening on the right
+[node name="Row1a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-5.4, 0, -16)
+stem_radius = 1.1
+stem_height = 11.0
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Row1b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-2.6, 0, -16)
+stem_radius = 1.1
+stem_height = 9.5
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Row1c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(0.2, 0, -16)
+stem_radius = 1.1
+stem_height = 12.5
+petal_color = "petal_yellow"
+petal_count = 6
+
+; Row 2 (z -36): opening on the left
+[node name="Row2a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(5.4, 0, -36)
+stem_radius = 1.1
+stem_height = 10.0
+petal_color = "petal_pink"
+petal_count = 5
+
+[node name="Row2b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(2.6, 0, -36)
+stem_radius = 1.1
+stem_height = 12.0
+petal_color = "petal_pink"
+petal_count = 5
+
+[node name="Row2c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-0.2, 0, -36)
+stem_radius = 1.1
+stem_height = 9.0
+petal_color = "petal_pink"
+petal_count = 5
+
+; Row 3 (z -56): opening on the right
+[node name="Row3a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-5.4, 0, -56)
+stem_radius = 1.1
+stem_height = 12.0
+petal_color = "petal_purple"
+petal_count = 6
+
+[node name="Row3b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-2.6, 0, -56)
+stem_radius = 1.1
+stem_height = 10.5
+petal_color = "petal_purple"
+petal_count = 6
+
+[node name="Row3c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(0.2, 0, -56)
+stem_radius = 1.1
+stem_height = 9.5
+petal_color = "petal_purple"
+petal_count = 6
+
+; Row 4 (z -74): opening on the left
+[node name="Row4a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(5.4, 0, -74)
+stem_radius = 1.1
+stem_height = 9.5
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Row4b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(2.6, 0, -74)
+stem_radius = 1.1
+stem_height = 11.5
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Row4c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-0.2, 0, -74)
+stem_radius = 1.1
+stem_height = 10.0
+petal_color = "petal_yellow"
+petal_count = 6
+
+; Row 5 (z -87): opening on the right
+[node name="Row5a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-5.4, 0, -87)
+stem_radius = 1.1
+stem_height = 12.5
+petal_color = "petal_pink"
+petal_count = 5
+
+[node name="Row5b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-2.6, 0, -87)
+stem_radius = 1.1
+stem_height = 9.0
+petal_color = "petal_pink"
+petal_count = 5
+
+[node name="Row5c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(0.2, 0, -87)
+stem_radius = 1.1
+stem_height = 11.0
+petal_color = "petal_pink"
+petal_count = 5
+
+; Row 6 (z -100): opening on the left
+[node name="Row6a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(5.4, 0, -100)
+stem_radius = 1.1
+stem_height = 10.5
+petal_color = "petal_white"
+petal_count = 7
+
+[node name="Row6b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(2.6, 0, -100)
+stem_radius = 1.1
+stem_height = 12.0
+petal_color = "petal_white"
+petal_count = 7
+
+[node name="Row6c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-0.2, 0, -100)
+stem_radius = 1.1
+stem_height = 9.5
+petal_color = "petal_white"
+petal_count = 7
+
+; Row 7 (z -113): opening on the right
+[node name="Row7a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-5.4, 0, -113)
+stem_radius = 1.1
+stem_height = 9.0
+petal_color = "petal_purple"
+petal_count = 6
+
+[node name="Row7b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-2.6, 0, -113)
+stem_radius = 1.1
+stem_height = 11.0
+petal_color = "petal_purple"
+petal_count = 6
+
+[node name="Row7c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(0.2, 0, -113)
+stem_radius = 1.1
+stem_height = 12.5
+petal_color = "petal_purple"
+petal_count = 6
+
+; Row 8 (z -126): opening on the left
+[node name="Row8a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(5.4, 0, -126)
+stem_radius = 1.1
+stem_height = 11.5
+petal_color = "petal_pink"
+petal_count = 5
+
+[node name="Row8b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(2.6, 0, -126)
+stem_radius = 1.1
+stem_height = 9.5
+petal_color = "petal_pink"
+petal_count = 5
+
+[node name="Row8c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-0.2, 0, -126)
+stem_radius = 1.1
+stem_height = 10.5
+petal_color = "petal_pink"
+petal_count = 5
+
+; Row 9 (z -137): opening on the right, SHORTCUT gap 1.8 m at x = -0.8
+[node name="Row9a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-5.4, 0, -137)
+stem_radius = 1.1
+stem_height = 10.0
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Row9b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-2.8, 0, -137)
+stem_radius = 1.1
+stem_height = 12.0
+petal_color = "petal_white"
+petal_count = 7
+
+[node name="Row9c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(1.2, 0, -137)
+stem_radius = 1.1
+stem_height = 12.0
+petal_color = "petal_white"
+petal_count = 7
+
+; Row 10 (z -148): opening on the left
+[node name="Row10a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(5.4, 0, -148)
+stem_radius = 1.1
+stem_height = 12.5
+petal_color = "petal_purple"
+petal_count = 6
+
+[node name="Row10b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(2.6, 0, -148)
+stem_radius = 1.1
+stem_height = 10.0
+petal_color = "petal_purple"
+petal_count = 6
+
+[node name="Row10c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-0.2, 0, -148)
+stem_radius = 1.1
+stem_height = 9.0
+petal_color = "petal_purple"
+petal_count = 6
+
+; Row 11 (z -159): opening on the right, SHORTCUT gap 1.8 m at x = -0.8
+[node name="Row11a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-5.4, 0, -159)
+stem_radius = 1.1
+stem_height = 11.0
+petal_color = "petal_pink"
+petal_count = 5
+
+[node name="Row11b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-2.8, 0, -159)
+stem_radius = 1.1
+stem_height = 12.5
+petal_color = "petal_white"
+petal_count = 7
+
+[node name="Row11c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(1.2, 0, -159)
+stem_radius = 1.1
+stem_height = 12.5
+petal_color = "petal_white"
+petal_count = 7
+
+; Row 12 (z -170): opening on the left
+[node name="Row12a" parent="." instance=ExtResource("7_stem")]
+position = Vector3(5.4, 0, -170)
+stem_radius = 1.1
+stem_height = 9.5
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Row12b" parent="." instance=ExtResource("7_stem")]
+position = Vector3(2.6, 0, -170)
+stem_radius = 1.1
+stem_height = 11.5
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Row12c" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-0.2, 0, -170)
+stem_radius = 1.1
+stem_height = 10.5
+petal_color = "petal_yellow"
+petal_count = 6
+
+; Section 1: on the straight between rows 1 and 2, lots of room
+[node name="Leaf1" parent="." instance=ExtResource("8_leaf")]
+position = Vector3(0, 0, -26)
+rotation_degrees = Vector3(0, 30, 0)
+leaf_length = 5.0
+leaf_width = 3.0
+
+; Section 2: on the diagonal of the swing to the left -> turn before it
+[node name="Leaf2" parent="." instance=ExtResource("8_leaf")]
+position = Vector3(-1.5, 0, -94)
+rotation_degrees = Vector3(0, -25, 0)
+leaf_length = 5.0
+leaf_width = 3.0
+
+; Section 3: on the swing back left after the first shortcut row
+[node name="Leaf3" parent="." instance=ExtResource("8_leaf")]
+position = Vector3(2, 0, -142)
+rotation_degrees = Vector3(0, 20, 0)
+leaf_length = 5.0
+leaf_width = 3.0
+
+; Section 3: on the shortcut line before the second gap (precision)
+[node name="Leaf4" parent="." instance=ExtResource("8_leaf")]
+position = Vector3(-1.2, 0, -153)
+rotation_degrees = Vector3(0, -10, 0)
+leaf_length = 5.0
+leaf_width = 3.0
+
+; Section 3: the final swing
+[node name="Leaf5" parent="." instance=ExtResource("8_leaf")]
+position = Vector3(3, 0, -165)
+rotation_degrees = Vector3(0, 25, 0)
+leaf_length = 5.0
+leaf_width = 3.0
+
+; Shortcut trail segment 1
+[node name="ShortcutTrail1" type="MeshInstance3D" parent="."]
+position = Vector3(-0.8, 0.015, -136)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 10)
+mesh = SubResource("mesh_trail")
+
+[node name="ShortcutTrail2" type="MeshInstance3D" parent="."]
+position = Vector3(-1.55, 0.015, -144.5)
+rotation_degrees = Vector3(0, 12.095, 0)
+scale = Vector3(1, 1, 7.159)
+mesh = SubResource("mesh_trail")
+
+[node name="ShortcutTrail3" type="MeshInstance3D" parent="."]
+position = Vector3(-1.55, 0.015, -151.5)
+rotation_degrees = Vector3(0, -12.095, 0)
+scale = Vector3(1, 1, 7.159)
+mesh = SubResource("mesh_trail")
+
+[node name="ShortcutTrail4" type="MeshInstance3D" parent="."]
+position = Vector3(-0.8, 0.015, -159)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 8)
+mesh = SubResource("mesh_trail")
+
+[node name="ShortcutTrail5" type="MeshInstance3D" parent="."]
+position = Vector3(-1.55, 0.015, -166.5)
+rotation_degrees = Vector3(0, 12.095, 0)
+scale = Vector3(1, 1, 7.159)
+mesh = SubResource("mesh_trail")
+
+; Bank decoration (landmarks beyond the water)
+[node name="BankStem1" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-24, -1.8, -10)
+stem_radius = 1.0
+stem_height = 13.0
+petal_color = "petal_pink"
+
+[node name="BankStem2" parent="." instance=ExtResource("7_stem")]
+position = Vector3(25, -1.8, -46)
+stem_radius = 0.9
+stem_height = 12.0
+petal_color = "petal_white"
+
+[node name="BankStem3" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-26, -1.8, -82)
+stem_radius = 1.1
+stem_height = 13.5
+petal_color = "petal_purple"
+
+[node name="BankStem4" parent="." instance=ExtResource("7_stem")]
+position = Vector3(24, -1.8, -118)
+stem_radius = 1.0
+stem_height = 12.5
+petal_color = "petal_yellow"
+
+[node name="BankStem5" parent="." instance=ExtResource("7_stem")]
+position = Vector3(-25, -1.8, -150)
+stem_radius = 1.0
+stem_height = 13.0
+petal_color = "petal_pink"
+
+[node name="BankStem6" parent="." instance=ExtResource("7_stem")]
+position = Vector3(26, -1.8, -184)
+stem_radius = 0.9
+stem_height = 12.0
+petal_color = "petal_purple"
+
+[node name="BankGrass1" parent="." instance=ExtResource("10_grass")]
+position = Vector3(-33, -1.8, 0)
+blade_count = 18
+radius = 3.5
+height_min = 3.0
+height_max = 5.0
+seed = 101
+
+[node name="BankGrass2" parent="." instance=ExtResource("10_grass")]
+position = Vector3(33, -1.8, -7)
+blade_count = 18
+radius = 3.5
+height_min = 3.0
+height_max = 5.0
+seed = 102
+
+[node name="BankGrass3" parent="." instance=ExtResource("10_grass")]
+position = Vector3(-33, -1.8, -40)
+blade_count = 18
+radius = 3.5
+height_min = 3.0
+height_max = 5.0
+seed = 103
+
+[node name="BankGrass4" parent="." instance=ExtResource("10_grass")]
+position = Vector3(33, -1.8, -47)
+blade_count = 18
+radius = 3.5
+height_min = 3.0
+height_max = 5.0
+seed = 104
+
+[node name="BankGrass5" parent="." instance=ExtResource("10_grass")]
+position = Vector3(-33, -1.8, -80)
+blade_count = 18
+radius = 3.5
+height_min = 3.0
+height_max = 5.0
+seed = 105
+
+[node name="BankGrass6" parent="." instance=ExtResource("10_grass")]
+position = Vector3(33, -1.8, -87)
+blade_count = 18
+radius = 3.5
+height_min = 3.0
+height_max = 5.0
+seed = 106
+
+[node name="BankGrass7" parent="." instance=ExtResource("10_grass")]
+position = Vector3(-33, -1.8, -120)
+blade_count = 18
+radius = 3.5
+height_min = 3.0
+height_max = 5.0
+seed = 107
+
+[node name="BankGrass8" parent="." instance=ExtResource("10_grass")]
+position = Vector3(33, -1.8, -127)
+blade_count = 18
+radius = 3.5
+height_min = 3.0
+height_max = 5.0
+seed = 108
+
+[node name="BankGrass9" parent="." instance=ExtResource("10_grass")]
+position = Vector3(-33, -1.8, -160)
+blade_count = 18
+radius = 3.5
+height_min = 3.0
+height_max = 5.0
+seed = 109
+
+[node name="BankGrass10" parent="." instance=ExtResource("10_grass")]
+position = Vector3(33, -1.8, -167)
+blade_count = 18
+radius = 3.5
+height_min = 3.0
+height_max = 5.0
+seed = 110
+
+[node name="Pebble1" parent="." instance=ExtResource("11_pebble")]
+position = Vector3(-35, -1.8, -30)
+size = Vector3(3, 2, 2.4)
+dark = true
+
+[node name="Pebble2" parent="." instance=ExtResource("11_pebble")]
+position = Vector3(36, -1.8, -70)
+size = Vector3(2.5, 1.6, 2)
+dark = false
+
+[node name="Pebble3" parent="." instance=ExtResource("11_pebble")]
+position = Vector3(-34, -1.8, -110)
+size = Vector3(2, 1.3, 1.6)
+dark = false
+
+[node name="Pebble4" parent="." instance=ExtResource("11_pebble")]
+position = Vector3(35, -1.8, -160)
+size = Vector3(3, 2, 2.6)
+dark = true
+
+[node name="Pebble5" parent="." instance=ExtResource("11_pebble")]
+position = Vector3(5, 0, -189)
+size = Vector3(1.8, 1.2, 1.5)
+dark = false
+
+[node name="Pebble6" parent="." instance=ExtResource("11_pebble")]
+position = Vector3(-5, 0, -189)
+size = Vector3(1.6, 1, 1.4)
+dark = true
+
+[node name="FinishGrassL" parent="." instance=ExtResource("10_grass")]
+position = Vector3(-5.5, 0, -179)
+blade_count = 8
+radius = 0.8
+seed = 77
+
+[node name="FinishGrassR" parent="." instance=ExtResource("10_grass")]
+position = Vector3(5.5, 0, -179)
+blade_count = 8
+radius = 0.8
+seed = 78
 
 [node name="Goal" parent="." instance=ExtResource("4_goal")]
-position = Vector3(0, 0, -4)
+position = Vector3(0, 0, -186)
 
 [node name="FallZone" parent="." instance=ExtResource("5_fall")]
-position = Vector3(0, -8, 0)
+position = Vector3(0, -8, -91)
+size = Vector3(400, 6, 400)

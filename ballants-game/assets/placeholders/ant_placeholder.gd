@@ -5,36 +5,66 @@ extends Node3D
 ## out like arms for balance.
 ##
 ## The back feet are placed ON the ball's surface every frame (a small
-## two-bone "IK" solve per leg), so they never float or sink, and walking
-## slides them back and forth along the surface.
+## two-bone "IK" solve per leg), so they never float or sink. Walking is a
+## gait: a foot stays planted for most of the cycle, then lifts and swings
+## forward, while the arms swing opposite, the body dips and sways, and the
+## antennae bob. Idle breathing, a crouched balancing pose at high speed
+## and tucked legs in the air. All the numbers are constants below.
 ##
 ## Any model that replaces this (via the "ant" entry in asset_manifest.gd)
 ## only needs to match:
 ##   1. Feet at the origin (y = 0), facing -Z (Godot's "forward").
-##   2. Optionally set_walk_speed(speed) and set_ball_radius(radius) methods
-##      to animate. Both are optional; without them the model just stands.
+##   2. Optionally set_walk_speed(speed), set_airborne(bool) and
+##      set_ball_radius(radius) methods to animate. All are optional;
+##      without them the model just stands.
 
 const BODY_COLOR := Color(0.45, 0.19, 0.10)
 const DARK_COLOR := Color(0.22, 0.09, 0.05)
 const EYE_COLOR := Color(0.03, 0.03, 0.03)
 
-const STEP_RATE := 1.6          # leg cycles per meter travelled
-const FULL_SWING_SPEED := 4.0   # ball speed (m/s) at which the walk is at full size
-const STRIDE := 0.06            # how far each foot slides forward/back (meters)
-const BOB := 0.012              # body bounce per step (meters)
-const LEAN := 0.18              # body tilt forward at full speed (radians)
+# --- Walk cycle -------------------------------------------------------
+# A real gait instead of a sped-up shuffle: each back foot is PLANTED for
+# most of the cycle (sliding back with the ball's surface), then LIFTS and
+# swings forward. The cadence rises with speed but is capped, so at top
+# speed the ant takes longer, bouncier strides rather than a blur of legs.
+const IDLE_SPEED := 0.25        # below this ball speed (m/s) the ant stands
+const CADENCE_SLOW := 1.3       # leg cycles per second at a walk
+const CADENCE_FAST := 2.6       # leg cycles per second at a run (the cap)
+const RUN_SPEED := 8.0          # ball speed (m/s) at which the run is reached
+const STANCE := 0.62            # fraction of a cycle a foot is planted
+const STRIDE_SLOW := 0.03       # how far a foot travels front-to-back, half (m)
+const STRIDE_FAST := 0.075
+const LIFT := 0.045             # how high a stepping foot lifts (m)
+const BOB := 0.016              # body dips at each footfall (m)
+const SWAY := 0.09              # body rolls toward the planted foot (radians)
+const ARM_SWING := 0.7          # arms swing opposite the legs (radians)
+const LEAN := 0.22              # forward lean at a run (radians)
+# --- Balancing at high speed --------------------------------------------
+# Above BALANCE_SPEED the ant shortens its steps, crouches and spreads its
+# arms like someone riding a log down a river.
+const BALANCE_SPEED := 9.5
+const BALANCE_FULL := 12.5
+const CROUCH := 0.035
+# --- In the air -----------------------------------------------------------
+const TUCK := 0.05              # feet pull up this far while airborne
 
 const HIP_OFFSET := Vector3(0.045, 0.21, 0.03)   # back-leg hip, right side (x mirrored for left)
-const FOOT_REST := Vector3(0.13, 0.0, 0.02)      # where a back foot rests, right side
-const FEMUR := 0.12             # upper leg length
-const TIBIA := 0.15             # lower leg length
+const FOOT_REST := Vector3(0.12, 0.0, 0.02)      # where a back foot rests, right side
+const FEMUR := 0.15             # upper leg length
+const TIBIA := 0.17             # lower leg length
 
 var _ball_radius := 0.5
 var _walk_phase := 0.0
 var _walk_speed := 0.0
+var _speed := 0.0               # smoothed speed, so the gait never jerks
+var _air := 0.0                 # 0 = on the ball, 1 = airborne pose
+var _airborne := false
+var _time := 0.0
 
 var _body: Node3D
 var _legs: Array[Dictionary] = []   # each: {side, femur, tibia}
+var _arms: Array[Dictionary] = []   # each: {pivot, side, front}
+var _antennae: Array[Node3D] = []
 
 
 func _ready() -> void:
@@ -45,29 +75,77 @@ func set_walk_speed(speed: float) -> void:
 	_walk_speed = speed
 
 
+## Optional: true while the ball is in the air (the ant tucks its legs).
+func set_airborne(airborne: bool) -> void:
+	_airborne = airborne
+
+
 ## Radius of the ball the ant stands on, in this model's units.
 func set_ball_radius(ball_radius: float) -> void:
 	_ball_radius = max(ball_radius, 0.05)
 
 
 func _process(delta: float) -> void:
-	var amount: float = clamp(_walk_speed / FULL_SWING_SPEED, 0.0, 1.0)
+	_time += delta
+	_speed = lerpf(_speed, _walk_speed, 1.0 - exp(-delta * 6.0))
+	_air = move_toward(_air, 1.0 if _airborne else 0.0, delta * 6.0)
+	var walking := clampf((_speed - IDLE_SPEED) / 1.0, 0.0, 1.0)
+	var run := clampf(_speed / RUN_SPEED, 0.0, 1.0)
+	var balance := smoothstep(BALANCE_SPEED, BALANCE_FULL, _speed)
+	var amount := walking * (1.0 - _air)
+	var cadence := lerpf(CADENCE_SLOW, CADENCE_FAST, run) * (1.0 - balance * 0.35)
 	if not Engine.is_editor_hint():
-		_walk_phase += delta * _walk_speed * STEP_RATE * TAU
-	_body.position.y = abs(sin(_walk_phase)) * BOB * amount
-	_body.rotation.x = -LEAN * amount
+		_walk_phase = fposmod(_walk_phase + delta * cadence * walking, 1.0)
+	var stride := lerpf(STRIDE_SLOW, STRIDE_FAST, run) * (1.0 - balance * 0.5) * amount
+
+	# Body: dips at each footfall, rolls toward the planted foot, leans
+	# forward with speed, crouches when balancing, breathes when idle.
+	var dip := 0.5 + 0.5 * cos(TAU * 2.0 * (_walk_phase - STANCE * 0.5))
+	var breathe := sin(_time * 2.2) * 0.006 * (1.0 - walking)
+	_body.position.y = -dip * BOB * amount - CROUCH * balance + breathe + _air * 0.02
+	_body.rotation.x = -LEAN * run * walking - 0.1 * balance - 0.15 * _air
+	_body.rotation.z = sin(TAU * (_walk_phase - STANCE * 0.5)) * SWAY * amount * (1.0 - balance)
+	_body.rotation.y = sin(TAU * _walk_phase) * 0.05 * amount
+
+	# Back legs: planted, then lifted and swung forward.
 	for i in _legs.size():
 		var leg: Dictionary = _legs[i]
 		var side: float = leg.side
-		var foot := Vector3(FOOT_REST.x * side, 0.0, FOOT_REST.z)
-		# Opposite legs step in opposite phase.
-		foot.z += sin(_walk_phase + PI * i) * STRIDE * amount
-		foot.y = _height_on_ball(foot.x, foot.z)
+		var p := fposmod(_walk_phase + 0.5 * i, 1.0)
+		var z := 0.0
+		var lift := 0.0
+		if p < STANCE:
+			z = lerpf(-stride, stride, p / STANCE)             # planted, sliding back
+		else:
+			var u := (p - STANCE) / (1.0 - STANCE)
+			z = lerpf(stride, -stride, smoothstep(0.0, 1.0, u))  # swinging forward
+			lift = sin(u * PI) * LIFT * amount
+		var spread := 0.025 * balance
+		var foot := Vector3((FOOT_REST.x + spread) * side, 0.0, FOOT_REST.z + z)
+		foot.y = _height_on_ball(foot.x, foot.z) + lift + TUCK * _air
 		var hip: Vector3 = _body.to_global(Vector3(HIP_OFFSET.x * side, HIP_OFFSET.y, HIP_OFFSET.z))
 		hip = to_local(hip)
 		var knee := _solve_knee(hip, foot, side)
 		_set_rod(leg.femur, hip, knee)
 		_set_rod(leg.tibia, knee, foot)
+
+	# Arms: swing opposite the same-side leg; spread out to balance at
+	# speed; thrown up in the air.
+	for arm in _arms:
+		var side: float = arm.side
+		var leg_phase := _walk_phase + (0.0 if side > 0.0 else 0.5)
+		var swing := -sin(TAU * leg_phase) * ARM_SWING * amount * (1.0 - balance * 0.6)
+		var pivot: Node3D = arm.pivot
+		var front: bool = arm.front
+		pivot.rotation.x = swing * (0.6 if front else 1.0) + 0.6 * _air
+		pivot.rotation.z = side * (0.9 * balance + 0.5 * _air + (0.08 * sin(_time * 1.7) if not front else 0.0))
+
+	# Antennae: bob with each step, twitch now and then when idle.
+	var twitch := maxf(sin(_time * 0.9) - 0.92, 0.0) * 6.0 * (1.0 - walking)
+	for i in _antennae.size():
+		var a := _antennae[i]
+		a.rotation.x = sin(TAU * 2.0 * _walk_phase - 0.8) * 0.18 * amount + sin(_time * 1.3 + i) * 0.06 + twitch * 0.4 - 0.4 * _air
+		a.rotation.z = (1.0 if i == 0 else -1.0) * (0.05 + 0.1 * run * walking)
 
 
 ## Height of the ball's surface at a horizontal offset from the top.
@@ -91,7 +169,7 @@ func _solve_knee(hip: Vector3, foot: Vector3, side: float) -> Vector3:
 	# Distance along hip->foot where the knee sits, and how far off that line.
 	var along := (FEMUR * FEMUR - TIBIA * TIBIA + distance * distance) / (2.0 * distance)
 	var off := sqrt(max(FEMUR * FEMUR - along * along, 0.0))
-	var pole := Vector3(side, 0.6, 0.2).normalized()
+	var pole := Vector3(side * 0.55, 0.35, -0.75).normalized()   # knees forward and a little out
 	var perpendicular := (pole - direction * pole.dot(direction))
 	if perpendicular.length_squared() < 0.0001:
 		perpendicular = Vector3.UP
@@ -116,17 +194,31 @@ func _build() -> void:
 	# Eyes.
 	_sphere(_body, Vector3(0.035, 0.44, -0.105), 0.016, Vector3.ONE, eye)
 	_sphere(_body, Vector3(-0.035, 0.44, -0.105), 0.016, Vector3.ONE, eye)
-	# Antennae.
-	_rod(_body, Vector3(0.02, 0.47, -0.07), Vector3(0.06, 0.58, -0.14), 0.008, dark)
-	_rod(_body, Vector3(-0.02, 0.47, -0.07), Vector3(-0.06, 0.58, -0.14), 0.008, dark)
+	# Antennae, on pivots at the head so they can bob.
+	for side in [1.0, -1.0]:
+		var antenna := Node3D.new()
+		antenna.position = Vector3(side * 0.02, 0.47, -0.07)
+		_body.add_child(antenna)
+		_rod(antenna, Vector3.ZERO, Vector3(side * 0.04, 0.11, -0.07), 0.008, dark)
+		_antennae.append(antenna)
 
 	for side in [1.0, -1.0]:
-		# Middle legs: hang down at the sides like relaxed arms.
-		_rod(_body, Vector3(side * 0.05, 0.3, -0.01), Vector3(side * 0.14, 0.26, -0.03), 0.011, dark)
-		_rod(_body, Vector3(side * 0.14, 0.26, -0.03), Vector3(side * 0.12, 0.1, -0.05), 0.009, dark)
-		# Front legs: held out forward for balance.
-		_rod(_body, Vector3(side * 0.045, 0.34, -0.04), Vector3(side * 0.12, 0.38, -0.1), 0.011, dark)
-		_rod(_body, Vector3(side * 0.12, 0.38, -0.1), Vector3(side * 0.08, 0.33, -0.19), 0.009, dark)
+		# Middle legs: relaxed arms hanging at the sides, on a shoulder pivot.
+		var mid := Node3D.new()
+		mid.position = Vector3(side * 0.05, 0.3, -0.01)
+		_body.add_child(mid)
+		_rod(mid, Vector3.ZERO, Vector3(side * 0.09, -0.04, -0.02), 0.011, dark)
+		_rod(mid, Vector3(side * 0.09, -0.04, -0.02), Vector3(side * 0.07, -0.2, -0.04), 0.009, dark)
+		_arms.append({"pivot": mid, "side": side, "front": false})
+		# Front legs: held out forward for balance, on a shoulder pivot.
+		var fore := Node3D.new()
+		fore.position = Vector3(side * 0.045, 0.34, -0.04)
+		_body.add_child(fore)
+		_rod(fore, Vector3.ZERO, Vector3(side * 0.075, 0.04, -0.06), 0.011, dark)
+		_rod(fore, Vector3(side * 0.075, 0.04, -0.06), Vector3(side * 0.035, -0.01, -0.15), 0.009, dark)
+		_arms.append({"pivot": fore, "side": side, "front": true})
+
+	for side in [1.0, -1.0]:
 		# Back legs: built once, positioned every frame in _process.
 		var femur := _rod(self, Vector3.ZERO, Vector3.UP * FEMUR, 0.013, dark)
 		var tibia := _rod(self, Vector3.ZERO, Vector3.UP * TIBIA, 0.011, dark)

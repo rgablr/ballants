@@ -97,6 +97,8 @@ func _process(delta: float) -> void:
 
 	if _visual.has_method("set_walk_speed"):
 		_visual.set_walk_speed(speed)
+	if _visual.has_method("set_airborne") and ball.has_method("is_grounded"):
+		_visual.set_airborne(not ball.is_grounded() and not ball.is_coyote_active())
 
 
 ## Squash on landing, then spring back.

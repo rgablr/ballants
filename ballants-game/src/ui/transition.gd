@@ -125,6 +125,28 @@ func show_complete(info: Dictionary, time: float) -> void:
 	_box.visible = true
 
 
+## After the last level of a world: the world's name and this session's
+## time for each of its levels. rows = [[level name, seconds or -1], ...]
+func show_world_complete(world: String, rows: Array) -> void:
+	_title.text = "%s complete!" % world
+	_level.text = "You rolled through the whole world"
+	var lines := PackedStringArray()
+	var total := 0.0
+	var all_timed := true
+	for row in rows:
+		var seconds: float = row[1]
+		if seconds >= 0.0:
+			lines.append("%s   %s" % [row[0], Levels.format_time(seconds)])
+			total += seconds
+		else:
+			lines.append("%s   –" % row[0])
+			all_timed = false
+	_time.text = "Total %s" % Levels.format_time(total) if all_timed else ""
+	_par.text = "\n".join(lines)
+	_box.visible = true
+	_prompt.visible = false
+
+
 func hide_complete() -> void:
 	_box.visible = false
 	_prompt.visible = false

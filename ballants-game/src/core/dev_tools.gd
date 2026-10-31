@@ -139,8 +139,16 @@ func _run_drive(path: String) -> void:
 		# Wait for the "press any button" prompt, press it like a player would.
 		await get_tree().create_timer(Levels.DROP_DELAY + Levels.FADE_TIME + Levels.CONTINUE_DELAY + 0.5).timeout
 		Transition.press_continue()
+		if before == LevelList.LEVELS.size() - 1:
+			# The world-complete card comes next; press through it too.
+			await get_tree().create_timer(Levels.CONTINUE_DELAY + 0.5).timeout
+			if not _screenshot_path.is_empty():
+				await _save_screenshot(_screenshot_path.get_basename() + "_world.png")
+			Transition.press_continue()
 		await get_tree().create_timer(1.0).timeout
-		print("[drive] after completing level %d the game loaded level %d" % [before + 1, Levels.current_index + 1])
+		var now := "the title area" if get_tree().current_scene.scene_file_path == LevelList.TITLE \
+				else "level %d" % [Levels.current_index + 1]
+		print("[drive] after completing level %d the game loaded %s" % [before + 1, now])
 	get_tree().quit(0 if passed else 1)
 
 

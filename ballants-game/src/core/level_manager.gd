@@ -34,6 +34,9 @@ const CONTINUE_DELAY := 0.6
 const FAIL_DELAY := 0.8
 
 var current_index := -1
+## This session's latest time for each level (index -> seconds), for the
+## world-complete screen.
+var session_times := {}
 var run_time := 0.0
 var timer_running := false
 
@@ -158,6 +161,8 @@ func _on_level_completed() -> void:
 	timer_running = false
 	_run_done = true
 	run_finished.emit(run_time)
+	if is_in_level():
+		session_times[current_index] = run_time
 	var my_run := _run_id
 	await get_tree().create_timer(DROP_DELAY).timeout
 	if my_run != _run_id:
@@ -172,10 +177,29 @@ func _on_level_completed() -> void:
 	await Transition.wait_for_continue()
 	if my_run != _run_id:
 		return
-	if is_in_level():
+	if is_in_level() and current_index == LevelList.LEVELS.size() - 1:
+		# Last level of the world: a "world complete" card, then the title.
+		Transition.show_world_complete(current_info().world, _world_times())
+		await get_tree().create_timer(CONTINUE_DELAY).timeout
+		if my_run != _run_id:
+			return
+		await Transition.wait_for_continue()
+		if my_run == _run_id:
+			load_title()
+	elif is_in_level():
 		load_next()
 	else:
 		restart()
+
+
+## [name, seconds or -1] for every level in the current world, in order.
+func _world_times() -> Array:
+	var world: String = current_info().world
+	var rows := []
+	for i in LevelList.LEVELS.size():
+		if LevelList.LEVELS[i].world == world:
+			rows.append([LevelList.LEVELS[i].name, session_times.get(i, -1.0)])
+	return rows
 
 
 ## Called by an entrance hill (the title area's giant hill): watch the

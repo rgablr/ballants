@@ -4,8 +4,10 @@ extends Node3D
 ## THICK GRASS -- a patch of tall, thick grass blades, rooted in the ground,
 ## that you can push through like brush.
 ##
-## Roll into it slowly and the blades bend away from the ball, push back on
-## it and slow it down; they spring upright again once you're past. Hit a
+## Roll into it slowly and the blades bend away from the ball and hold it
+## back: a stiff, even resistance straight against the way you're rolling
+## (never a shove sideways), so you plough through slowly. They spring
+## upright again once you're past. Hit a
 ## blade hard (faster than break_speed) and it SNAPS: the broken blade
 ## tumbles away as a loose piece, a puff of dust goes up, and the ball
 ## loses a little speed. Snapped blades grow back after regrow_time.
@@ -37,7 +39,7 @@ extends Node3D
 ## Ball speed (m/s) at which a blade snaps instead of bending.
 @export var break_speed := 6.0
 ## How strongly pushing through the brush slows the ball (per second).
-@export var drag := 2.4
+@export var drag := 6.0
 ## Seconds before a snapped blade grows back.
 @export var regrow_time := 12.0
 
@@ -48,7 +50,7 @@ const CONTACT := BALL_RADIUS + 0.18   # ball center to blade centerline
 const STIFFNESS := 55.0               # how hard a bent blade springs back
 const DAMPING := 6.5
 const PUSH := 110.0                   # how hard the ball shoves a blade over
-const SHOVE_BACK := 26.0              # how hard a blade shoves the ball back (m/s² at full overlap)
+const RESIST := 9.0                   # extra braking against your motion (m/s² per touching blade, at full overlap)
 const MAX_BEND := 1.25                # radians; a blade can't fold flatter than this
 
 var _built := false
@@ -148,10 +150,13 @@ func _touch_ball(blade: Dictionary, delta: float) -> Vector2:
 		_snap(blade, v)
 		return Vector2.ZERO
 	blade.touching = true
-	# The brush slows the ball and nudges it away from the blade.
+	# The brush holds the ball back: drag plus a braking push, both straight
+	# against its motion, so it slows down without being knocked aside.
 	var slow := 1.0 - clampf(drag * overlap * delta, 0.0, 0.5)
 	_player.linear_velocity = Vector3(v.x * slow, v.y, v.z * slow)
-	_player.apply_central_force(Vector3(-away.x, 0.0, -away.y) * SHOVE_BACK * overlap * _player.mass)
+	if speed > 0.05:
+		var against := -Vector3(v.x, 0.0, v.z) / speed
+		_player.apply_central_force(against * minf(RESIST * overlap, speed / delta * 0.5) * _player.mass)
 	return away * PUSH * overlap
 
 

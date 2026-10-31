@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/objects/garden/curved_grass_wall.gd" id="1_curved_grass_wall"]
+
+[node name="CurvedGrassWall" type="Node3D"]
+script = ExtResource("1_curved_grass_wall")

@@ -6,6 +6,15 @@
 [ext_resource type="PackedScene" path="res://src/objects/goal.tscn" id="4_goal"]
 [ext_resource type="PackedScene" path="res://src/objects/fall_zone.tscn" id="5_fall"]
 [ext_resource type="PackedScene" path="res://src/objects/garden/sidewalk_slab.tscn" id="6_slab"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/dirt_tile.tscn" id="7_dirt"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/grass_wall.tscn" id="8_wall"]
+[ext_resource type="Script" path="res://src/objects/curved_track.gd" id="9_curve"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/crack_line.tscn" id="10_crack"]
+[ext_resource type="Script" path="res://src/objects/garden/curved_grass_wall.gd" id="11_cwall"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/pebble.tscn" id="12_pebble"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/flower_stem.tscn" id="13_stem"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/grass_clump.tscn" id="14_clump"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/lawn.tscn" id="15_lawn"]
 
 [node name="Level1SidewalkCrack" type="Node3D"]
 script = ExtResource("1_level")
@@ -14,13 +23,595 @@ level_name = "Sidewalk Crack"
 [node name="GardenTheme" parent="." instance=ExtResource("2_theme")]
 
 [node name="StartPoint" parent="." instance=ExtResource("3_start")]
-position = Vector3(0, 0, 3)
+position = Vector3(0, 3, 3)
 
-[node name="Ground" parent="." instance=ExtResource("6_slab")]
-position = Vector3(0, -0.5, 0)
+[node name="Lawn" parent="." instance=ExtResource("15_lawn")]
+position = Vector3(-4.854, -4, -88.851)
+size = Vector2(320, 320)
+clump_count = 160
+
+
+[node name="Slab1" parent="." instance=ExtResource("6_slab")]
+position = Vector3(0, 2.5, -19.25)
+rotation_degrees = Vector3(0, 0, 0)
+size = Vector3(12, 1, 57.5)
+
+[node name="Bed1" parent="." instance=ExtResource("7_dirt")]
+position = Vector3(0, -1, -19.25)
+rotation_degrees = Vector3(0, 0, 0)
+size = Vector3(10, 6, 57.5)
+
+[node name="Wall1" parent="." instance=ExtResource("8_wall")]
+position = Vector3(-6.5, 3, -19.25)
+rotation_degrees = Vector3(0, 0, 0)
+length = 57.5
+base_height = 1
+seed = 14
+
+[node name="Wall2" parent="." instance=ExtResource("8_wall")]
+position = Vector3(6.5, 3, -19.25)
+rotation_degrees = Vector3(0, 0, 0)
+length = 57.5
+base_height = 1
+seed = 21
+
+[node name="Crack1" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(0, 3, 0, 0, 3, -48)
+seed = 4
+
+[node name="Seam1" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-6, 3, -12, 6, 3, -12)
+width = 0.2
+jag = 0.0
+color = Color(0.62, 0.6, 0.55, 1)
+lift = 0.02
+
+[node name="Seam2" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-6, 3, -24, 6, 3, -24)
+width = 0.2
+jag = 0.0
+color = Color(0.62, 0.6, 0.55, 1)
+lift = 0.02
+
+[node name="Seam3" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-6, 3, -36, 6, 3, -36)
+width = 0.2
+jag = 0.0
+color = Color(0.62, 0.6, 0.55, 1)
+lift = 0.02
+
+[node name="WallBack" parent="." instance=ExtResource("8_wall")]
+position = Vector3(0, 3, 9.5)
+rotation_degrees = Vector3(0, 90, 0)
+length = 14.0
+base_height = 1.0
+seed = 3
+
+[node name="Curve1" type="Node3D" parent="."]
+script = ExtResource("9_curve")
+position = Vector3(-24, 3, -48)
+radius = 24
+width = 12
+sweep_degrees = -45
+start_degrees = 0
+bank_degrees = 0.0
+segments = 8
+thickness = 1.0
+color = Color(0.8, 0.78, 0.72, 1)
+
+[node name="CurveBed1" type="Node3D" parent="."]
+script = ExtResource("9_curve")
+position = Vector3(-24, 2, -48)
+radius = 24
+width = 10
+sweep_degrees = -45
+start_degrees = 0
+bank_degrees = 0.0
+segments = 8
+thickness = 6
+color = Color(0.5, 0.36, 0.22, 1)
+
+[node name="CurveWall1" type="Node3D" parent="."]
+script = ExtResource("11_cwall")
+position = Vector3(-24, 3, -48)
+radius = 17.5
+sweep_degrees = -45
+start_degrees = 0
+segments = 8
+base_height = 1
+seed = 55
+
+[node name="CurveWall2" type="Node3D" parent="."]
+script = ExtResource("11_cwall")
+position = Vector3(-24, 3, -48)
+radius = 30.5
+sweep_degrees = -45
+start_degrees = 0
+segments = 8
+base_height = 1
+seed = 60
+
+[node name="Crack2" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(0, 3, -48, -0.061, 3, -49.712, -0.244, 3, -51.416, -0.548, 3, -53.102, -0.972, 3, -54.762, -1.513, 3, -56.387, -2.169, 3, -57.97, -2.936, 3, -59.502, -3.81, 3, -60.975, -4.787, 3, -62.383, -5.862, 3, -63.717, -7.029, 3, -64.971)
+seed = 13
+
+[node name="Slab2" parent="." instance=ExtResource("6_slab")]
+position = Vector3(-19.934, 2.5, -77.875)
+rotation_degrees = Vector3(0, 45, 0)
+size = Vector3(12, 1, 36.5)
+
+[node name="Bed2" parent="." instance=ExtResource("7_dirt")]
+position = Vector3(-19.934, -1, -77.875)
+rotation_degrees = Vector3(0, 45, 0)
+size = Vector3(10, 6, 36.5)
+
+[node name="Wall3" parent="." instance=ExtResource("8_wall")]
+position = Vector3(-24.53, 3, -73.279)
+rotation_degrees = Vector3(0, 45, 0)
+length = 36.5
+base_height = 1
+seed = 15
+
+[node name="Wall4" parent="." instance=ExtResource("8_wall")]
+position = Vector3(-15.338, 3, -82.471)
+rotation_degrees = Vector3(0, 45, 0)
+length = 36.5
+base_height = 1
+seed = 22
+
+[node name="Crack3" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-7.029, 3, -64.971, -32.485, 3, -90.426)
+seed = 18
+
+[node name="Seam4" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-19.757, 3, -69.213, -11.272, 3, -77.698)
+width = 0.2
+jag = 0.0
+color = Color(0.62, 0.6, 0.55, 1)
+lift = 0.02
+
+[node name="Seam5" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-28.243, 3, -77.698, -19.757, 3, -86.184)
+width = 0.2
+jag = 0.0
+color = Color(0.62, 0.6, 0.55, 1)
+lift = 0.02
+
+[node name="Curve2" type="Node3D" parent="."]
+script = ExtResource("9_curve")
+position = Vector3(-18.343, 3, -104.569)
+radius = 20
+width = 12
+sweep_degrees = 90
+start_degrees = 135
+bank_degrees = 0.0
+segments = 15
+thickness = 1.0
+color = Color(0.8, 0.78, 0.72, 1)
+
+[node name="CurveBed2" type="Node3D" parent="."]
+script = ExtResource("9_curve")
+position = Vector3(-18.343, 2, -104.569)
+radius = 20
+width = 10
+sweep_degrees = 90
+start_degrees = 135
+bank_degrees = 0.0
+segments = 15
+thickness = 6
+color = Color(0.5, 0.36, 0.22, 1)
+
+[node name="Crack4" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-32.485, 3, -90.426, -33.458, 3, -91.471, -34.354, 3, -92.583, -35.168, 3, -93.756, -35.897, 3, -94.984, -36.536, 3, -96.26, -37.082, 3, -97.579, -37.533, 3, -98.934, -37.886, 3, -100.317, -38.14, 3, -101.722, -38.292, 3, -103.142, -38.343, 3, -104.569, -38.292, 3, -105.995, -38.14, 3, -107.415, -37.886, 3, -108.82, -37.533, 3, -110.203, -37.082, 3, -111.558, -36.536, 3, -112.877, -35.897, 3, -114.154, -35.168, 3, -115.381, -34.354, 3, -116.554, -33.458, 3, -117.666, -32.485, 3, -118.711)
+seed = 23
+
+[node name="Curb1" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-28.384, 3, -94.528, -29.075, 3, -95.27, -29.711, 3, -96.059, -30.289, 3, -96.891, -30.806, 3, -97.763, -31.26, 3, -98.67, -31.648, 3, -99.606, -31.968, 3, -100.568, -32.219, 3, -101.55, -32.399, 3, -102.548, -32.507, 3, -103.556, -32.543, 3, -104.569, -32.507, 3, -105.582, -32.399, 3, -106.589, -32.219, 3, -107.587, -31.968, 3, -108.569, -31.648, 3, -109.531, -31.26, 3, -110.467, -30.806, 3, -111.374, -30.289, 3, -112.246, -29.711, 3, -113.078, -29.075, 3, -113.868, -28.384, 3, -114.609)
+width = 0.3
+jag = 0.0
+color = Color(0.55, 0.53, 0.48, 1)
+
+[node name="Curb2" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-36.587, 3, -86.325, -37.841, 3, -87.673, -38.997, 3, -89.107, -40.047, 3, -90.62, -40.987, 3, -92.204, -41.812, 3, -93.851, -42.516, 3, -95.552, -43.098, 3, -97.3, -43.554, 3, -99.084, -43.881, 3, -100.897, -44.077, 3, -102.728, -44.143, 3, -104.569, -44.077, 3, -106.409, -43.881, 3, -108.24, -43.554, 3, -110.053, -43.098, 3, -111.837, -42.516, 3, -113.585, -41.812, 3, -115.286, -40.987, 3, -116.933, -40.047, 3, -118.517, -38.997, 3, -120.03, -37.841, 3, -121.464, -36.587, 3, -122.812)
+width = 0.3
+jag = 0.0
+color = Color(0.55, 0.53, 0.48, 1)
+
+[node name="Slab3" parent="." instance=ExtResource("6_slab")]
+position = Vector3(-28.243, 2.5, -122.953)
+rotation_degrees = Vector3(0, -45, 0)
+size = Vector3(12, 1, 12)
+
+[node name="Bed3" parent="." instance=ExtResource("7_dirt")]
+position = Vector3(-28.243, -1, -122.953)
+rotation_degrees = Vector3(0, -45, 0)
+size = Vector3(10, 6, 12)
+
+[node name="Curb3" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-36.587, 3, -122.812, -28.101, 3, -131.297)
+width = 0.3
+jag = 0.0
+color = Color(0.55, 0.53, 0.48, 1)
+
+[node name="Curb4" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-28.384, 3, -114.609, -19.899, 3, -123.095)
+width = 0.3
+jag = 0.0
+color = Color(0.55, 0.53, 0.48, 1)
+
+[node name="Crack5" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-32.485, 3, -118.711, -24, 3, -127.196)
+seed = 30
+
+[node name="Slab4" parent="." instance=ExtResource("6_slab")]
+position = Vector3(-18.873, 2.5, -132.322)
+rotation_degrees = Vector3(0, -45, 0)
+size = Vector3(9, 1, 14.5)
+
+[node name="Bed4" parent="." instance=ExtResource("7_dirt")]
+position = Vector3(-18.873, -1, -132.322)
+rotation_degrees = Vector3(0, -45, 0)
+size = Vector3(7, 6, 14.5)
+
+[node name="Curb5" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-27.041, 3, -130.237, -17.141, 3, -140.136)
+width = 0.3
+jag = 0.0
+color = Color(0.55, 0.53, 0.48, 1)
+
+[node name="Curb6" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-20.959, 3, -124.155, -11.06, 3, -134.055)
+width = 0.3
+jag = 0.0
+color = Color(0.55, 0.53, 0.48, 1)
+
+[node name="Crack6" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-24, 3, -127.196, -14.101, 3, -137.095)
+seed = 35
+
+[node name="Seam6" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-18.697, 3, -138.863, -12.333, 3, -132.499)
+width = 0.2
+jag = 0.0
+color = Color(0.62, 0.6, 0.55, 1)
+lift = 0.02
+
+[node name="Curve3" type="Node3D" parent="."]
+script = ExtResource("9_curve")
+position = Vector3(-24.707, 3, -147.702)
+radius = 15
+width = 9
+sweep_degrees = -45
+start_degrees = 45
+bank_degrees = 0.0
+segments = 8
+thickness = 1.0
+color = Color(0.8, 0.78, 0.72, 1)
+
+[node name="CurveBed3" type="Node3D" parent="."]
+script = ExtResource("9_curve")
+position = Vector3(-24.707, 2, -147.702)
+radius = 15
+width = 7
+sweep_degrees = -45
+start_degrees = 45
+bank_degrees = 0.0
+segments = 8
+thickness = 6
+color = Color(0.5, 0.36, 0.22, 1)
+
+[node name="Crack7" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-14.101, 3, -137.095, -13.371, 3, -137.879, -12.699, 3, -138.713, -12.088, 3, -139.592, -11.542, 3, -140.513, -11.063, 3, -141.471, -10.653, 3, -142.46, -10.315, 3, -143.476, -10.05, 3, -144.514, -9.86, 3, -145.567, -9.745, 3, -146.632, -9.707, 3, -147.702)
+seed = 39
+
+[node name="Curb7" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-17.141, 3, -140.136, -16.621, 3, -140.695, -16.141, 3, -141.29, -15.706, 3, -141.917, -15.316, 3, -142.574, -14.974, 3, -143.257, -14.682, 3, -143.963, -14.441, 3, -144.688, -14.252, 3, -145.428, -14.116, 3, -146.179, -14.034, 3, -146.939, -14.007, 3, -147.702)
+width = 0.3
+jag = 0.0
+color = Color(0.55, 0.53, 0.48, 1)
+
+[node name="Curb8" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-11.06, 3, -134.055, -10.121, 3, -135.063, -9.257, 3, -136.136, -8.471, 3, -137.268, -7.768, 3, -138.453, -7.151, 3, -139.685, -6.624, 3, -140.957, -6.189, 3, -142.265, -5.848, 3, -143.6, -5.604, 3, -144.955, -5.456, 3, -146.325, -5.407, 3, -147.702)
+width = 0.3
+jag = 0.0
+color = Color(0.55, 0.53, 0.48, 1)
+
+[node name="Slab5" parent="." instance=ExtResource("6_slab")]
+position = Vector3(-9.707, 2.5, -151.952)
+rotation_degrees = Vector3(0, 0, 0)
+size = Vector3(10, 1, 8.5)
+
+[node name="Bed5" parent="." instance=ExtResource("7_dirt")]
+position = Vector3(-9.707, -1, -151.952)
+rotation_degrees = Vector3(0, 0, 0)
+size = Vector3(8, 6, 8.5)
+
+[node name="Wall5" parent="." instance=ExtResource("8_wall")]
+position = Vector3(-15.207, 3, -151.952)
+rotation_degrees = Vector3(0, 0, 0)
+length = 8.5
+base_height = 1
+seed = 17
+
+[node name="Wall6" parent="." instance=ExtResource("8_wall")]
+position = Vector3(-4.207, 3, -151.952)
+rotation_degrees = Vector3(0, 0, 0)
+length = 8.5
+base_height = 1
+seed = 24
+
+[node name="Crack8" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-9.707, 3, -147.702, -9.707, 3, -155.702)
+seed = 46
+
+[node name="Slope1" parent="." instance=ExtResource("6_slab")]
+position = Vector3(-9.707, 0.968, -165.875)
+rotation_degrees = Vector3(-8.531, 0, 0)
+size = Vector3(10, 1, 20.724)
+
+[node name="Bed6" parent="." instance=ExtResource("7_dirt")]
+position = Vector3(-9.707, -2.5, -165.702)
+rotation_degrees = Vector3(0, 0, 0)
+size = Vector3(8, 3, 19)
+
+[node name="Wall7" parent="." instance=ExtResource("8_wall")]
+position = Vector3(-15.207, 1.5, -165.702)
+rotation_degrees = Vector3(-8.531, 0, 0)
+length = 20.224
+base_height = 1.0
+seed = 52
+
+[node name="Wall8" parent="." instance=ExtResource("8_wall")]
+position = Vector3(-4.207, 1.5, -165.702)
+rotation_degrees = Vector3(-8.531, 0, 0)
+length = 20.224
+base_height = 1.0
+seed = 59
+
+[node name="Crack9" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-9.707, 3, -155.702, -9.707, 0, -175.702)
+seed = 51
+
+[node name="GoalSlab" parent="." instance=ExtResource("6_slab")]
+position = Vector3(-9.707, -0.5, -188.702)
+rotation_degrees = Vector3(0, 0, 0)
+size = Vector3(14, 1, 26)
+
+[node name="GoalBed" parent="." instance=ExtResource("7_dirt")]
+position = Vector3(-9.707, -2.5, -188.702)
+rotation_degrees = Vector3(0, 0, 0)
+size = Vector3(12, 3, 26)
+
+[node name="Wall9" parent="." instance=ExtResource("8_wall")]
+position = Vector3(-17.207, 0, -188.702)
+rotation_degrees = Vector3(0, 0, 0)
+length = 26
+base_height = 1.0
+seed = 32
+
+[node name="Wall10" parent="." instance=ExtResource("8_wall")]
+position = Vector3(-2.207, 0, -188.702)
+rotation_degrees = Vector3(0, 0, 0)
+length = 26
+base_height = 1.0
+seed = 30
+
+[node name="WallEnd" parent="." instance=ExtResource("8_wall")]
+position = Vector3(-9.707, 0, -202.202)
+rotation_degrees = Vector3(0, 90, 0)
+length = 16.0
+base_height = 1.2
+seed = 41
+
+[node name="Crack" parent="." instance=ExtResource("10_crack")]
+points = PackedVector3Array(-9.707, 0, -175.702, -9.707, 0, -185.202)
+seed = 77
 
 [node name="Goal" parent="." instance=ExtResource("4_goal")]
-position = Vector3(0, 0, -4)
+position = Vector3(-9.707, 0, -187.702)
+
+[node name="Flower1" parent="." instance=ExtResource("13_stem")]
+position = Vector3(8.679, -4, -52.593)
+stem_height = 11
+stem_radius = 0.6
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Flower2" parent="." instance=ExtResource("13_stem")]
+position = Vector3(6.377, -4, -60.894)
+stem_height = 13
+stem_radius = 0.6
+petal_color = "petal_pink"
+petal_count = 6
+
+[node name="Flower3" parent="." instance=ExtResource("13_stem")]
+position = Vector3(2.004, -4, -68.317)
+stem_height = 10
+stem_radius = 0.6
+petal_color = "petal_white"
+petal_count = 6
+
+[node name="Flower4" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-38.496, -4, -84.416)
+stem_height = 12
+stem_radius = 0.7
+petal_color = "petal_purple"
+petal_count = 6
+
+[node name="Flower5" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-26.475, -4, -96.437)
+stem_height = 12
+stem_radius = 0.7
+petal_color = "petal_purple"
+petal_count = 6
+
+[node name="Flower6" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-43.084, -4, -88.502)
+stem_height = 12
+stem_radius = 0.6
+petal_color = "petal_pink"
+petal_count = 6
+
+[node name="Flower7" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-47.301, -4, -98.94)
+stem_height = 14
+stem_radius = 0.6
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Flower8" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-47.301, -4, -110.197)
+stem_height = 11
+stem_radius = 0.6
+petal_color = "petal_white"
+petal_count = 6
+
+[node name="Flower9" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-43.084, -4, -120.635)
+stem_height = 13
+stem_radius = 0.6
+petal_color = "petal_pink"
+petal_count = 6
+
+[node name="Pebble1" parent="." instance=ExtResource("12_pebble")]
+position = Vector3(-26.137, -2.5, -100.069)
+size = Vector3(3.2, 3.2, 2.8)
+
+[node name="Pebble2" parent="." instance=ExtResource("12_pebble")]
+position = Vector3(-27.309, -2.5, -103.784)
+size = Vector3(3.2, 3.2, 2.8)
+dark = true
+
+[node name="Pebble3" parent="." instance=ExtResource("12_pebble")]
+position = Vector3(-26.8, -2.5, -107.647)
+size = Vector3(3.2, 3.2, 2.8)
+
+[node name="Flower10" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-6.338, -4, -133.86)
+stem_height = 13
+stem_radius = 0.7
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Flower11" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-3.235, -4, -139.46)
+stem_height = 12
+stem_radius = 0.7
+petal_color = "petal_purple"
+petal_count = 6
+
+[node name="Flower12" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-1.795, -4, -145.697)
+stem_height = 14
+stem_radius = 0.7
+petal_color = "petal_pink"
+petal_count = 6
+
+[node name="Pebble4" parent="." instance=ExtResource("12_pebble")]
+position = Vector3(-18.724, -2, -145.162)
+size = Vector3(4.5, 5, 4)
+dark = true
+
+[node name="Pebble5" parent="." instance=ExtResource("12_pebble")]
+position = Vector3(0.793, -3, -185.702)
+size = Vector3(3, 3, 2.6)
+
+[node name="Pebble6" parent="." instance=ExtResource("12_pebble")]
+position = Vector3(-20.207, -3, -191.702)
+size = Vector3(2.6, 2.8, 2.2)
+dark = true
+
+[node name="Pebble7" parent="." instance=ExtResource("12_pebble")]
+position = Vector3(-0.707, -2, -154.702)
+size = Vector3(3.5, 4.5, 3)
+
+[node name="Pebble8" parent="." instance=ExtResource("12_pebble")]
+position = Vector3(-19.207, -2, -157.702)
+size = Vector3(3, 4, 3)
+dark = true
+
+[node name="Flower13" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-0.707, -4, -199.702)
+stem_height = 12
+stem_radius = 0.6
+petal_color = "petal_pink"
+petal_count = 6
+
+[node name="Flower14" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-17.707, -4, -201.702)
+stem_height = 13
+stem_radius = 0.6
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Flower15" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-8.707, -4, -205.702)
+stem_height = 11
+stem_radius = 0.6
+petal_color = "petal_white"
+petal_count = 6
+
+[node name="Flower16" parent="." instance=ExtResource("13_stem")]
+position = Vector3(9.5, -4, -4)
+stem_height = 12
+stem_radius = 0.6
+petal_color = "petal_pink"
+petal_count = 6
+
+[node name="Flower17" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-9.5, -4, -16)
+stem_height = 11
+stem_radius = 0.6
+petal_color = "petal_yellow"
+petal_count = 6
+
+[node name="Flower18" parent="." instance=ExtResource("13_stem")]
+position = Vector3(9.5, -4, -28)
+stem_height = 13
+stem_radius = 0.6
+petal_color = "petal_white"
+petal_count = 6
+
+[node name="Flower19" parent="." instance=ExtResource("13_stem")]
+position = Vector3(-9.5, -4, -40)
+stem_height = 12
+stem_radius = 0.6
+petal_color = "petal_purple"
+petal_count = 6
+
+[node name="Pebble9" parent="." instance=ExtResource("12_pebble")]
+position = Vector3(-4.207, 0, -196.702)
+size = Vector3(1.6, 1, 1.4)
+
+[node name="Pebble10" parent="." instance=ExtResource("12_pebble")]
+position = Vector3(-15.207, 0, -197.702)
+size = Vector3(1.3, 0.9, 1.2)
+dark = true
+
+[node name="Clump1" parent="." instance=ExtResource("14_clump")]
+position = Vector3(-12, -4, 12)
+seed = 50
+radius = 1.5
+blade_count = 12
+
+[node name="Clump2" parent="." instance=ExtResource("14_clump")]
+position = Vector3(-4, -4, 12)
+seed = 51
+radius = 1.5
+blade_count = 12
+
+[node name="Clump3" parent="." instance=ExtResource("14_clump")]
+position = Vector3(4, -4, 12)
+seed = 52
+radius = 1.5
+blade_count = 12
+
+[node name="Clump4" parent="." instance=ExtResource("14_clump")]
+position = Vector3(12, -4, 12)
+seed = 53
+radius = 1.5
+blade_count = 12
 
 [node name="FallZone" parent="." instance=ExtResource("5_fall")]
 position = Vector3(0, -8, 0)
+size = Vector3(600, 6, 600)

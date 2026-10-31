@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/objects/physics_prop.gd" id="1_prop"]
+
+[node name="Domino" type="RigidBody3D"]
+script = ExtResource("1_prop")
+shape_type = 0
+size = Vector3(0.25, 1.2, 0.6)
+color = Color(0.35, 0.7, 0.75, 1)
+tuning_mass_name = "domino_mass"

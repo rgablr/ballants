@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/objects/physics_prop.gd" id="1_prop"]
+
+[node name="LightBox" type="RigidBody3D"]
+script = ExtResource("1_prop")
+shape_type = 0
+size = Vector3(0.5, 0.5, 0.5)
+color = Color(0.95, 0.85, 0.45, 1)
+tuning_mass_name = "light_box_mass"

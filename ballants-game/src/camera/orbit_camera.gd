@@ -51,6 +51,16 @@ func get_yaw() -> float:
 	return _yaw
 
 
+## Points the camera in a direction right away (used by dev tools).
+func aim(yaw: float, pitch: float) -> void:
+	_yaw = yaw
+	_pitch = pitch
+	_seconds_since_manual = 0.0
+	_apply_rotation()
+	if target:
+		global_position = _focus_point()
+
+
 ## Kicks off a screen shake of the given size (meters). Decays on its own.
 func shake(strength: float) -> void:
 	_shake = maxf(_shake, strength)

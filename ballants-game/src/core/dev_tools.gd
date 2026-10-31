@@ -45,6 +45,10 @@ func _ready() -> void:
 			_screenshot_path = arg.get_slice("=", 1)
 		elif arg.begins_with("--zoom="):
 			Tuning.camera_distance = float(arg.get_slice("=", 1))
+		elif arg.begins_with("--camera-yaw="):
+			_aim_camera_later(float(arg.get_slice("=", 1)), Tuning.camera_pitch_default)
+		elif arg.begins_with("--camera-pitch="):
+			Tuning.camera_pitch_default = float(arg.get_slice("=", 1))
 		elif arg.begins_with("--press="):
 			_press_later(arg.get_slice("=", 1))
 		elif arg == "--save-roundtrip":
@@ -56,6 +60,15 @@ func _ready() -> void:
 		_run_autotest()
 	elif not _screenshot_path.is_empty():
 		_screenshot_then_quit(1.5)
+
+
+## --camera-yaw=DEGREES turns the camera to look in that direction at start
+## (0 = north/-Z, 180 = south/+Z). Pair with --camera-pitch and --zoom.
+func _aim_camera_later(yaw_degrees: float, pitch_degrees: float) -> void:
+	await get_tree().create_timer(0.1).timeout
+	for rig in get_tree().get_nodes_in_group("camera_rig"):
+		if rig.has_method("aim"):
+			rig.aim(deg_to_rad(yaw_degrees), deg_to_rad(pitch_degrees))
 
 
 func _press_later(action: String) -> void:

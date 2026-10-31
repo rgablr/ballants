@@ -1,0 +1,150 @@
+extends Node
+## LEVEL MANAGER -- moves between levels and times each run.
+##
+##   - knows which level is playing (an index into LevelList.LEVELS, or -1
+##     for the test arena)
+##   - the run timer: starts on the first movement input, stops at the goal
+##   - on goal: waits a moment, then loads the next level (wrapping to the
+##     first after the last)
+##   - on fall-out (a FallZone, or dropping below the world): restarts
+##   - keys 1/2/3 jump to a level, 0 loads the test arena, R restarts
+##
+## Loaded as a global called "Levels". The HUD listens to its signals.
+
+signal level_loaded(index: int)
+signal run_started
+signal run_finished(time: float)
+signal run_failed
+
+## Seconds to show the "Level complete" message before moving on.
+const COMPLETE_DELAY := 3.0
+## Seconds to show "Fell out!" before restarting.
+const FAIL_DELAY := 0.8
+
+var current_index := -1
+var run_time := 0.0
+var timer_running := false
+
+var _run_done := false
+var _loading := false
+var _run_id := 0   # bumps on every load so stale timers can't act
+
+
+func _ready() -> void:
+	Game.level_completed.connect(_on_level_completed)
+	# Which level is the main scene? Match it to the list so the index is
+	# right from the first frame.
+	var main_scene: String = ProjectSettings.get_setting("application/run/main_scene", "")
+	for i in LevelList.LEVELS.size():
+		if LevelList.LEVELS[i].scene == main_scene:
+			current_index = i
+	level_loaded.emit.call_deferred(current_index)
+
+
+func _process(delta: float) -> void:
+	if timer_running:
+		run_time += delta
+	elif is_in_level() and not _run_done and not _loading and _movement_pressed():
+		timer_running = true
+		run_started.emit()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("level_1"):
+		load_level(0)
+	elif event.is_action_pressed("level_2"):
+		load_level(1)
+	elif event.is_action_pressed("level_3"):
+		load_level(2)
+	elif event.is_action_pressed("level_0"):
+		load_test_arena()
+
+
+## True when a listed level is playing (false in the test arena).
+func is_in_level() -> bool:
+	return current_index >= 0
+
+
+## The current level's list entry, or an empty dictionary in the arena.
+func current_info() -> Dictionary:
+	if is_in_level():
+		return LevelList.LEVELS[current_index]
+	return {}
+
+
+func load_level(index: int) -> void:
+	if index < 0 or index >= LevelList.LEVELS.size():
+		push_error("Levels: no level %d in the list" % index)
+		return
+	current_index = index
+	_change_scene(LevelList.LEVELS[index].scene)
+
+
+func load_next() -> void:
+	load_level((current_index + 1) % LevelList.LEVELS.size())
+
+
+func load_test_arena() -> void:
+	current_index = -1
+	_change_scene(LevelList.TEST_ARENA)
+
+
+func restart() -> void:
+	if is_in_level():
+		load_level(current_index)
+	else:
+		_change_scene(get_tree().current_scene.scene_file_path)
+
+
+## Called by FallZone (or the ball falling below the world). Shows the
+## fail message briefly, then restarts the level. In the test arena the
+## ball just respawns instead (handled by the player).
+func fail() -> void:
+	if _run_done or _loading:
+		return
+	_run_done = true
+	timer_running = false
+	run_failed.emit()
+	var my_run := _run_id
+	await get_tree().create_timer(FAIL_DELAY).timeout
+	if my_run == _run_id:
+		restart()
+
+
+func _change_scene(path: String) -> void:
+	_loading = true
+	_run_id += 1
+	run_time = 0.0
+	timer_running = false
+	_run_done = false
+	Game.level_complete = false
+	Engine.time_scale = 1.0
+	get_tree().change_scene_to_file(path)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_loading = false
+	level_loaded.emit(current_index)
+
+
+func _on_level_completed() -> void:
+	timer_running = false
+	_run_done = true
+	run_finished.emit(run_time)
+	if not is_in_level():
+		return
+	var my_run := _run_id
+	await get_tree().create_timer(COMPLETE_DELAY).timeout
+	if my_run == _run_id:
+		load_next()
+
+
+func _movement_pressed() -> bool:
+	return Input.get_vector("move_left", "move_right", "move_forward", "move_back") != Vector2.ZERO \
+			or Input.is_action_pressed("jump")
+
+
+## Formats seconds as m:ss.hh for the HUD.
+static func format_time(seconds: float) -> String:
+	var minutes := int(seconds / 60.0)
+	var rest := seconds - minutes * 60.0
+	return "%d:%05.2f" % [minutes, rest]

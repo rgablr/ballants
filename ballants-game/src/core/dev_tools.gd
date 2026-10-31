@@ -9,8 +9,17 @@ extends Node
 ##       worlds, no level) and quits. Exit code 0 = all passed.
 ##
 ##   godot -- --autotest
-##       Plays the level by itself for a few seconds (rolls forward, jumps),
-##       prints PASS/FAIL checks, and quits. Exit code 0 = all passed.
+##       Loads the test arena, plays it by itself for a few seconds (rolls,
+##       jumps), prints PASS/FAIL checks, and quits. Exit code 0 = all passed.
+##
+##   godot -- --level=2
+##       Starts on that level (1/2/3) or the test arena (0). Combine with
+##       --screenshot, --zoom, --camera-yaw to picture a level.
+##
+##   godot --headless -- --drive=/full/path/level_1.json
+##       A bot drives the ball through the waypoints in the file (format in
+##       src/core/level_bot.gd) and reports whether it reached the goal.
+##       This is how "the level can be completed" is checked by machine.
 ##
 ##   godot -- --screenshot=/full/path/picture.png
 ##       Waits 1.5 seconds, saves a picture of the game window, and quits.
@@ -35,12 +44,23 @@ var _failures := 0
 
 func _ready() -> void:
 	var autotest := false
+	var level := -2          # -2 = leave the main scene alone
+	var drive_path := ""
 	for arg in OS.get_cmdline_user_args():
 		if arg == "--tests":
 			get_tree().change_scene_to_file.call_deferred("res://tests/physics_tests.tscn")
 			return
 		elif arg == "--autotest":
 			autotest = true
+			level = 0
+		elif arg.begins_with("--level="):
+			level = int(arg.get_slice("=", 1))
+		elif arg.begins_with("--scene="):
+			# Any scene by path, e.g. --scene=res://levels/garden/garden_showcase.tscn
+			Levels.current_index = -1
+			get_tree().change_scene_to_file.call_deferred(arg.get_slice("=", 1))
+		elif arg.begins_with("--drive="):
+			drive_path = arg.get_slice("=", 1)
 		elif arg.begins_with("--screenshot="):
 			_screenshot_path = arg.get_slice("=", 1)
 		elif arg.begins_with("--zoom="):
@@ -56,10 +76,49 @@ func _ready() -> void:
 			print("[devtools] save roundtrip: %s" % ("ok" if error.is_empty() else error))
 			get_tree().quit.call_deferred(0 if error.is_empty() else 1)
 			return
+	if not drive_path.is_empty():
+		_run_drive(drive_path)
+		return
+	if level != -2:
+		_load_level_later(level)
 	if autotest:
 		_run_autotest()
 	elif not _screenshot_path.is_empty():
 		_screenshot_then_quit(1.5)
+
+
+## Switches to a level once the tree is up. 0 = arena, 1..n = list order.
+func _load_level_later(level: int) -> void:
+	await get_tree().process_frame
+	if level <= 0:
+		Levels.load_test_arena()
+	else:
+		Levels.load_level(level - 1)
+
+
+func _run_drive(path: String) -> void:
+	var text := FileAccess.get_file_as_string(path)
+	var config = JSON.parse_string(text)
+	if config == null or config is not Dictionary:
+		print("[drive] FAIL: could not read waypoint file %s" % path)
+		get_tree().quit.call_deferred(1)
+		return
+	await _load_level_later(int(config.get("level", 1)))
+	await get_tree().create_timer(0.5).timeout
+	var bot := LevelBot.new()
+	add_child(bot)
+	bot.start(config)
+	var result: Array = await bot.finished
+	var passed: bool = result[0]
+	print("[drive] %s: level %d -- %s" % ["PASS" if passed else "FAIL", int(config.get("level", 1)), result[1]])
+	if not _screenshot_path.is_empty():
+		await _save_screenshot(_screenshot_path)
+	if passed and Levels.is_in_level():
+		# Confirm the level system moves on to the next level by itself.
+		var before := Levels.current_index
+		await get_tree().create_timer(Levels.COMPLETE_DELAY + 1.0).timeout
+		print("[drive] after completing level %d the game loaded level %d" % [before + 1, Levels.current_index + 1])
+	get_tree().quit(0 if passed else 1)
 
 
 ## --camera-yaw=DEGREES turns the camera to look in that direction at start
@@ -90,7 +149,7 @@ func _check(name: String, ok: bool, detail := "") -> void:
 
 
 func _run_autotest() -> void:
-	await get_tree().create_timer(1.0).timeout
+	await get_tree().create_timer(1.5).timeout
 	var player := get_tree().get_first_node_in_group("player") as PlayerBall
 	_check("player exists", player != null)
 	if player == null:
@@ -158,7 +217,7 @@ func _run_autotest() -> void:
 
 	# Restart should put the ball back near the start.
 	Game.restart_level()
-	await get_tree().create_timer(0.5).timeout
+	await get_tree().create_timer(0.8).timeout
 	player = get_tree().get_first_node_in_group("player") as PlayerBall
 	_check("restart reloads the level", player != null and player.global_position.length() < 3.0)
 

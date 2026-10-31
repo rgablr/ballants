@@ -1,0 +1,90 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://levels/level.gd" id="1_level"]
+[ext_resource type="PackedScene" path="res://levels/garden/garden_theme.tscn" id="2_theme"]
+[ext_resource type="PackedScene" path="res://src/objects/start_point.tscn" id="3_start"]
+[ext_resource type="PackedScene" path="res://src/objects/goal.tscn" id="4_goal"]
+[ext_resource type="PackedScene" path="res://src/objects/fall_zone.tscn" id="5_fall"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/dirt_tile.tscn" id="6_dirt"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/sidewalk_slab.tscn" id="7_slab"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/grass_clump.tscn" id="8_grass"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/grass_wall.tscn" id="9_wall"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/flower_stem.tscn" id="10_stem"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/pebble.tscn" id="11_pebble"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/flower_pot.tscn" id="12_pot"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/puddle.tscn" id="13_puddle"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/leaf_patch.tscn" id="14_leaf"]
+[ext_resource type="PackedScene" path="res://src/objects/garden/hose.tscn" id="15_hose"]
+[ext_resource type="PackedScene" path="res://src/objects/rail.tscn" id="16_rail"]
+
+[node name="GardenShowcase" type="Node3D"]
+script = ExtResource("1_level")
+level_name = "Garden piece showcase (not a level)"
+
+[node name="GardenTheme" parent="." instance=ExtResource("2_theme")]
+
+[node name="StartPoint" parent="." instance=ExtResource("3_start")]
+position = Vector3(0, 0, 8)
+
+[node name="Dirt" parent="." instance=ExtResource("6_dirt")]
+position = Vector3(0, -0.5, 0)
+size = Vector3(40, 1, 40)
+
+[node name="Slab" parent="." instance=ExtResource("7_slab")]
+position = Vector3(-14, -0.5, -8)
+
+[node name="SlabCrack" parent="." instance=ExtResource("16_rail")]
+position = Vector3(-14, 0.0, -8)
+size = Vector3(0.25, 0.08, 12)
+color = Color(0.42, 0.4, 0.36, 1)
+
+[node name="Grass" parent="." instance=ExtResource("8_grass")]
+position = Vector3(6, 0, 4)
+
+[node name="GrassSolid" parent="." instance=ExtResource("8_grass")]
+position = Vector3(9, 0, 4)
+solid = true
+seed = 3
+
+[node name="Wall" parent="." instance=ExtResource("9_wall")]
+position = Vector3(12, 0, -4)
+
+[node name="Stem" parent="." instance=ExtResource("10_stem")]
+position = Vector3(-6, 0, -2)
+
+[node name="StemYellow" parent="." instance=ExtResource("10_stem")]
+position = Vector3(-9, 0, 3)
+petal_color = "petal_yellow"
+stem_radius = 0.5
+stem_height = 8.0
+
+[node name="Pebble" parent="." instance=ExtResource("11_pebble")]
+position = Vector3(3, 0, -6)
+
+[node name="PebbleDark" parent="." instance=ExtResource("11_pebble")]
+position = Vector3(6, 0, -8)
+size = Vector3(3, 2, 2.4)
+dark = true
+
+[node name="Pot" parent="." instance=ExtResource("12_pot")]
+position = Vector3(-4, 0, -12)
+
+[node name="Puddle" parent="." instance=ExtResource("13_puddle")]
+position = Vector3(12, -1.5, 12)
+size = Vector2(10, 10)
+
+[node name="Leaf" parent="." instance=ExtResource("14_leaf")]
+position = Vector3(0, 0, -1)
+rotation_degrees = Vector3(0, 25, 0)
+
+[node name="Hose" parent="." instance=ExtResource("15_hose")]
+position = Vector3(8, 0, -14)
+points = PackedVector3Array(0, 0, 0, 0, 0, -4, 1, 0.6, -8, 3, 0.6, -11, 6, 0, -13)
+radius_start = 1.2
+radius_end = 0.6
+
+[node name="Goal" parent="." instance=ExtResource("4_goal")]
+position = Vector3(0, 0, -16)
+
+[node name="FallZone" parent="." instance=ExtResource("5_fall")]
+position = Vector3(0, -8, 0)

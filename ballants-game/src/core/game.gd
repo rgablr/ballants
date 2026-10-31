@@ -50,7 +50,7 @@ func set_ui_open(open: bool) -> void:
 func restart_level() -> void:
 	level_complete = false
 	level_restarting.emit()
-	get_tree().reload_current_scene()
+	Levels.restart()
 
 
 ## Called by the Goal object. Safe to call more than once.

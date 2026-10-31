@@ -24,8 +24,20 @@ signal landed
 ## pushed (unit vector), and roughly where it happened.
 signal impacted(strength: float, direction: Vector3, position: Vector3)
 
-## The camera rig that decides which way "forward" is. Set in the level scene.
-@export var camera_rig: Node3D
+## The camera rig that decides which way "forward" is. Set in the level
+## scene, or by the Level script when it spawns the player.
+@export var camera_rig: Node3D:
+	set(value):
+		if camera_rig and camera_rig.has_signal("manually_turned") \
+				and camera_rig.manually_turned.is_connected(_on_camera_manually_turned):
+			camera_rig.manually_turned.disconnect(_on_camera_manually_turned)
+		camera_rig = value
+		if camera_rig and camera_rig.has_signal("manually_turned"):
+			camera_rig.manually_turned.connect(_on_camera_manually_turned)
+
+## Grip multiplier from the surface under the ball (1 = normal). Slick
+## patches lower it; it scales both friction and the push.
+var surface_grip := 1.0
 
 var radius := 0.5
 
@@ -75,8 +87,8 @@ func _ready() -> void:
 	_visual_root.top_level = true
 	_visual_root.add_child(Assets.instantiate_model("ball"))
 
-	if camera_rig and camera_rig.has_signal("manually_turned"):
-		camera_rig.manually_turned.connect(_on_camera_manually_turned)
+	# The exported camera_rig is assigned before _ready, so hook it up now.
+	camera_rig = camera_rig
 
 
 ## Copies the values the physics engine needs from the tuning file. Called
@@ -87,8 +99,14 @@ func _apply_tuning() -> void:
 	# only slows horizontal motion and never shortens a jump.
 	linear_damp = 0.0
 	angular_damp = Tuning.spin_resistance
-	physics_material_override.friction = Tuning.ball_friction
+	physics_material_override.friction = Tuning.ball_friction * surface_grip
 	physics_material_override.bounce = Tuning.ball_bounce
+
+
+## Called by SlickPatch when the ball rolls onto / off a slippery surface.
+func set_surface_grip(grip: float) -> void:
+	surface_grip = clampf(grip, 0.0, 1.0)
+	_apply_tuning()
 
 
 func is_grounded() -> bool:
@@ -127,8 +145,13 @@ func _physics_process(delta: float) -> void:
 	_try_jump()
 
 	_previous_velocity = linear_velocity
+	# Falling out of the world: in a listed level that fails the run (the
+	# level's FallZone normally catches it first); in the arena, respawn.
 	if global_position.y < Tuning.fall_respawn_y:
-		respawn()
+		if Levels.is_in_level():
+			Levels.fail()
+		else:
+			respawn()
 
 
 func _process(_delta: float) -> void:
@@ -163,6 +186,8 @@ func _apply_movement() -> void:
 	var strength := Tuning.roll_acceleration * mass
 	if not _grounded:
 		strength *= Tuning.air_control
+	else:
+		strength *= surface_grip
 
 	var velocity_h := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
 	var speed_h := velocity_h.length()

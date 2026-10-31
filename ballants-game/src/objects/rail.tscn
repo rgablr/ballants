@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/objects/block.gd" id="1_block"]
+
+[node name="Rail" type="StaticBody3D"]
+script = ExtResource("1_block")
+size = Vector3(0.3, 0.6, 8)
+color = Color(0.55, 0.52, 0.5, 1)

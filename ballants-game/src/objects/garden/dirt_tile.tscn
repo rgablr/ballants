@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/objects/block.gd" id="1_block"]
+
+[node name="DirtTile" type="StaticBody3D"]
+script = ExtResource("1_block")
+size = Vector3(12, 1, 12)
+color = Color(0.5, 0.36, 0.22, 1)

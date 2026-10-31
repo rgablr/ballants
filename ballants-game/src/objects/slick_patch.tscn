@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/objects/slick_patch.gd" id="1_slick"]
+
+[node name="SlickPatch" type="Area3D"]
+script = ExtResource("1_slick")

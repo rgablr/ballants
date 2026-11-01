@@ -303,6 +303,22 @@ var egg_knock_bounce := 0.15
 
 ## How much the eggs squash when the ball hits them (looks only).
 var egg_squash := 0.14
+# ------------------------------------------- LEVEL 3: FUNGUS FARM ----
+
+## How high a bounce mushroom throws the ball, in meters above the cap
+## (the ball's center peaks this far above where it rests on the cap).
+## Fungus Farm's tower mushrooms are 4.5 m apart in height, so keep this
+## above about 5.5 or the tower cannot be climbed.
+var mushroom_bounce_height := 6.5
+
+## How high the tall blue-white mushroom at the foot of Fungus Farm's
+## tower throws the ball (m above its cap). It must clear the tall
+## mushroom ledge 10 m up beside it (the hidden crystal).
+var mushroom_tall_bounce_height := 12.5
+
+## Grip on the pale spore floors (1 = normal dirt, lower = slicker). Both
+## the ball's friction and its push are multiplied by this while on spores.
+var spore_grip := 0.3
 
 
 # ------------------------------------------------------- SLIDER RANGES ----
@@ -369,6 +385,9 @@ const RANGES := {
 	"egg_knock_speed": [0.0, 10.0],
 	"egg_knock_bounce": [0.0, 1.0],
 	"egg_squash": [0.0, 0.5],
+	"mushroom_bounce_height": [1.0, 15.0],
+	"mushroom_tall_bounce_height": [1.0, 25.0],
+	"spore_grip": [0.05, 1.0],
 }
 
 

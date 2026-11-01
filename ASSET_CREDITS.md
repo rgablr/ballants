@@ -29,6 +29,7 @@ credit, but they are placeholders to be replaced:
 | Level blocks, crates, dominoes | `src/objects/*.gd` | Optional: themed models; collision stays as-is |
 | Ant hill (the finish) | `src/objects/ant_hill.gd` | Optional: a low-poly ant-hill model; the crater/hole shape and collision stay as-is |
 | Backyard Garden kit: grass clumps and walls, thick (breakable) grass, flower stems, pebbles, flower pot, puddle, leaf, hose, crack line, lawn, meadow ground | `src/objects/garden/*.gd`, colors in `levels/garden/garden_theme.gd` | Optional: low-poly CC0 garden models (Kenney Nature Kit is CC0 but its download is browser-only; see below) scaled to ant size; collision stays as-is |
+| Fungus Farm pieces: bounce mushroom (glowing cap, squash), spore patch (pale floor, puffballs, spore particles), spore cloud (drifting spore particles), dirt bed (damp tilled bed with glowing edge buttons) | `src/objects/nest/bounce_mushroom.gd`, `spore_patch.gd`, `spore_cloud.gd`, `dirt_bed.gd` | Optional: low-poly CC0 mushroom models (e.g. Quaternius); collision stays as-is |
 
 | Garden sky: gradient, sun, clouds, horizon houses/hills/trees | `levels/garden/garden_sky.gdshader` (drawn by a shader, no image) | Optional: a hand-painted or CC0 sky panorama |
 | Bugs: ladybug, worm, spider, fly, bee | `src/objects/critters/*.gd` | Optional: low-poly CC0 insect models; behaviour scripts stay |

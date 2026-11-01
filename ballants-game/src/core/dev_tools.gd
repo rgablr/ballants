@@ -424,11 +424,15 @@ func _run_hubtest(mode: String) -> void:
 			hcheck.call("skip: cutscene ended quickly", seconds < 12.0, "%.1f s" % seconds)
 			hcheck.call("skip: treated as Yes (gift received, outcome yes)", Progress.has_queen_item and outcome[0] == "yes", "outcome=%s" % outcome[0])
 			hcheck.call("skip: the question was never asked", not answered)
+			var hole_at: Vector3 = (hub.queen_hole.transform as Transform3D).origin
+			hcheck.call("skip: the Queen is back in her hole", hub.queen.global_position.distance_to(hole_at) < 2.0)
 		_:
 			hcheck.call("Yes: cutscene finished with outcome yes", outcome[0] == "yes", "outcome=%s after %.0f s" % [outcome[0], seconds])
 			hcheck.call("Yes: the Queen's gift was received", Progress.has_queen_item)
-			hcheck.call("Yes: the Queen is standing near the hero", hub.queen.global_position.distance_to(player.global_position) < 5.0,
-					"%.1f m" % hub.queen.global_position.distance_to(player.global_position))
+			var hole_at: Vector3 = (hub.queen_hole.transform as Transform3D).origin
+			var home := await _wait_until(func(): return hub.queen.global_position.distance_to(hole_at) < 2.0, 15.0)
+			hcheck.call("Yes: the Queen crawled back into her hole", home,
+					"%.1f m from the hole" % hub.queen.global_position.distance_to(hole_at))
 	await get_tree().create_timer(0.3).timeout
 	hcheck.call("control returned to the player", not Game.control_locked and not Game.cutscene_active)
 	hcheck.call("game camera is live again", get_viewport().get_camera_3d() != cutscene.camera)

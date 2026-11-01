@@ -43,6 +43,17 @@ var _head: Node3D
 var _eye_material: StandardMaterial3D
 var _brows: Node3D
 var _steam: Array[GPUParticles3D] = []
+var _eyes: Array[MeshInstance3D] = []
+var _blush: Node3D
+## Clapping: seconds left (< 0 = not clapping) and the clap count so far.
+var _clap_time := -1.0
+## Rearing up (0..1): the body tips back and lifts so the abdomen tip
+## stays on the ground and the front legs come up off it.
+var _rear := 0.0
+var _clap_total := 0.0
+var _claps_heard := 0
+## The hole she lives in (the Queen goes back to it).
+var home_hole: Dictionary = {}
 var _legs: Array[Dictionary] = []
 var _antennae: Array[Node3D] = []
 var _time := 0.0
@@ -102,7 +113,7 @@ func _build() -> void:
 	_body.add_child(_head)
 	CritterParts.sphere(_head, Vector3(0.0, 0.0, -0.045), 0.07, Vector3(1.05, 0.95, 1.05), body_mat, 10)
 	for side in [1.0, -1.0]:
-		CritterParts.sphere(_head, Vector3(side * 0.045, 0.02, -0.095), 0.018, Vector3.ONE, eye_mat, 8)
+		_eyes.append(CritterParts.sphere(_head, Vector3(side * 0.045, 0.02, -0.095), 0.018, Vector3.ONE, eye_mat, 8))
 		# Mandibles.
 		CritterParts.rod(_head, Vector3(side * 0.03, -0.03, -0.1), Vector3(side * 0.01, -0.035, -0.14), 0.008, dark_mat)
 		var antenna := Node3D.new()
@@ -183,7 +194,9 @@ func _process(delta: float) -> void:
 	var moving := clampf(_moving_speed / 1.5, 0.0, 1.0)
 	_gait = fposmod(_gait + delta * (1.6 + _moving_speed * 1.1) * moving, 1.0)
 	_pose_legs(_gait, moving)
-	_body.position.y = sin(_time * 2.4) * 0.004 * (1.0 - moving) + absf(sin(_gait * TAU * 2.0)) * 0.006 * moving
+	_clap(delta)
+	_body.position.y = sin(_time * 2.4) * 0.004 * (1.0 - moving) + absf(sin(_gait * TAU * 2.0)) * 0.006 * moving \
+			+ sin(_rear * CLAP_REAR) * 0.2
 	_look = lerpf(_look, _look_target, 1.0 - exp(-delta * 4.0))
 	_head.rotation.y = _look + sin(_time * 1.1) * 0.05
 	for i in _antennae.size():
@@ -291,6 +304,8 @@ static func hole_path(hole: Dictionary, depth_in: float, depth_out: float) -> Ar
 
 ## Puts a worker inside a hole, out of sight.
 func hide_in_hole(hole: Dictionary) -> void:
+	if home_hole.is_empty():
+		home_hole = hole
 	_hole = hole
 	state = State.HIDDEN
 	_timer = _rng.randf_range(0.5, 6.0)
@@ -401,7 +416,10 @@ func walk_floor_to(point: Vector3, walk_speed := 4.0) -> void:
 ##   walk_to  to (a spot or actor), speed
 ##   face     target (an actor)
 ##   nod
-##   mood     mood ("angry" / "calm"), hold (seconds to wait after)
+##   mood     mood ("angry" / "happy" / "calm"), hold (seconds to wait after)
+##   celebrate  claps: hops up and claps her front legs with a happy face
+##   go_home  speed, await (false = let the scene move on while she
+##            crawls), instant (true = straight back inside, for skips)
 func cutscene_action(action: String, step: Dictionary, player: Node) -> void:
 	match action:
 		"emerge":
@@ -424,6 +442,19 @@ func cutscene_action(action: String, step: Dictionary, player: Node) -> void:
 		"mood":
 			set_mood(str(step.get("mood", "calm")))
 			await get_tree().create_timer(float(step.get("hold", 0.6))).timeout
+		"celebrate":
+			await celebrate(int(step.get("claps", 6)))
+		"go_home":
+			var cave = player.resolve("cave")
+			if step.get("instant", false):
+				set_mood("calm")
+				_path = []
+				hide_in_hole(home_hole)
+				return
+			if step.get("await", true):
+				await go_home(cave, float(step.get("speed", 6.0)))
+			else:
+				go_home(cave, float(step.get("speed", 6.0)))
 
 
 # -------------------------------------------------------------- anger ----
@@ -432,6 +463,14 @@ func cutscene_action(action: String, step: Dictionary, player: Node) -> void:
 ## slanting down to the middle, and steam puffing out of both sides of
 ## her head.
 func _build_anger(brow_material: Material) -> void:
+	# Rosy cheeks for her happy face.
+	_blush = Node3D.new()
+	_blush.name = "Blush"
+	_blush.visible = false
+	_head.add_child(_blush)
+	var pink := CritterParts.material(Color(1.0, 0.72, 0.78), 0.6)
+	for side in [1.0, -1.0]:
+		CritterParts.sphere(_blush, Vector3(side * 0.062, -0.022, -0.088), 0.015, Vector3(1.4, 0.6, 0.5), pink, 8)
 	_brows = Node3D.new()
 	_brows.name = "Brows"
 	_brows.visible = false
@@ -495,6 +534,13 @@ func _build_anger(brow_material: Material) -> void:
 ## shake. Anything else: back to calm.
 func set_mood(mood: String) -> void:
 	var angry := mood == "angry"
+	var happy := mood == "happy"
+	# Happy: eyes squeezed into smiling slits, rosy cheeks, antennae up.
+	for eye in _eyes:
+		eye.scale = Vector3(1.25, 0.3, 1.0) if happy else Vector3.ONE
+		eye.position.y = 0.028 if happy else 0.02
+	if _blush:
+		_blush.visible = happy
 	if _brows:
 		_brows.visible = angry
 	for steam in _steam:
@@ -509,6 +555,90 @@ func set_mood(mood: String) -> void:
 		for i in 6:
 			shake.tween_property(_head, "rotation:z", 0.18 if i % 2 == 0 else -0.18, 0.06)
 		shake.tween_property(_head, "rotation:z", 0.0, 0.08)
+
+
+# ---------------------------------------------------------- celebrate ----
+
+const CLAP_RATE := 3.2       # claps per second
+const CLAP_REAR := 0.95      # how far she rears up to free her front legs (rad)
+
+## Delighted: a happy face, she rears up on her back legs and claps her two
+## front legs together, hopping. Awaitable.
+func celebrate(claps := 6) -> void:
+	set_mood("happy")
+	_clap_total = claps / CLAP_RATE
+	_clap_time = _clap_total
+	_claps_heard = 0
+	var rear := create_tween().set_parallel(true)
+	rear.tween_property(_body, "rotation:x", CLAP_REAR, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	rear.tween_property(self, "_rear", 1.0, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# Two little hops while clapping.
+	var base_y := position.y
+	var hops := create_tween()
+	for i in 2:
+		hops.tween_property(self, "position:y", base_y + 0.55, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		hops.tween_property(self, "position:y", base_y, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		hops.tween_interval(0.25)
+	await get_tree().create_timer(_clap_total + 0.1).timeout
+	var down := create_tween().set_parallel(true)
+	down.tween_property(_body, "rotation:x", 0.0, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	down.tween_property(self, "_rear", 0.0, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await down.finished
+
+
+## While clapping, the front pair of legs is lifted in front of her and
+## brought together and apart (overrides the walking pose).
+func _clap(delta: float) -> void:
+	if _clap_time < 0.0:
+		return
+	_clap_time -= delta
+	var elapsed := _clap_total - _clap_time
+	var phase := elapsed * CLAP_RATE
+	# 0 = legs apart, 1 = touching; snappy shut, slower open.
+	var shut := pow(0.5 + 0.5 * cos(phase * TAU), 3.0)
+	var count := int(phase + 0.5)
+	if count > _claps_heard and shut > 0.9:
+		_claps_heard = count
+		Sounds.play_at("menu_change", global_position + Vector3.UP, -2.0, randf_range(1.5, 1.8))
+	for i in 2:   # the two front legs come first in _legs
+		var leg: Dictionary = _legs[i]
+		var side: float = leg.side
+		var hip: Vector3 = _body.transform * (leg.hip as Vector3)
+		# Hands meet in front of her face (worked out from where the head is
+		# now, since she's rearing).
+		var face := _body.transform * _head.position
+		var hand := face + Vector3(side * lerpf(0.12, 0.01, shut), 0.02, -0.14)
+		var knee := (hip + hand) * 0.5 + Vector3(side * 0.06, -0.02, 0.0)
+		CritterParts.set_rod(leg.femur, hip, knee)
+		CritterParts.set_rod(leg.tibia, knee, hand)
+	if _clap_time < 0.0:
+		_clap_time = -1.0
+
+
+## Crawls back across the floor, up the wall and into her own hole, then
+## stays hidden there. Awaitable.
+func go_home(cave: CaveShell, walk_speed := 6.0) -> void:
+	if home_hole.is_empty() or cave == null:
+		return
+	set_mood("calm")
+	var hole := home_hole
+	var foot := cave.surface_transform(hole.angle, 0.0).origin
+	foot.y = 0.0
+	var keys: Array[Transform3D] = []
+	var here := global_position
+	here.y = 0.0
+	keys.append_array(floor_path(here, foot))
+	keys.append_array(wall_path(cave, hole.angle, 0.0, hole.angle, hole.t))
+	# Into the hole: facing into the wall, "up" up the wall.
+	var xf: Transform3D = hole.transform
+	var normal := xf.basis.y
+	var inward := Basis.looking_at(-normal, -xf.basis.z)
+	keys.append(Transform3D(inward, xf.origin + normal * 0.3))
+	keys.append(Transform3D(inward, xf.origin - normal * 1.5))
+	set_path(keys, walk_speed)
+	global_position = here   # start where she stands (set_path jumps to key 0)
+	await path_finished
+	state = State.HIDDEN
 
 
 ## Winds her body back, then swings her thorax forward through whatever is

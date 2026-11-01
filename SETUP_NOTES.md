@@ -1470,8 +1470,13 @@ ballants-game/
   device and the labels swap live.
 - You cannot move, jump, restart or switch levels during the cutscene.
 - **Yes:** "Oh, thank goodness…", a glowing orb floats from her to you,
-  "Received: the Queen's gift (placeholder)", the camera glides back
-  behind you and the HUD returns. You can play.
+  "Received: the Queen's gift (placeholder)". Then she's delighted: happy
+  squinting eyes and rosy cheeks, she rears up on her back legs, hops
+  twice and claps her two front legs together six times (a little click
+  each clap). She turns and crawls back across the floor, up the wall and
+  into her hole; about a second and a half into that walk the camera
+  glides back behind you, the HUD returns and you can move while she
+  finishes going home.
 - **No:** the Queen's eyes turn glowing red, black brows scowl, steam
   puffs from both sides of her head and she shakes it; then "In that
   case…". The jail door swings open on its hinge (out into the cave, never
@@ -1607,4 +1612,27 @@ Acceptance criteria:
 - "made by rgablr" sits in the bottom-left corner on every screen,
   including the black results and Game Over screens, and doesn't overlap
   the speed readout.
+
+## 35. The Queen celebrates and goes home (2026-11-01)
+
+After you accept and get her gift, the Queen celebrates (happy eyes, rosy
+cheeks, rears up, two hops, six claps of her front legs), then crawls back
+to her hole. Control returns while she is on her way, so you don't wait
+for the whole walk; she disappears into her hole on her own a few seconds
+later. Skipping the cutscene puts her straight back in her hole.
+
+New actor actions in cutscene files: `celebrate` (`claps`), `go_home`
+(`speed`, `await: false` to let the scene carry on, `instant: true`), and
+`mood` now also takes `"happy"`.
+
+Acceptance criteria:
+- Answer Yes: after "Received…", the camera is in front of her; she
+  rears up, hops and claps her two front legs together in front of her
+  face, looking happy (squinting eyes, pink cheeks). Then she turns and
+  walks off toward her hole, the camera turning to follow.
+- Shortly after she sets off you can roll again; she climbs the wall and
+  vanishes into her hole.
+- Hold Esc/Start to skip: she's gone (back in her hole) when you get
+  control.
+- `./run_tests.sh` passes; the Yes run checks she ends up in her hole.
 

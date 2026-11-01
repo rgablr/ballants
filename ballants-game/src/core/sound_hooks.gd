@@ -196,7 +196,7 @@ func ui(what: String) -> void:
 	match what:
 		"open": play("menu_open", -6.0)
 		"close": play("menu_close", -6.0)
-		"move": play("menu_move", -10.0)
+		"move": play("menu_move", -14.0, 1.3)
 		"change": play("menu_change", -6.0, _vary())
 		"confirm": play("confirm", -6.0)
 

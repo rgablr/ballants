@@ -2530,3 +2530,55 @@ wording, or send me yours.
 **Q50. Developer keys (1–8, 0, H, T, U, F1, F2)** still work and are
 listed on the Controls page. Hide them from players (only in debug
 builds), or keep?
+
+## 55. Stand-alone builds (2026-11-01)
+
+The game can now be built as apps that run without Godot installed:
+
+```
+cd ballants-game
+./export.sh            # both;  ./export.sh mac  /  ./export.sh windows
+```
+
+- **Mac**: `builds/mac/BallAnts.zip` (about 81 MB). Unzip it and
+  double-click Ballants.app. It runs natively on Intel and Apple-silicon
+  Macs. It is "ad-hoc" signed, not with an Apple developer account, so a
+  Mac that *downloaded* it shows a warning: the first time, right-click
+  Ballants.app > Open > Open. Copies passed between your own Macs by USB
+  stick or AirDrop usually open normally. Checked: the exported app
+  starts and shows the main menu.
+- **Windows**: `builds/windows/BallAnts.exe` (about 114 MB, one file).
+  Double-click it. Windows may say "Windows protected your PC": More info
+  > Run anyway. Built but **not yet tried on a Windows PC**.
+- `builds/` is not saved in git (the apps are big and can always be
+  rebuilt). The build settings are `ballants-game/export_presets.cfg`.
+- Needs Godot's export templates for 4.7.2 on the Mac that builds
+  (installed on this one, from Godot's official release, checksum
+  verified). Another Mac: in Godot, Editor > Manage Export Templates >
+  Download and Install.
+- One project setting changed for this: "Import ETC2 ASTC" textures
+  (needed for Apple-silicon Macs).
+- In a built app the F1 tuning panel's Save can't write the settings
+  file (the app has no editable copy of it); tune in the editor instead.
+- Save profiles live in the user data folder of the computer running
+  it, the same place for the built app as for the editor on that Mac.
+
+## 56. Fixed: clicks spamming in the customize screen with a controller
+
+Holding the left stick in the customize screen played the click about
+30–50 times a second and flicked through the colors just as fast. A held
+stick sends a new motion event every frame, and the customize screen
+treated each one as a fresh press. Now the stick is read once per frame
+instead: one step when you push it, then a steady repeat (after 0.45 s,
+about every 0.16 s) while you hold it. Keys and the d-pad are unchanged.
+Also fixed: the keyboard-or-controller tracking stopped while the game
+was paused (every menu pauses it), so menus could show keyboard names
+while you used a controller. The menu test now holds the stick in the
+customize screen and checks the color changes once.
+
+**The real cause of the rapid clicking in every menu:** the sound for
+moving between menu items was Kenney's "scroll", and each of those files
+is a full second of 19 clicks (a spun scroll wheel), so every move or
+choice played a burst of clicking. It is now a single short click
+(`click_002`, a little higher and softer). The scroll files stay in the
+pack folder but nothing uses them.

@@ -33,6 +33,9 @@ var _raw_roll := 0.0
 
 
 func _ready() -> void:
+	# Keep watching in menus too (the game is paused there), so they know
+	# whether a keyboard or a controller is in use.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_scan_devices()
 	Input.joy_connection_changed.connect(func(_device: int, _connected: bool): _scan_devices())
 

@@ -63,7 +63,9 @@ const SOUNDS := {
 	# Menus.
 	"menu_open": "res://assets/audio/sounds/kenney/open_001.ogg",
 	"menu_close": "res://assets/audio/sounds/kenney/close_001.ogg",
-	"menu_move": ["res://assets/audio/sounds/kenney/scroll_001.ogg", "res://assets/audio/sounds/kenney/scroll_002.ogg", "res://assets/audio/sounds/kenney/scroll_003.ogg"],
+	# Moving between menu items: one short tick. (Not Kenney's "scroll"
+	# sounds: each is a full second of 19 rapid clicks, a spun scroll wheel.)
+	"menu_move": "res://assets/audio/sounds/kenney/click_002.ogg",
 	"menu_change": ["res://assets/audio/sounds/kenney/click_001.ogg", "res://assets/audio/sounds/kenney/click_002.ogg", "res://assets/audio/sounds/kenney/click_003.ogg"],
 	"confirm": "res://assets/audio/sounds/kenney/confirmation_001.ogg",
 	# Results cards: level complete, world complete.

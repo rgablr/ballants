@@ -871,6 +871,28 @@ func _run_menutest() -> void:
 	await get_tree().process_frame
 	mcheck.call("Esc again resumes", GameMenu.mode == "" and not get_tree().paused)
 
+	# Customize with a held stick: one step per push, not one per frame
+	# (a held stick sends a motion event every frame).
+	CustomizeMenu.open()
+	await get_tree().process_frame
+	var steps := [0]
+	var count_step := func(): steps[0] += 1
+	Cosmetics.changed.connect(count_step)
+	for i in 30:
+		var push := InputEventJoypadMotion.new()
+		push.axis = JOY_AXIS_LEFT_X
+		push.axis_value = 0.9 + 0.002 * (i % 3)
+		Input.parse_input_event(push)
+		await get_tree().process_frame
+	var rest := InputEventJoypadMotion.new()
+	rest.axis = JOY_AXIS_LEFT_X
+	rest.axis_value = 0.0
+	Input.parse_input_event(rest)
+	await get_tree().process_frame
+	Cosmetics.changed.disconnect(count_step)
+	CustomizeMenu.close()
+	mcheck.call("customize: a held stick changes the color once, not every frame", steps[0] == 1, "%d changes in 30 frames" % steps[0])
+
 	# Pause in a level: Restart Level restarts it.
 	Levels.load_level(0)
 	await get_tree().create_timer(1.0).timeout

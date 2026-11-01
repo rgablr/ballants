@@ -9,7 +9,7 @@ assets only. No AI-generated content.
 | Nunito (variable font) | All UI text | https://github.com/googlefonts/nunito | The Nunito Project Authors (Vernon Adams, Cyreal, Jacques Le Bailly) | SIL Open Font License 1.1 (`ballants-game/assets/fonts/Nunito-OFL.txt`) |
 | Kenney Impact Sounds (bumps, thuds, grassy landings, grass snapping, enemy hit punch) | Sound effects | https://kenney.nl/assets/impact-sounds | Kenney (kenney.nl) | CC0 1.0 (`ballants-game/assets/audio/sounds/kenney/Kenney-License.txt`) |
 | Kenney Digital Audio (jump boing, hill drop whistle, hit tone, respawn pop) | Sound effects | https://kenney.nl/assets/digital-audio | Kenney | CC0 1.0 |
-| Kenney Interface Sounds (menu open/close/move/change, confirm, enemy warning scratch, friendly-bug bump plucks and bong) | Sound effects | https://kenney.nl/assets/interface-sounds | Kenney | CC0 1.0 |
+| Kenney Interface Sounds (menu open/close/move (a click)/change, confirm, enemy warning scratch, friendly-bug bump plucks and bong) | Sound effects | https://kenney.nl/assets/interface-sounds | Kenney | CC0 1.0 |
 | Kenney Music Jingles (PIZZI07 level complete, STEEL07 world complete) | Results jingles | https://kenney.nl/assets/music-jingles | Kenney | CC0 1.0 |
 | "Green Hills" (2016) | Background music | https://opengameart.org/content/green-hills | Igor Gundarev | CC0 1.0 |
 | "Sunflower Valley" (2017) | Background music | https://opengameart.org/content/sunflower-valley | isaiah658 | CC0 1.0 |

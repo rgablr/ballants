@@ -201,3 +201,4 @@ jolt_physics_3d/simulation/use_enhanced_internal_edge_removal=true
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+textures/vram_compression/import_etc2_astc=true

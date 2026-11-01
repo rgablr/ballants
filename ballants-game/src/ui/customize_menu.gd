@@ -212,6 +212,12 @@ func _unhandled_input(event: InputEvent) -> void:
 func _input(event: InputEvent) -> void:
 	if not is_open:
 		return
+	if event is InputEventJoypadMotion:
+		# The stick is read in _process instead: a held stick sends a new
+		# motion event every frame, and each one would count as a fresh
+		# press (30 color changes and clicks a second). (Left unhandled so
+		# Controls still notices a controller is in use; the game is paused.)
+		return
 	var handled := true
 	if event.is_action_pressed("ui_cancel"):
 		close()
@@ -324,9 +330,47 @@ func _place_rows() -> void:
 		box.position = Vector2(x, on_screen.y - height * 0.5)
 
 
+## The stick: one step when pushed, then a steady repeat while held.
+const STICK_THRESHOLD := 0.55
+const STICK_REPEAT_DELAY := 0.45
+const STICK_REPEAT_EVERY := 0.16
+var _stick_dir := Vector2i.ZERO
+var _stick_timer := 0.0
+
+
+func _read_stick(delta: float) -> void:
+	# The movement controls are WASD + the left stick; the keys are handled
+	# as key presses in _input, so only read here while on a controller.
+	var raw := Vector2.ZERO
+	if Controls.last_device == "controller":
+		raw = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var dir := Vector2i.ZERO
+	if raw.length() >= STICK_THRESHOLD:
+		# Whichever way it's pushed more: up / down or left / right.
+		dir = Vector2i(int(signf(raw.x)), 0) if absf(raw.x) > absf(raw.y) else Vector2i(0, int(signf(raw.y)))
+	if dir != _stick_dir:
+		_stick_dir = dir
+		_stick_timer = STICK_REPEAT_DELAY
+		_stick_step(dir)
+	elif dir != Vector2i.ZERO:
+		_stick_timer -= delta
+		if _stick_timer <= 0.0:
+			_stick_timer = STICK_REPEAT_EVERY
+			_stick_step(dir)
+
+
+func _stick_step(dir: Vector2i) -> void:
+	if dir.y != 0:
+		_select_index(_selected + dir.y)
+	elif dir.x != 0:
+		_change(ROW_SLOTS[_selected], dir.x)
+
+
 func _process(delta: float) -> void:
 	if not is_open:
+		_stick_dir = Vector2i.ZERO
 		return
+	_read_stick(delta)
 	_time += delta
 	# Slowly swing round so you see the ant from the front and both sides.
 	_turntable.rotation.y = sin(_time * 0.6) * 0.7

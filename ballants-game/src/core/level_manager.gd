@@ -94,6 +94,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		load_level(3)
 	elif event.is_action_pressed("level_5"):
 		load_level(4)
+	elif event.is_action_pressed("level_6"):
+		load_level(5)
+	elif event.is_action_pressed("level_7"):
+		load_level(6)
+	elif event.is_action_pressed("level_8"):
+		load_level(7)
 	elif event.is_action_pressed("level_0"):
 		load_test_arena()
 	elif event.is_action_pressed("hub"):
@@ -247,6 +253,7 @@ func _change_scene(path: String) -> void:
 	Game.control_locked = false
 	Game.cutscene_active = false
 	Engine.time_scale = 1.0
+	Progress.begin_run()
 	var was_dark := Transition.is_dark()
 	get_tree().change_scene_to_file(path)
 	await get_tree().process_frame
@@ -267,9 +274,10 @@ func _on_level_completed() -> void:
 	timer_running = false
 	_run_done = true
 	run_finished.emit(run_time)
+	var states := []
 	if is_in_level():
 		session_times[current_index] = run_time
-		Progress.record_finish(current_index, run_time, float(current_info().par_time))
+		states = Progress.record_finish(current_index, run_time, float(current_info().par_time))
 	var my_run := _run_id
 	await get_tree().create_timer(DROP_DELAY).timeout
 	if my_run != _run_id:
@@ -277,7 +285,7 @@ func _on_level_completed() -> void:
 	await Transition.fade_out(FADE_TIME)
 	if my_run != _run_id:
 		return
-	Transition.show_complete(current_info(), run_time)
+	Transition.show_complete(current_info(), run_time, states)
 	await get_tree().create_timer(CONTINUE_DELAY).timeout
 	if my_run != _run_id:
 		return

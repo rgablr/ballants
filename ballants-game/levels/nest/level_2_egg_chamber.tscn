@@ -1,0 +1,43 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://levels/level.gd" id="1_level"]
+[ext_resource type="PackedScene" path="res://levels/nest/anthill_theme.tscn" id="2_theme"]
+[ext_resource type="PackedScene" path="res://src/objects/start_point.tscn" id="3_start"]
+[ext_resource type="PackedScene" path="res://src/objects/ant_hill.tscn" id="4_hill"]
+[ext_resource type="Script" path="res://src/objects/nest/dirt_track.gd" id="5_track"]
+[ext_resource type="PackedScene" path="res://src/objects/fall_zone.tscn" id="6_fall"]
+[ext_resource type="PackedScene" path="res://src/objects/hidden_crystal.tscn" id="7_crystal"]
+
+; LEVEL 2 -- Egg Chamber. A STAND-IN until the level is built: a straight dirt
+; strip from the start to an ant hill, with both hidden crystals on it.
+; Replace everything below the theme with the real course (see
+; SETUP_NOTES.md, "Inside the Nest").
+[node name="Level2EggChamber" type="Node3D"]
+script = ExtResource("1_level")
+level_name = "Egg Chamber"
+
+[node name="AnthillTheme" parent="." instance=ExtResource("2_theme")]
+
+[node name="StartPoint" parent="." instance=ExtResource("3_start")]
+position = Vector3(0, 4, 20)
+
+[node name="Strip" type="StaticBody3D" parent="."]
+script = ExtResource("5_track")
+points = PackedVector3Array(0, 4, 24, 0, 4, 0, 0, 4, -24, 0, 4, -40)
+widths = PackedFloat32Array(10, 10, 10, 16)
+wall_height = 3.0
+
+[node name="HiddenCrystal0" parent="." instance=ExtResource("7_crystal")]
+position = Vector3(3, 4, -6)
+which = 0
+
+[node name="HiddenCrystal1" parent="." instance=ExtResource("7_crystal")]
+position = Vector3(-3, 4, -16)
+which = 1
+
+[node name="AntHill" parent="." instance=ExtResource("4_hill")]
+position = Vector3(0, 4, -32)
+
+[node name="FallZone" parent="." instance=ExtResource("6_fall")]
+position = Vector3(0, -1, -10)
+size = Vector3(400, 4, 400)

@@ -259,6 +259,54 @@ func _update_dread(delta: float) -> void:
 		_dread.stop()
 
 
+var _crystal_chime: AudioStreamWAV
+
+## Picking up a hidden sugar crystal: a bright three-note rising chime
+## with a glassy shimmer, made in code (no recording).
+func crystal(position: Vector3) -> void:
+	if _crystal_chime == null:
+		_crystal_chime = _make_crystal_chime()
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var voice := AudioStreamPlayer3D.new()
+	voice.bus = SFX_BUS
+	voice.stream = _crystal_chime
+	voice.volume_db = -4.0
+	voice.unit_size = 6.0
+	voice.max_distance = 40.0
+	scene.add_child(voice)
+	voice.global_position = position
+	voice.finished.connect(voice.queue_free)
+	voice.play()
+
+
+func _make_crystal_chime() -> AudioStreamWAV:
+	var rate := 22050
+	var seconds := 0.9
+	var count := int(rate * seconds)
+	var data := PackedByteArray()
+	data.resize(count * 2)
+	# Three notes a major third and a fifth apart, each ringing on under
+	# the next, with a high sparkle over the top.
+	var notes := [[0.0, 880.0], [0.09, 1108.7], [0.18, 1318.5]]
+	for i in count:
+		var t := float(i) / rate
+		var v := 0.0
+		for note in notes:
+			var start: float = note[0]
+			if t < start:
+				continue
+			var u := t - start
+			var f: float = note[1]
+			var env := minf(u / 0.012, 1.0) * exp(-u * 4.5)
+			v += (sin(TAU * f * u) + 0.35 * sin(TAU * f * 2.0 * u) + 0.12 * sin(TAU * f * 3.0 * u)) * env * 0.3
+		var sparkle := sin(TAU * 3520.0 * t) * exp(-t * 7.0) * 0.08 * (0.5 + 0.5 * sin(TAU * 28.0 * t))
+		v += sparkle
+		data.encode_s16(i * 2, int(clampf(v, -1.0, 1.0) * 30000.0))
+	return _wav(data, rate)
+
+
 ## One second of soft, low "brown" noise that loops seamlessly: a ball
 ## rolling over grass and dirt.
 func _make_rumble() -> AudioStreamWAV:

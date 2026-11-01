@@ -472,23 +472,40 @@ func _give_item(step: Dictionary, my_run: int) -> void:
 	await get_tree().create_timer(CutsceneStyle.ITEM_POPUP_TIME * 0.8).timeout
 
 
+## The Crystal Pouch: a small leather sack, tied at the neck, with a sugar
+## crystal glowing in its mouth.
 func _make_orb() -> Node3D:
 	var orb := Node3D.new()
-	orb.name = "GiftOrb"
-	var mesh := SphereMesh.new()
-	mesh.radius = 0.14
-	mesh.height = 0.28
-	mesh.radial_segments = 10
-	mesh.rings = 5
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(1.0, 0.95, 0.7)
-	material.emission_enabled = true
-	material.emission = Color(1.0, 0.85, 0.4)
-	material.emission_energy_multiplier = 2.5
-	mesh.material = material
-	var instance := MeshInstance3D.new()
-	instance.mesh = mesh
-	orb.add_child(instance)
+	orb.name = "CrystalPouch"
+	var leather := CritterParts.material(Color(0.55, 0.36, 0.2), 0.9)
+	var sack := CritterParts.sphere(orb, Vector3(0.0, -0.02, 0.0), 0.15, Vector3(1.0, 1.1, 0.9), leather, 10)
+	sack.name = "Sack"
+	var neck := CylinderMesh.new()
+	neck.top_radius = 0.07
+	neck.bottom_radius = 0.05
+	neck.height = 0.08
+	neck.radial_segments = 8
+	neck.material = leather
+	var neck_instance := MeshInstance3D.new()
+	neck_instance.mesh = neck
+	neck_instance.position = Vector3(0.0, 0.15, 0.0)
+	orb.add_child(neck_instance)
+	var tie := TorusMesh.new()
+	tie.inner_radius = 0.045
+	tie.outer_radius = 0.065
+	tie.rings = 8
+	tie.ring_segments = 5
+	tie.material = CritterParts.material(Color(0.9, 0.75, 0.3), 0.6)
+	var tie_instance := MeshInstance3D.new()
+	tie_instance.mesh = tie
+	tie_instance.position = Vector3(0.0, 0.12, 0.0)
+	orb.add_child(tie_instance)
+	var crystal := TunnelEntrance.make_crystal(0.12)
+	crystal.position = Vector3(0.0, 0.2, 0.0)
+	for child in crystal.get_children():
+		if child is OmniLight3D:
+			child.queue_free()
+	orb.add_child(crystal)
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.85, 0.5)
 	light.light_energy = 1.5

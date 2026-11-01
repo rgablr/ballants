@@ -25,7 +25,7 @@
 
     "yes": [
       {"do": "line", "speaker": "queen", "camera": "queen", "shot": "face", "text": "Oh, thank goodness! Here, take this. It will help you on your journey."},
-      {"do": "give_item", "from": "queen", "to": "hero", "item": "the Queen's gift (placeholder)"},
+      {"do": "give_item", "from": "queen", "to": "hero", "item": "the Crystal Pouch"},
       {"do": "camera", "target": "queen", "distance": 2.7, "height": 0.9, "yaw": 30, "look_height": 0.75, "move": 0.7},
       {"do": "actor", "actor": "queen", "action": "celebrate", "claps": 6},
       {"do": "camera", "target": "queen", "between": ["hero", "queen_hole"], "fraction": 0.12, "side": -2.5, "y": 1.9, "look_height": 0.3, "track": true, "move": 0.8},
@@ -43,7 +43,7 @@
     ],
 
     "skipped": [
-      {"do": "give_item", "from": "queen", "to": "hero", "item": "the Queen's gift (placeholder)", "silent": true},
+      {"do": "give_item", "from": "queen", "to": "hero", "item": "the Crystal Pouch", "silent": true},
       {"do": "actor", "actor": "queen", "action": "go_home", "instant": true},
       {"do": "end", "outcome": "yes"}
     ]

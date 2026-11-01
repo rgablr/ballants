@@ -154,6 +154,20 @@ func _run_drive(path: String) -> void:
 	var result: Array = await bot.finished
 	var passed: bool = result[0]
 	print("[drive] %s: level %d -- %s" % ["PASS" if passed else "FAIL", int(config.get("level", 1)), result[1]])
+	# Crystals: which of the level's four the run earned, and whether the
+	# file expected particular hidden ones ("expect_hidden": [0, 1]).
+	if Levels.is_in_level():
+		var states: Array = Progress.slot_states(Levels.current_index)
+		var earned := PackedStringArray()
+		for slot in Progress.SLOT_COUNT:
+			if states[slot] != "none":
+				earned.append(Progress.SLOT_NAMES[slot].to_lower() + ("" if states[slot] == "new" else " (old)"))
+		print("[drive] crystals this run: %s" % (", ".join(earned) if not earned.is_empty() else "none"))
+		for which in config.get("expect_hidden", []):
+			var got: bool = states[Progress.SLOT_HIDDEN_A + int(which)] != "none"
+			if not got:
+				passed = false
+			print("[drive] %s: hidden crystal %d %s" % ["PASS" if got else "FAIL", int(which), "collected" if got else "NOT collected"])
 	if not _screenshot_path.is_empty():
 		# One picture at the finish (ball dropping into the hill), one of the
 		# results screen a second after the wipe to black.
@@ -457,6 +471,29 @@ func _run_hubtest(mode: String) -> void:
 		await _shove(player, into, 8.0, 2.5)
 		var depth := locked.to_local(player.global_position).z
 		hcheck.call("locked tunnel blocks the ball", Levels.is_in_hub() and depth < 1.0, "reached z=%.2f into the mouth (rubble at 0..2.6)" % depth)
+
+	# Unlock thresholds from the level list: tunnel 4 opens at 5 crystals,
+	# tunnel 5 at 8, and a count below each keeps the rubble in place.
+	var tunnel5: TunnelEntrance = hub.tunnel_for(4)
+	if locked and tunnel5:
+		var need4 := Progress.crystals_needed(3)
+		var need5 := Progress.crystals_needed(4)
+		Progress.debug_set_crystals(need4 - 1)
+		await get_tree().process_frame
+		hcheck.call("tunnel 4 stays locked one crystal short", locked.is_locked(), "%d crystals" % Progress.crystals)
+		Progress.debug_set_crystals(need4)
+		await get_tree().create_timer(1.2).timeout
+		hcheck.call("tunnel 4 opens at %d crystals" % need4, not locked.is_locked() and not locked._rubble.visible)
+		hcheck.call("tunnel 5 still locked at %d crystals" % need4, tunnel5.is_locked())
+		Progress.debug_set_crystals(need5 - 1)
+		await get_tree().process_frame
+		hcheck.call("tunnel 5 stays locked one crystal short", tunnel5.is_locked(), "%d crystals" % Progress.crystals)
+		Progress.debug_set_crystals(need5)
+		await get_tree().create_timer(1.2).timeout
+		hcheck.call("tunnel 5 opens at %d crystals" % need5, not tunnel5.is_locked() and not tunnel5._rubble.visible)
+		Progress.debug_set_crystals(0)
+		await get_tree().process_frame
+		hcheck.call("rubble is back at 0 crystals", locked.is_locked() and tunnel5.is_locked())
 
 	# A small hole: fling the ball at one; it must stay outside the wall.
 	var shell: CaveShell = hub.shell

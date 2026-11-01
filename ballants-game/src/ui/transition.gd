@@ -50,8 +50,8 @@ func _ready() -> void:
 	_box.anchor_bottom = 0.5
 	_box.offset_left = -500.0
 	_box.offset_right = 500.0
-	_box.offset_top = -160.0
-	_box.offset_bottom = 160.0
+	_box.offset_top = -240.0
+	_box.offset_bottom = 240.0
 	_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	_box.add_theme_constant_override("separation", 14)
 	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -62,6 +62,7 @@ func _ready() -> void:
 	_level = _label(LINE_SIZE, Color(1, 1, 1, 0.8))
 	_time = _label(TIME_SIZE, Color.WHITE)
 	_par = _label(LINE_SIZE, Color(1, 1, 1, 0.8))
+	_build_crystal_row()
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(0, 30)
 	_box.add_child(spacer)
@@ -130,9 +131,48 @@ func clear() -> void:
 	_black.visible = false
 
 
-## The results on the black: message, level name, time, par verdict.
-## info is a LevelList entry, or empty in the test arena.
-func show_complete(info: Dictionary, time: float) -> void:
+var _crystal_row: HBoxContainer
+var _crystal_icons: Array[CrystalIcon] = []
+var _crystal_labels: Array[Label] = []
+var _crystal_summary: Label
+
+## The level's four sugar crystals: an icon and a name each, under the
+## time. Filled in by show_complete.
+func _build_crystal_row() -> void:
+	_crystal_row = HBoxContainer.new()
+	_crystal_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_crystal_row.add_theme_constant_override("separation", 34)
+	_crystal_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_box.add_child(_crystal_row)
+	for slot in Progress.SLOT_COUNT:
+		var column := VBoxContainer.new()
+		column.alignment = BoxContainer.ALIGNMENT_CENTER
+		column.add_theme_constant_override("separation", 4)
+		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_crystal_row.add_child(column)
+		var center := CenterContainer.new()
+		center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(center)
+		var icon := CrystalIcon.new()
+		icon.extent = 30.0
+		center.add_child(icon)
+		_crystal_icons.append(icon)
+		var label := Label.new()
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 17)
+		label.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.text = Progress.SLOT_NAMES[slot]
+		column.add_child(label)
+		_crystal_labels.append(label)
+	_crystal_summary = _label(20, Color(0.85, 0.97, 1.0))
+
+
+## The results on the black: message, level name, time, target time, and
+## the level's four crystals (bright = earned just now, plain = earned on
+## an earlier run, outline = still to get). info is a LevelList entry, or
+## empty in the test arena; states is Progress.slot_states() for the level.
+func show_complete(info: Dictionary, time: float, states: Array = []) -> void:
 	if info.is_empty():
 		_title.text = "GOAL!"
 		_level.text = "Test arena"
@@ -142,10 +182,40 @@ func show_complete(info: Dictionary, time: float) -> void:
 		_level.text = "%s  –  %s" % [info.world, info.name]
 		var par: float = info.par_time
 		if time <= par:
-			_par.text = "Under par by %s" % Levels.format_time(par - time)
+			_par.text = "Target %s  –  beaten by %s" % [Levels.format_time(par), Levels.format_time(par - time)]
 		else:
-			_par.text = "Par %s  (%s over)" % [Levels.format_time(par), Levels.format_time(time - par)]
+			_par.text = "Target %s  –  %s over" % [Levels.format_time(par), Levels.format_time(time - par)]
 	_time.text = Levels.format_time(time)
+	var show_crystals := not states.is_empty()
+	_crystal_row.visible = show_crystals
+	_crystal_summary.visible = show_crystals
+	if show_crystals:
+		var new_count := 0
+		var have := 0
+		for slot in Progress.SLOT_COUNT:
+			var state: String = states[slot] if slot < states.size() else "none"
+			_crystal_icons[slot].state = state
+			var name: String = Progress.SLOT_NAMES[slot]
+			if slot == Progress.SLOT_TIME and not info.is_empty():
+				name = "Under %s" % Levels.format_time(float(info.par_time))
+			match state:
+				"new":
+					_crystal_labels[slot].text = name + "\nNEW!"
+					_crystal_labels[slot].add_theme_color_override("font_color", Color(0.85, 0.97, 1.0))
+					new_count += 1
+					have += 1
+				"old":
+					_crystal_labels[slot].text = name + "\n(earned before)"
+					_crystal_labels[slot].add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+					have += 1
+				_:
+					_crystal_labels[slot].text = name + "\n–"
+					_crystal_labels[slot].add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+		if new_count > 0:
+			_crystal_summary.text = "+%d sugar crystal%s   (%d of 4 from this level,  %d in the pouch)" \
+					% [new_count, "" if new_count == 1 else "s", have, Progress.crystals]
+		else:
+			_crystal_summary.text = "%d of 4 from this level,  %d in the pouch" % [have, Progress.crystals]
 	_box.visible = true
 	Sounds.level_complete()
 
@@ -168,6 +238,8 @@ func show_world_complete(world: String, rows: Array) -> void:
 			all_timed = false
 	_time.text = "Total %s" % Levels.format_time(total) if all_timed else ""
 	_par.text = "\n".join(lines)
+	_crystal_row.visible = false
+	_crystal_summary.visible = false
 	_box.visible = true
 	_prompt.visible = false
 	Sounds.world_complete()

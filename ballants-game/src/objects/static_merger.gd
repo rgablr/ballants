@@ -33,9 +33,12 @@ static func merge(root: Node) -> StaticBody3D:
 	return merged
 
 
-static func _find_blocks(node: Node) -> Array[Block]:
-	var found: Array[Block] = []
-	if node is Block:
+## Blocks, and any other StaticBody3D that opts in with a `merge_collision`
+## property (DirtTrack, DirtWall), so a course built from several pieces
+## is still one body with no catchable seams.
+static func _find_blocks(node: Node) -> Array[StaticBody3D]:
+	var found: Array[StaticBody3D] = []
+	if node is Block or (node is StaticBody3D and "merge_collision" in node):
 		found.append(node)
 	for child in node.get_children():
 		found.append_array(_find_blocks(child))

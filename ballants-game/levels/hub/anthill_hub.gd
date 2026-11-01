@@ -150,9 +150,12 @@ func _arrive() -> void:
 	var rig := find_child("CameraRig", true, false)
 	if player == null:
 		return
-	if arrived_from >= 0 and arrived_from < tunnels.size():
+	if arrived_from >= 0:
 		# Back from a level: in front of its tunnel, looking into the cave.
-		var spot := tunnels[arrived_from].return_transform()
+		# A level with no tunnel (the unassigned garden levels) puts you in
+		# the middle, facing tunnel 1.
+		var tunnel := tunnel_for(arrived_from)
+		var spot := tunnel.return_transform() if tunnel else Transform3D(Basis.IDENTITY, Vector3(0.0, 0.6, 0.0))
 		player.global_position = spot.origin
 		player.linear_velocity = Vector3.ZERO
 		player.angular_velocity = Vector3.ZERO

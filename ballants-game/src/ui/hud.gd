@@ -35,10 +35,25 @@ func _ready() -> void:
 
 
 var _crystals: Label
+var _pouch: HBoxContainer
+var _pouch_icon: CrystalIcon
+var _pouch_level: Label
 
-## Top right: how many sugar crystals you have (hidden while it's zero
-## outside the hub).
+## Top right: the Crystal Pouch, i.e. how many sugar crystals you have of
+## all there are. Always shown in the hub; elsewhere once you have the
+## pouch or any crystal. In a level a second line shows that level's four.
 func _build_crystal_counter() -> void:
+	_pouch = HBoxContainer.new()
+	_pouch.alignment = BoxContainer.ALIGNMENT_END
+	_pouch.add_theme_constant_override("separation", 8)
+	_pouch.anchor_left = 1.0
+	_pouch.anchor_right = 1.0
+	_pouch.offset_left = -420.0
+	_pouch.offset_right = -16.0
+	_pouch.offset_top = 36.0
+	_pouch.offset_bottom = 76.0
+	_pouch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_pouch)
 	_crystals = Label.new()
 	_crystals.add_theme_font_size_override("font_size", 22)
 	_crystals.add_theme_color_override("font_color", Color(0.85, 0.97, 1.0))
@@ -46,22 +61,47 @@ func _build_crystal_counter() -> void:
 	_crystals.add_theme_constant_override("shadow_offset_x", 1)
 	_crystals.add_theme_constant_override("shadow_offset_y", 1)
 	_crystals.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_crystals.anchor_left = 1.0
-	_crystals.anchor_right = 1.0
-	_crystals.offset_left = -320.0
-	_crystals.offset_right = -16.0
-	_crystals.offset_top = 40.0
-	_crystals.offset_bottom = 70.0
-	add_child(_crystals)
+	_crystals.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_crystals.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_pouch.add_child(_crystals)
+	var center := CenterContainer.new()
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_pouch.add_child(center)
+	_pouch_icon = CrystalIcon.new()
+	_pouch_icon.extent = 20.0
+	_pouch_icon.state = "old"
+	center.add_child(_pouch_icon)
+	_pouch_level = Label.new()
+	_pouch_level.add_theme_font_size_override("font_size", 16)
+	_pouch_level.add_theme_color_override("font_color", Color(1, 1, 1, 0.75))
+	_pouch_level.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_pouch_level.add_theme_constant_override("shadow_offset_x", 1)
+	_pouch_level.add_theme_constant_override("shadow_offset_y", 1)
+	_pouch_level.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_pouch_level.anchor_left = 1.0
+	_pouch_level.anchor_right = 1.0
+	_pouch_level.offset_left = -420.0
+	_pouch_level.offset_right = -16.0
+	_pouch_level.offset_top = 76.0
+	_pouch_level.offset_bottom = 100.0
+	_pouch_level.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_pouch_level)
 	_refresh_crystals()
 
 
 func _refresh_crystals() -> void:
 	if _crystals == null:
 		return
-	var show := Progress.crystals > 0 or Levels.is_in_hub()
-	_crystals.visible = show
-	_crystals.text = "sugar crystals: %d%s" % [Progress.crystals, "   (debug: all tunnels open)" if Progress.debug_unlock_all else ""]
+	var show := Progress.crystals > 0 or Progress.has_queen_item or Levels.is_in_hub()
+	_pouch.visible = show
+	_crystals.text = "Crystal Pouch  %d / %d%s" % [Progress.crystals, Progress.crystals_total(),
+			"   (debug: all tunnels open)" if Progress.debug_unlock_all else ""]
+	_pouch_level.visible = show and Levels.is_in_level()
+	if Levels.is_in_level():
+		var marks := PackedStringArray()
+		for slot in Progress.SLOT_COUNT:
+			marks.append("◆" if Progress.has_crystal(Levels.current_index, slot) else "◇")
+		_pouch_level.text = "this level  " + " ".join(marks)
 
 
 func _refresh_controls_text() -> void:
@@ -114,7 +154,7 @@ func _process(_delta: float) -> void:
 		_speed.text = "%.1f m/s" % Vector2(v.x, v.z).length()
 	if Levels.is_in_level():
 		var info := Levels.current_info()
-		_timer.text = "%s   par %s" % [Levels.format_time(Levels.run_time), Levels.format_time(info.par_time)]
+		_timer.text = "%s   target %s" % [Levels.format_time(Levels.run_time), Levels.format_time(info.par_time)]
 	else:
 		_timer.text = ""
 	var gyro := Controls.gyro_active()

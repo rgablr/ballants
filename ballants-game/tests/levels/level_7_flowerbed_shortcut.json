@@ -1,4 +1,4 @@
-{"level": 2, "timeout": 120, "speed": 7, "waypoints": [
+{"level": 7, "timeout": 120, "speed": 7, "waypoints": [
   {"pos": [2.5, 0, -8], "speed": 9},
   {"pos": [3.5, 0, -16], "speed": 9},
   {"pos": [-3.5, 0, -36], "speed": 9},

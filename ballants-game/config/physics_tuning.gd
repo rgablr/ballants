@@ -150,7 +150,7 @@ var ground_normal_min := 0.5
 ## ground, or skimming just above it after one of the tiny hops it makes at
 ## speed (within jump_contact_margin), even while it is bouncing up off a
 ## landing. false = the normal rule (on the ground, plus coyote_time).
-var jump_on_contact := false
+var jump_on_contact := true
 
 ## With jump_on_contact on: how far above the ground, in meters under the
 ## ball, still counts as touching it.

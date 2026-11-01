@@ -45,6 +45,7 @@ credit, but they are placeholders to be replaced:
 | The Queen's gift (a glowing orb) | `src/cutscene/cutscene_player.gd` (`_make_orb`) | Whatever the item turns out to be (see SETUP_NOTES Q27) |
 | Level 4 Worker Rush pieces: crumb-carrying worker lines (crumbs, the glinting carried crystal, dark ant holes), crumb piles, the sliding storage gate with its lamps | `src/objects/nest/worker_line.gd`, `crumb_pile.gd`, `storage_gate.gd` (workers reuse `cave_ant.gd`) | Optional: low-poly CC0 crumb and door models; paths, timing and collision stay |
 | Dialogue "jibber" voices | `src/cutscene/voice_synth.gd` (short pitched tones computed in code; no recording, no AI) | Keep, or CC0 recorded blips per character |
+| Collapsing floor tiles (cracked slab, crack lines, dust puffs) and the falling-dust trickle (Level 5) | `src/objects/nest/collapsing_tile.gd`, `src/objects/nest/falling_dust.gd` | Optional: a few CC0 cracked-stone/dirt slab models (top face at the origin); the touch timer and collision stay |
 
 ## Searched but not used
 

@@ -383,6 +383,41 @@ var storage_gate_open_fraction := 0.45
 
 ## Seconds the gate takes to slide open or shut.
 var storage_gate_slide_time := 0.5
+# ------------------------- LEVEL 5: COLLAPSING GALLERY ----
+# The cracked floor tiles (src/objects/nest/collapsing_tile.gd). Each tile
+# starts a countdown when the ball first touches it: it waits the crack
+# delay, then shakes and puffs dust for the fall delay, then drops. The
+# section scales below multiply both delays for the tiles of one section.
+
+## Seconds from the ball touching a collapsing tile until it starts to crack and shake.
+var tile_crack_delay := 0.55
+
+## Seconds a cracked tile shakes before it drops away (its floor is gone the moment it drops).
+var tile_fall_delay := 0.75
+
+## How fast a dropped tile falls out of sight, as a fraction of gravity. Looks only.
+var tile_fall_speed := 1.0
+
+## How hard a cracking tile rattles, in meters. Looks only.
+var tile_shake := 0.05
+
+## Collapsing Gallery, section 1 (warning floor): its tiles take this many times longer to crack and fall.
+var gallery_warning_scale := 2.6
+
+## Collapsing Gallery, the curves: the inside row of tiles all start their countdown when you enter the curve, and take this fraction of the normal time.
+var gallery_curve_inside_scale := 0.3
+
+## Collapsing Gallery, final sprint: the slope's tiles take this fraction of the normal time.
+var gallery_sprint_scale := 0.5
+
+## Collapsing Gallery, the narrow bridges to the side ledge (hidden crystal 0): this fraction of the normal time.
+var gallery_ledge_bridge_scale := 0.5
+
+## Collapsing Gallery, the first bridge out to the side ledge starts its countdown when you roll past its approach, then waits this many seconds before its own crack countdown begins (each tile further out waits 0.25 s more). Turn onto it at once or it is gone.
+var gallery_ledge_bridge_delay := 1.5
+
+## Collapsing Gallery, the dead-end branch (hidden crystal 1): seconds after you roll onto its first tile before the entrance tile's crack countdown begins (it then cracks and drops like any tile; deeper tiles go 0.3 s later each). Grab the crystal and get back out before it drops.
+var gallery_dead_end_time := 2.5
 
 
 # ------------------------------------------------------- SLIDER RANGES ----
@@ -470,6 +505,16 @@ const RANGES := {
 	"storage_gate_period": [1.0, 12.0],
 	"storage_gate_open_fraction": [0.05, 0.95],
 	"storage_gate_slide_time": [0.05, 2.0],
+	"tile_crack_delay": [0.0, 3.0],
+	"tile_fall_delay": [0.05, 3.0],
+	"tile_fall_speed": [0.1, 3.0],
+	"tile_shake": [0.0, 0.3],
+	"gallery_warning_scale": [0.5, 6.0],
+	"gallery_curve_inside_scale": [0.05, 2.0],
+	"gallery_sprint_scale": [0.1, 2.0],
+	"gallery_ledge_bridge_scale": [0.1, 2.0],
+	"gallery_ledge_bridge_delay": [0.0, 6.0],
+	"gallery_dead_end_time": [0.5, 10.0],
 }
 
 

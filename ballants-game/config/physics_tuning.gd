@@ -25,7 +25,7 @@ signal value_changed(value_name: String, value)
 
 ## How hard everything falls. Real Earth gravity is 9.8. Games usually use
 ## more so that jumps feel quick and snappy instead of floaty.
-var gravity := 9.9425
+var gravity := 12.27
 
 ## If the ball falls below this height (for example, off the edge of the
 ## world), it is put back at the level's start point.
@@ -37,17 +37,17 @@ var fall_respawn_y := -2.5
 ## Weight of the ball (with the ant). Heavier = pushes crates harder, but
 ## roll_acceleration below is "per kilogram", so weight alone won't change
 ## how fast you accelerate. Keep it well above the crates so they scatter.
-var ball_mass := 4.1095
+var ball_mass := 2.5255
 
 ## How quickly you pick up speed when you hold a direction. Higher = snappier
 ## response. Lower = more "Super Monkey Ball" momentum, where you have to plan
 ## turns ahead. (This is the force per kilogram; a rolling ball converts about
 ## 70% of it into actual acceleration because some goes into spinning it.)
-var roll_acceleration := 10.48
+var roll_acceleration := 10.085
 
 ## Top rolling speed on flat ground. Holding a direction will not push you
 ## faster than this. Gravity (rolling down a ramp) still can.
-var max_speed := 14.1625
+var max_speed := 9.775
 
 ## When you push AGAINST the direction you're already moving, your push is
 ## multiplied by this. 1.0 = no help (pure momentum). 1.5 = stopping and
@@ -60,17 +60,17 @@ var air_control := 0.2475
 
 ## How quickly the ball slows down on its own when you let go. 0 = rolls
 ## forever. Higher = stops sooner. Keep this small for a momentum feel.
-var rolling_resistance := 0.2625
+var rolling_resistance := 0.3975
 
 ## How quickly the ball stops spinning on its own. Keep small.
-var spin_resistance := 0.1425
+var spin_resistance := 0.225
 
 ## Grip between the ball and the ground. 0 = ice, 1 = rubber on concrete.
 ## Low values make the ball slide instead of roll.
-var ball_friction := 0.785
+var ball_friction := 0.915
 
 ## How bouncy the ball is when it hits something. 0 = thud, 1 = superball.
-var ball_bounce := 0.47
+var ball_bounce := 0.55
 
 
 # ------------------------------------------------- FEEL (FAKE PHYSICS) ----
@@ -81,13 +81,13 @@ var ball_bounce := 0.47
 ## your current motion rather than along it. 0 = pure physics. 1 = sideways
 ## pushes are twice as strong. Turns start right away, momentum still
 ## carries you.
-var turn_assist := 0.72
+var turn_assist := 0.1
 
 ## Pulls the ball toward the ground while it rolls fast, so it hugs ramps
 ## and crests instead of popping off them. Given as a fraction of gravity
 ## at top speed (it scales down at lower speeds). 0 = off. Does not affect
 ## jumps or bounce pads.
-var ground_stick := 0.37
+var ground_stick := 1.0
 
 ## Seam smoothing: removes the sudden "pop" a ball can get when it rolls
 ## over the hidden edge where two flat floor pieces overlap. It only acts
@@ -102,26 +102,26 @@ var seam_smoothing := true
 
 ## A sudden speed change (m/s, in one physics step) at least this big counts
 ## as a small impact: dust puff + ball squash.
-var impact_small := 9.0312
+var impact_small := 1.475
 
 ## A sudden speed change at least this big is a BIG impact: adds screen
 ## shake and a hit-pause.
 var impact_big := 10.0
 
 ## How much the ball flattens on a big impact. 0.25 = squashes to 75%.
-var ball_squash := 0.372
+var ball_squash := 0.204
 
 ## How long the ball takes to spring back to round, in seconds.
-var ball_squash_time := 0.2923
+var ball_squash_time := 0.4158
 
 ## Screen shake size for a big impact, in meters of camera wobble.
-var shake_strength := 0.55
+var shake_strength := 0.1225
 
 ## How quickly the shake dies away. Higher = shorter shake.
 var shake_decay := 14.92
 
 ## Freeze-frame length on a big impact, in seconds. 0 = off.
-var hit_pause := 0.1335
+var hit_pause := 0.0
 
 ## How many degrees wider the camera's field of view gets at top speed.
 ## Makes speed feel like speed.
@@ -140,11 +140,11 @@ var coyote_time := 0.115
 
 ## Jump "forgiveness" before landing: if you press jump this many seconds
 ## before touching down, the jump still happens on landing. Keep tiny.
-var jump_buffer_time := 0.12
+var jump_buffer_time := 0.0425
 
 ## How steep a surface can be and still count as "ground" you can jump from.
 ## 1.0 = only perfectly flat. 0.5 = up to about 60 degrees. 0 = even walls.
-var ground_normal_min := 0.555
+var ground_normal_min := 0.5
 
 
 # --------------------------------------------------------------- CAMERA ----
@@ -181,15 +181,15 @@ var camera_lazy := true
 ## Lazy camera: how much farther than camera distance the ball can roll away
 ## before the camera is dragged along (meters). Bigger = the camera stays
 ## put longer.
-var camera_lazy_slack := 2.5
+var camera_lazy_slack := 1.9
 
 ## Lazy camera: a very slow drift round behind your direction of travel.
 ## 0 = never (pure lazy camera). Try 0.2 to 0.5 for a gentle drift.
-var camera_lazy_swing := 0.0
+var camera_lazy_swing := 0.2025
 
 ## Chase camera (when the lazy camera is off): swings round behind the
 ## direction you're rolling by itself. false = fully manual camera.
-var camera_auto_follow := true
+var camera_auto_follow := false
 
 ## How quickly the camera swings behind you. Higher = snappier.
 var camera_auto_follow_speed := 5.7182
@@ -200,7 +200,7 @@ var camera_look_hold_time := 0.9625
 
 ## Below this speed the camera stops trying to swing behind you, so it
 ## doesn't twitch when you're nearly stopped.
-var camera_auto_follow_min_speed := 1.65
+var camera_auto_follow_min_speed := 3.175
 
 ## Mouse look speed. Small numbers; try 0.001 to 0.005.
 var mouse_sensitivity := 0.0032
@@ -241,14 +241,14 @@ var gyro_invert := false
 ## How far the ant is thrown across the top of the ball when the ball
 ## speeds up, brakes or turns (it leans AGAINST the change, showing
 ## momentum). 0 = ant always stays glued to the very top.
-var ant_lean_per_accel := 0.0135
+var ant_lean_per_accel := 0.0503
 
 ## How far the ant leans TOWARD where you're pushing, the instant you push.
 ## This is the "I'm about to go that way" tell. Radians; 0 = off.
-var ant_input_lean := 0.3325
+var ant_input_lean := 0.3013
 
 ## Maximum lean angle in radians (0.6 is about 35 degrees).
-var ant_max_lean := 0.813
+var ant_max_lean := 0.0
 
 ## The lean is a spring. Stiffness = how fast it reacts (higher = snappier).
 var ant_lean_stiffness := 103.825
@@ -271,7 +271,7 @@ var ant_land_bounce_time := 0.05
 # --------------------------------------------------- INTERACTIVE OBJECTS ----
 
 ## Weight of a pushable crate. Much lighter than the ball = flies when hit.
-var crate_mass := 0.4
+var crate_mass := 0.0871
 
 ## Weight of the small light boxes scattered in fields. Very light = snappy.
 var light_box_mass := 0.15
@@ -280,13 +280,13 @@ var light_box_mass := 0.15
 var domino_mass := 0.3
 
 ## Weight of a loose boulder. Heavier than the ball = it shoves YOU around.
-var boulder_mass := 4.0
+var boulder_mass := 3.7815
 
 ## Weight of a seesaw plank.
 var seesaw_plank_mass := 1.5
 
 ## How high a bounce pad launches you, in meters.
-var bounce_pad_height := 5.0
+var bounce_pad_height := 6.01
 
 
 # ------------------------------------------------------- SLIDER RANGES ----

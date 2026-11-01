@@ -1,15 +1,22 @@
 extends Node3D
-## ORBIT CAMERA -- third-person camera that follows a target, swings around
-## behind the direction of travel by itself, and can be looked around with
-## the mouse or the right stick.
+## ORBIT CAMERA -- third-person camera that follows a target and can be
+## looked around with the mouse or the right stick.
 ##
 ## Structure: this node (the "rig") sits at the target and holds the rotation.
 ## A SpringArm3D child pushes the actual Camera3D backwards, and pulls it in
 ## automatically if a wall would otherwise block the view.
 ##
-## Auto-follow: when the target is moving and the player hasn't touched the
-## camera for Tuning.camera_look_hold_time seconds, the rig eases its yaw
-## toward the direction of travel and its pitch back to the default.
+## Lazy camera (the default, Tuning.camera_lazy): the camera remembers where
+## it is in the world and only turns to keep the target in view. It moves
+## only when the target gets farther than camera_distance + camera_lazy_slack
+## (dragged along like on a leash) or closer than camera_distance (it backs
+## off). Rolling in a circle, you see the circle; the camera doesn't chase.
+##
+## Chase camera (camera_lazy off): when the target is moving and the player
+## hasn't touched the camera for Tuning.camera_look_hold_time seconds, the
+## rig eases its yaw toward the direction of travel.
+##
+## Either way the pitch eases back to the default after a look.
 ##
 ## The player reads this rig's yaw to decide which way "forward" is, so
 ## turning the camera turns the controls too.
@@ -37,6 +44,8 @@ var _pitch := 0.0   # up/down rotation, radians (positive looks down)
 var _seconds_since_manual := 999.0
 var _shake := 0.0   # current screen-shake strength, meters
 var _fov_current := 70.0
+var _anchor := Vector3.ZERO   # lazy camera: where the camera stands (world, flat)
+var _anchor_set := false
 
 @onready var _arm: SpringArm3D = $SpringArm3D
 @onready var _camera: Camera3D = $SpringArm3D/Camera3D
@@ -69,6 +78,7 @@ func aim(yaw: float, pitch: float) -> void:
 	_apply_rotation()
 	if target:
 		global_position = _focus_point()
+	_anchor_set = false
 
 
 ## Kicks off a screen shake of the given size (meters). Decays on its own.
@@ -89,7 +99,9 @@ func _process(delta: float) -> void:
 	_attract_blend = move_toward(_attract_blend, 1.0 if attract else 0.0, delta * 0.7)
 	var showcase := smoothstep(0.0, 1.0, _attract_blend)
 	# Cheap to re-apply every frame, and it makes the F1 panel's changes live.
-	_arm.spring_length = lerpf(Tuning.camera_distance, ATTRACT_DISTANCE, showcase)
+	if not Tuning.camera_lazy or attract or showcase > 0.0:
+		_arm.spring_length = lerpf(Tuning.camera_distance, ATTRACT_DISTANCE, showcase)
+		_anchor_set = false
 	_update_fov(delta)
 	_update_shake(delta)
 
@@ -103,7 +115,10 @@ func _process(delta: float) -> void:
 			var invert := -1.0 if Tuning.invert_camera_y else 1.0
 			_turn_manually(-stick.x * Tuning.stick_sensitivity * delta,
 					stick.y * Tuning.stick_sensitivity * delta * invert)
-		_auto_follow(delta)
+		if Tuning.camera_lazy and showcase <= 0.0:
+			_lazy_follow(delta)
+		else:
+			_auto_follow(delta)
 
 	# Once the ball drops into the ant hill the camera holds still, so the
 	# ball visibly disappears down the hole instead of the camera following
@@ -119,7 +134,43 @@ func _turn_manually(yaw_delta: float, pitch_delta: float) -> void:
 	_pitch += pitch_delta
 	_seconds_since_manual = 0.0
 	_apply_rotation()
+	if _anchor_set:   # lazy camera: walk its spot round the target too
+		_anchor = global_position + Vector3(sin(_yaw), 0.0, cos(_yaw)) * _arm.spring_length
 	manually_turned.emit(yaw_delta)
+
+
+## The lazy camera. The camera keeps its spot in the world; each frame it
+## turns to face the target, and steps in or out only to keep the distance
+## between camera_distance and camera_distance + camera_lazy_slack.
+func _lazy_follow(delta: float) -> void:
+	if target == null:
+		return
+	var focus := global_position
+	var near: float = Tuning.camera_distance
+	var far: float = near + Tuning.camera_lazy_slack
+	if not _anchor_set:
+		_anchor = focus + Vector3(sin(_yaw), 0.0, cos(_yaw)) * _arm.spring_length
+		_anchor_set = true
+	var away := Vector3(_anchor.x - focus.x, 0.0, _anchor.z - focus.z)
+	var distance := away.length()
+	if distance < 0.01:
+		away = Vector3(sin(_yaw), 0.0, cos(_yaw))
+		distance = near
+	var length := clampf(distance, near, far)
+	_yaw = atan2(away.x, away.z)
+	# Optional slow drift round behind the direction of travel.
+	if Tuning.camera_lazy_swing > 0.0 and target is RigidBody3D \
+			and _seconds_since_manual >= Tuning.camera_look_hold_time:
+		var velocity: Vector3 = (target as RigidBody3D).linear_velocity
+		velocity.y = 0.0
+		if velocity.length() >= Tuning.camera_auto_follow_min_speed:
+			var behind := atan2(-velocity.x, -velocity.z)
+			_yaw = lerp_angle(_yaw, behind, 1.0 - exp(-delta * Tuning.camera_lazy_swing))
+	if _seconds_since_manual >= Tuning.camera_look_hold_time:
+		_pitch = lerp(_pitch, deg_to_rad(Tuning.camera_pitch_default), 1.0 - exp(-delta * 3.0))
+	_anchor = focus + Vector3(sin(_yaw), 0.0, cos(_yaw)) * length
+	_arm.spring_length = length
+	_apply_rotation()
 
 
 ## Eases the camera behind the direction the target is moving.

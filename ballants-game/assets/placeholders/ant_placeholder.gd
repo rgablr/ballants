@@ -56,7 +56,7 @@ const CRAWL_BACK := 0.17        # body slides back so it lies on top of the ball
 const CRAWL_LOWER := 0.0        # and drops this much (m); 0 keeps the legs in view
 const CRAWL_CADENCE := 1.6      # extra leg-cycle speed when crawling (x)
 # --- Teetering (sharp turns) ----------------------------------------------
-const TEETER_SWAY := 0.25       # side-to-side body wobble (radians)
+const TEETER_SWAY := 0.35       # side-to-side body wobble (radians)
 const TEETER_RATE := 10.0       # wobble speed (rad/s)
 
 const HIP_OFFSET := Vector3(0.045, 0.21, 0.03)   # back-leg hip, right side (x mirrored for left)

@@ -44,8 +44,10 @@ const CRAWL_OFF := 0.68
 ## top of the ball instead of sliding far round the front.
 const CRAWL_LEAN := 0.2
 ## Sideways acceleration (m/s²) where teetering starts, and where it's full.
-const TEETER_START := 7.0
-const TEETER_FULL := 16.0
+const TEETER_START := 4.0
+const TEETER_FULL := 10.0
+## How far the whole ant rocks over the ball at full teeter (radians).
+const TEETER_ROCK := 0.42
 # In the air: judged by how high the ball really is above the ground (with
 # a gap between "up" and "down"), so landing bounces and bumpy ground don't
 # leave the ant flailing after it has landed.
@@ -151,7 +153,7 @@ func _process(delta: float) -> void:
 	_teeter_time += delta
 	if _teeter > 0.001:
 		var forward_axis := Vector3(_facing.x, 0.0, _facing.z).normalized()
-		up = up.rotated(forward_axis, sin(_teeter_time * 7.0) * 0.28 * _teeter)
+		up = up.rotated(forward_axis, sin(_teeter_time * 7.0) * TEETER_ROCK * _teeter)
 
 	# Build the ant's orientation from "up" and "facing", keeping them at right
 	# angles so the model isn't skewed.
@@ -212,7 +214,7 @@ func _update_air(delta: float) -> void:
 	elif not grounded and gap > AIR_UP:
 		_in_air = true
 		_air_time = 0.0
-		_tumble_time = -1.0
+		_stop_somersault()
 
 
 ## The landing somersault: one quick forward roll around the ant's middle
@@ -228,12 +230,20 @@ func _somersault(delta: float) -> void:
 	_visual.rotation.x = angle
 	_visual.position = middle - Basis(Vector3.RIGHT, angle) * middle + lift
 	if t >= 1.0:
-		_tumble_time = -1.0
-		_visual.rotation.x = 0.0
-		_visual.position = Vector3.ZERO
+		_stop_somersault()
+
+
+## Ends the somersault (finished, or cut short by a jump) and puts the ant
+## squarely back on the ball. Cutting it short without this left the ant
+## floating above the ball, mid-hop.
+func _stop_somersault() -> void:
+	_tumble_time = -1.0
+	_visual.rotation.x = 0.0
+	_visual.position = Vector3.ZERO
 
 
 func _on_knocked_off(direction: Vector3) -> void:
+	_stop_somersault()
 	_fallen = true
 	_fall_time = 0.0
 	_fall_from = global_position
@@ -270,10 +280,8 @@ func _tumble(delta: float) -> void:
 
 func _on_respawned() -> void:
 	_fallen = false
-	_tumble_time = -1.0
 	_in_air = false
-	_visual.rotation.x = 0.0
-	_visual.position = Vector3.ZERO
+	_stop_somersault()
 	_lean = Vector3.ZERO
 	_lean_velocity = Vector3.ZERO
 
@@ -288,7 +296,7 @@ func _on_landed() -> void:
 func _on_jumped() -> void:
 	_in_air = true   # a jump is airborne at once, before the gap opens up
 	_air_time = 0.0
-	_tumble_time = -1.0
+	_stop_somersault()
 	var stretch := Tuning.ant_land_squash * 0.5
 	_play_bounce(Vector3(1.0 - stretch * 0.5, 1.0 + stretch, 1.0 - stretch * 0.5))
 

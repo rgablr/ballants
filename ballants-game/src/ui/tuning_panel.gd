@@ -5,6 +5,9 @@ extends CanvasLayer
 ## into the tuning file (comments are kept), "Reset" restores the values
 ## the file had when the game started. The panel is built from the tuning
 ## file itself, so a new value there shows up here with no extra work.
+##
+## Everything in it is mouse-only, so you can keep driving the ball with
+## the keyboard or a controller while the panel is open.
 
 const PANEL_WIDTH := 440.0
 
@@ -72,6 +75,7 @@ func _build() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.focus_mode = Control.FOCUS_NONE
 	column.add_child(scroll)
 
 	var list := VBoxContainer.new()
@@ -97,6 +101,7 @@ func _add_button(parent: Control, text: String, callback: Callable) -> void:
 	var button := Button.new()
 	button.text = text
 	button.pressed.connect(callback)
+	button.focus_mode = Control.FOCUS_NONE
 	parent.add_child(button)
 
 
@@ -118,6 +123,7 @@ func _add_row(parent: Control, value_name: String, comment: String) -> void:
 	if value is bool:
 		var check := CheckBox.new()
 		check.button_pressed = value
+		check.focus_mode = Control.FOCUS_NONE
 		check.toggled.connect(func(pressed: bool): Tuning.set_value(value_name, pressed))
 		row.add_child(check)
 		_rows[value_name] = {"control": check, "value_label": null}
@@ -129,6 +135,11 @@ func _add_row(parent: Control, value_name: String, comment: String) -> void:
 	slider.max_value = value_range[1]
 	slider.step = (value_range[1] - value_range[0]) / 400.0
 	slider.value = value
+	# Mouse only: never takes keyboard/controller focus (so driving the ball
+	# with the stick doesn't also move sliders), and the mouse wheel
+	# scrolls the list instead of nudging the slider under the pointer.
+	slider.focus_mode = Control.FOCUS_NONE
+	slider.scrollable = false
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	slider.custom_minimum_size.x = 140.0
 	row.add_child(slider)

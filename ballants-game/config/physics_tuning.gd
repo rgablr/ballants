@@ -170,8 +170,25 @@ var camera_follow_speed := 11.4325
 ## Camera field of view in degrees. Bigger = see more, feels faster.
 var camera_fov := 80.6
 
-## The camera swings around behind the direction you're rolling by itself.
-## false = fully manual camera.
+## LAZY CAMERA (on by default): the camera stays where it is and just turns
+## to keep the ball in view. It only moves when the ball gets too far away
+## (it's dragged along behind) or comes too close (it backs off). Roll in a
+## circle and you watch the circle instead of the camera chasing you.
+## Off = the older chase camera, which swings behind your direction of travel
+## (the auto follow settings below).
+var camera_lazy := true
+
+## Lazy camera: how much farther than camera distance the ball can roll away
+## before the camera is dragged along (meters). Bigger = the camera stays
+## put longer.
+var camera_lazy_slack := 2.5
+
+## Lazy camera: a very slow drift round behind your direction of travel.
+## 0 = never (pure lazy camera). Try 0.2 to 0.5 for a gentle drift.
+var camera_lazy_swing := 0.0
+
+## Chase camera (when the lazy camera is off): swings round behind the
+## direction you're rolling by itself. false = fully manual camera.
 var camera_auto_follow := true
 
 ## How quickly the camera swings behind you. Higher = snappier.
@@ -299,6 +316,8 @@ const RANGES := {
 	"camera_pitch_max": [0.0, 89.0],
 	"camera_follow_speed": [1.0, 40.0],
 	"camera_fov": [40.0, 120.0],
+	"camera_lazy_slack": [0.0, 10.0],
+	"camera_lazy_swing": [0.0, 3.0],
 	"camera_auto_follow_speed": [0.1, 10.0],
 	"camera_look_hold_time": [0.0, 5.0],
 	"camera_auto_follow_min_speed": [0.0, 10.0],

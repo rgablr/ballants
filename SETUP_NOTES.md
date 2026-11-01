@@ -1253,3 +1253,13 @@ Known limits: I can't hear the game, so the volumes come from the numbers. If an
 - **The bug:** after a jump, the ball bounces about 25 cm on landing (ball bounce 0.47 in the tuning file), and on the bumpy meadow it also loses ground contact for a moment. The ant's "in the air" pose followed the ball's ground contact exactly, so it kept flailing and looked like it was hovering for up to half a second while the ball rolled on.
 - **The fix:** a jump puts the ant in the air straight away. Otherwise the ant only counts as airborne when there's more than 0.5 m of gap under the ball, and as landed again at 0.12 m. Landing bounces and bumps stay under that, so they no longer set off the flailing. The ball's own bounce is unchanged.
 - **The somersault:** after more than 0.35 s in the air (any real jump or drop), the ant does one quick forward roll over its middle with a little spring up (0.45 s), then is back standing and running. Short hops and bumps don't trigger it.
+
+## 27. Lazy camera, mouse-only tuning panel, ant gap fix, stronger turn sway
+
+- **Lazy camera (new default).** The camera keeps its spot in the world and turns to keep the ball in view. It's dragged along only when the ball gets farther than `camera_distance + camera_lazy_slack` (2.14 + 2.5 m), and backs off only when the ball comes closer than `camera_distance`. Rolling in small circles, you watch the circle. Rolling toward the camera pushes it back, so reversing never needs a camera turn. Mouse or right stick still turns it, and it stays where you put it (only the up/down tilt eases back). In the F1 panel:
+  - `camera lazy`: off = the old chase camera.
+  - `camera lazy slack`: how far the ball can get before the camera follows.
+  - `camera lazy swing`: an optional very slow drift round behind you; 0 = none.
+- **F1 panel is mouse-only.** Sliders, checkboxes and buttons never take keyboard or controller focus, so you can drive and tune at the same time. The mouse wheel scrolls the list instead of nudging the slider under the pointer.
+- **Ant floating above the ball, fixed.** A hard bounce (or a jump) during the landing somersault cut it off partway without putting the ant back down. Ending a somersault early now always resets the ant onto the ball (also when knocked off).
+- **Turn sway (teetering) is easier to see.** It was there before but only kicked in on very sharp turns (sideways acceleration over 7 m/s², full at 16). A hard turn only reached about 38%. It now starts at 4 m/s² and is full at 10, and the ant rocks further (0.42 rad) and windmills its arms more. A hard turn now reaches full sway.

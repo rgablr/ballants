@@ -289,6 +289,22 @@ var seesaw_plank_mass := 1.5
 var bounce_pad_height := 6.01
 
 
+# --------------------------------------------- LEVEL 2: EGG CHAMBER ----
+
+## How fast a pile of ant eggs (Egg Chamber) knocks the ball back out
+## when it rolls into them, in m/s. Low = a soft nudge; the speed you had
+## along the pile is always kept.
+var egg_knock_speed := 2.5
+
+## Extra outward speed from an egg pile, as a fraction of the speed you
+## hit it with (0 = every hit knocks back the same; 0.55 = as bouncy as a
+## dirt wall).
+var egg_knock_bounce := 0.15
+
+## How much the eggs squash when the ball hits them (looks only).
+var egg_squash := 0.14
+
+
 # ------------------------------------------------------- SLIDER RANGES ----
 # Lowest and highest value the F1 panel's slider allows for each value.
 # Only affects the panel. Values not listed get a guessed range.
@@ -350,6 +366,9 @@ const RANGES := {
 	"boulder_mass": [0.1, 20.0],
 	"seesaw_plank_mass": [0.1, 10.0],
 	"bounce_pad_height": [0.5, 15.0],
+	"egg_knock_speed": [0.0, 10.0],
+	"egg_knock_bounce": [0.0, 1.0],
+	"egg_squash": [0.0, 0.5],
 }
 
 

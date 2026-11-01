@@ -8,8 +8,9 @@
     "intro": [
       {"do": "camera", "target": "hero", "shot": "face", "move": 1.8},
       {"do": "wait", "seconds": 1.0},
-      {"do": "camera", "target": "queen_hole", "distance": 5.0, "height": 1.0, "yaw": 35, "look_height": 0.0, "front_toward": "hero", "move": 1.2},
-      {"do": "actor", "actor": "queen", "action": "emerge", "hole": "queen_hole", "settle": "queen_spot", "face": "hero", "speed": 6.0, "camera_follow": true},
+      {"do": "camera", "target": "queen", "between": ["queen_hole", "hero"], "fraction": 0.5, "side": 4.0, "y": 2.4, "look_height": 0.2, "track": true, "move": 1.4},
+      {"do": "wait", "seconds": 0.4},
+      {"do": "actor", "actor": "queen", "action": "emerge", "hole": "queen_hole", "settle": "queen_spot", "face": "hero", "speed": 6.0},
       {"do": "line", "speaker": "queen", "camera": "queen", "shot": "face", "text": "Oh boy! Am I glad you're finally back! A small group of rogue worker ants stole our supply of sugar crystals we saved for the winter!"},
       {"do": "line", "speaker": "hero", "camera": "hero", "shot": "face", "gesture": "tilt", "text": "..."},
       {"do": "line", "speaker": "queen", "camera": "queen", "shot": "face", "text": "They hid them all over the yard and deep inside the nest!"},
@@ -29,6 +30,8 @@
     ],
 
     "no": [
+      {"do": "camera", "target": "queen", "shot": "face", "move": 0.6},
+      {"do": "actor", "actor": "queen", "action": "mood", "mood": "angry"},
       {"do": "line", "speaker": "queen", "camera": "queen", "shot": "face", "text": "In that case, you shall be banished to the jail cell for turning your back on the colony..."},
       {"do": "scene", "action": "jail"},
       {"do": "game_over", "target": "hero"}

@@ -33,6 +33,10 @@ extends Node
 ##       Puts the ball at that x,y,z right after the level loads, to picture
 ##       or try one spot of a level without rolling there.
 ##
+##   godot -- --hub --autoplay=no --screenshot=/tmp/s.png --shots=30,32,34
+##       Presses through cutscene dialogue with that answer and saves a
+##       picture at each time (s_1.png, s_2.png...).
+##
 ##   godot -- --press=toggle_tuning_panel
 ##       Presses a named input action half a second after start (any action
 ##       from the Input Map). Handy with --screenshot to capture the F1/F2 panels.
@@ -96,6 +100,10 @@ func _ready() -> void:
 					action = item.get_slice("@", 0)
 					at = float(item.get_slice("@", 1))
 				_press_later(action, at)
+		elif arg.begins_with("--autoplay="):
+			# --autoplay=yes|no : presses through any cutscene dialogue and
+			# gives that answer, for watching cutscenes with --shots.
+			_autoplay(arg.get_slice("=", 1))
 		elif arg.begins_with("--shots="):
 			# --shots=1,3.5,8 with --screenshot=base.png saves base_1.png, base_2.png...
 			var times := PackedFloat32Array()
@@ -218,6 +226,18 @@ func _timed_shots_later(times: PackedFloat32Array) -> void:
 			continue
 		await _save_screenshot("%s_%d.png" % [_screenshot_path.get_basename(), index])
 	get_tree().quit(0)
+
+
+func _autoplay(answer: String) -> void:
+	while true:
+		await get_tree().create_timer(0.5).timeout
+		var box := get_tree().root.find_child("DialogueBox", true, false) as DialogueBox
+		if box == null or not box.is_showing():
+			continue
+		if box._choosing:
+			_press_action("dialogue_no" if answer == "no" else "jump")
+		else:
+			_press_action("jump")
 
 
 func _press_later(action: String, at := 0.5) -> void:

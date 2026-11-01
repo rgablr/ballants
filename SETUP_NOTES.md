@@ -1315,8 +1315,9 @@ finishing a level puts you back in the cave in front of that tunnel.
   the number of crystals still needed standing on it and a glowing,
   turning sugar crystal hovering above the number. Unlock costs live in
   the level list too (`crystals_required`: 0, 0, 0, 2, 4 for now).
-- A **jail cell** between tunnels 1 and 5: a smaller barred alcove whose
-  bars slide up and slam down.
+- A **jail cell** between tunnels 1 and 5: a smaller alcove closed by an
+  arched door of bars (the same shape as the opening) that swings out on
+  a hinge and slams shut.
 - The **Queen's hole**, low on the wall between tunnels 1 and 2.
 
 **Progress** (`src/core/progress.gd`, a global): crystals, which levels
@@ -1344,10 +1345,13 @@ a head tilt / a double blink. The question shows "Yes (Space) / No (N)" or
 - **Yes:** her last line, then a small glowing orb floats from her to the
   hero, "Received: the Queen's gift (placeholder)", the camera glides back
   behind the hero, and the hub is yours.
-- **No:** her banishment line, the jail bars rise, the ball rolls over and
-  in by itself (camera following), the bars slam with a thud and a shake,
-  a black circle closes in on the hero, "Game Over" for two seconds, then
-  the title meadow fades in. **The title meadow is the main menu** for now
+- **No:** she gets furious (eyes glow red, black brows scowl, steam puffs
+  out of her head, her head shakes), says her banishment line, the jail
+  door swings open, she stomps round behind your ball and swings her
+  thorax into it: the ball flies across the cave, through the doorway,
+  smacks the back of the cell and bounces back to the middle, and the door
+  slams shut. Then a black circle closes in on the hero, "Game Over" for
+  two seconds, and the title meadow fades in. **The title meadow is the main menu** for now
   (see Q29).
 - **Skip:** hold Esc / Start for 1 s (a small bar fills top-left). Jumps to
   the end as if you'd said Yes (gift given, no popup).
@@ -1447,10 +1451,12 @@ ballants-game/
 
 **Opening cutscene (first arrival per session)**
 - About a second after landing the camera glides in on your ant's face
-  (its antennae and arms sway a little), then cuts to a hole on the wall.
+  (its antennae and arms sway a little), then glides to a spot on the
+  floor halfway between you and the Queen's hole (off to the side) and
+  looks up at the hole. The camera never goes into a wall.
 - The Queen crawls out of the hole (the only ant that ever comes fully
-  out), down the wall, across the floor with the camera following, and
-  turns to face you. She is clearly bigger than the workers, with a
+  out), down the wall and across the floor; the camera stays put and pans
+  to follow her all the way to you. She turns to face you. She is clearly bigger than the workers, with a
   crown and a big striped abdomen.
 - Each line: the speaker's name above a see-through black box on the
   right, text typing letter by letter with babbly blips (hers low and
@@ -1466,10 +1472,14 @@ ballants-game/
 - **Yes:** "Oh, thank goodness…", a glowing orb floats from her to you,
   "Received: the Queen's gift (placeholder)", the camera glides back
   behind you and the HUD returns. You can play.
-- **No:** "In that case…", the camera shows the jail, its bars rise, your
-  ball rolls there by itself and in, the bars slam (thud, shake), a black
-  circle closes in on you until the screen is black, "Game Over", and the
-  title meadow fades in from black.
+- **No:** the Queen's eyes turn glowing red, black brows scowl, steam
+  puffs from both sides of her head and she shakes it; then "In that
+  case…". The jail door swings open on its hinge (out into the cave, never
+  through the dirt), she walks behind your ball, winds up and swings her
+  thorax: dust, a thud, the ball flies in an arc across the cave and
+  through the doorway, smacks the back wall of the cell (dust, squash,
+  shake), bounces back to the middle. The door slams shut and rattles. A
+  black circle closes in on you, "Game Over", the title meadow fades in.
 - Hold Esc (or Start) for a second at any point in the cutscene: a
   "skipping..." bar fills top-left, the scene ends at once as if you'd
   said Yes, you can play. Tapping Esc does not skip (it only frees the
@@ -1564,3 +1574,37 @@ or press H / R there.**
 - (a) Smooth pans (as built, 0.9 s).
 - (b) Hard cuts.
 - (c) Pans between the same speaker's lines, cuts when the speaker changes.
+
+## 34. Fixes from your first look (2026-11-01)
+
+- **Queen's entrance camera** no longer goes through the wall. It stands
+  on the floor halfway between the hero and her hole (4 m off to the
+  side, 2.4 m up), looks at the hole, and pans to follow her down the wall
+  and across to the hero. New framing option for cutscene files:
+  `"between": ["actor", "actor"]` with `fraction`, `side`, `height`/`y`.
+- **Angry Queen on "No":** red glowing eyes, scowling black brows, steam
+  puffing from both sides of her head, a furious head shake (new actor
+  action `{"do": "actor", "actor": "queen", "action": "mood", "mood":
+  "angry"}`). Then she bats the ball into the cell with a thorax swing
+  instead of the ball rolling in by itself; it bounces off the back wall.
+- **Jail door** is now an arched door of bars the same shape as the
+  opening, hinged on its left edge; it swings out into the cave to open
+  and slams shut with a rattle. It never passes through the dirt.
+- **Watermark** "made by rgablr" in the bottom-left corner of every screen
+  (title, levels, hub, black screens). The speed readout moved up to make
+  room. Text and look: `WATERMARK` at the top of `src/ui/transition.gd`.
+- Dev flag `--autoplay=yes|no` presses through cutscene dialogue with that
+  answer (pair with `--shots`).
+
+Acceptance criteria:
+- Fresh hub arrival: when the camera leaves the hero it ends up on the
+  cave floor looking up at a hole; you never see the inside of a wall.
+  The Queen crawls out and the view turns to follow her down and across.
+- Answer No: her eyes glow red, brows scowl, steam puffs, then the line.
+  The jail door swings open sideways (not up). She walks behind the ball,
+  rears back and swings into it; the ball flies into the cell, hits the
+  back wall, bounces, and the door slams shut. Game Over, title.
+- "made by rgablr" sits in the bottom-left corner on every screen,
+  including the black results and Game Over screens, and doesn't overlap
+  the speed readout.
+

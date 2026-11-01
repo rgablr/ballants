@@ -34,7 +34,9 @@ extends Node
 ##   goto      section
 ##   end       outcome
 ## FRAMINGS: distance, height, yaw (degrees from the target's front),
-## look_height, optional y (absolute camera height), fov, track (keep
+## look_height, optional y (absolute camera height), between [actor,
+## actor] + fraction + side (stand part-way between two actors, off to the
+## side, instead of around the target), fov, track (keep
 ## aiming at a moving target), follow (keep the whole framing on a moving
 ## target). Defaults in CutsceneStyle.SHOT_DEFAULTS; per character in the
 ## characters file under "shots".
@@ -311,7 +313,7 @@ func shot_params(target_id: String, shot_name: String, overrides: Dictionary = {
 	var own: Dictionary = (ch.get("shots", {}) as Dictionary).get(shot_name, {})
 	for key in own:
 		params[key] = own[key]
-	for key in ["distance", "height", "yaw", "look_height", "y", "fov", "track", "follow", "front_toward"]:
+	for key in ["distance", "height", "yaw", "look_height", "y", "fov", "track", "follow", "front_toward", "between", "fraction", "side"]:
 		if overrides.has(key):
 			params[key] = overrides[key]
 	return params
@@ -343,6 +345,21 @@ func _shot_transform(target, p: Dictionary) -> Transform3D:
 	var front := _front_of(target, p)
 	var dir := front.rotated(Vector3.UP, deg_to_rad(float(p.get("yaw", 0.0))))
 	var cam_pos := origin + dir * float(p.get("distance", 2.0)) + Vector3.UP * float(p.get("height", 0.5))
+	if p.has("at"):
+		# A fixed spot given by code (a Vector3).
+		cam_pos = p.at
+	elif p.has("between"):
+		# Part-way between two actors ("fraction", 0.5 = halfway), pushed
+		# "side" meters off the line between them, "height" above it.
+		var pair: Array = p.between
+		var a := position_of(resolve(str(pair[0])))
+		var b := position_of(resolve(str(pair[1])))
+		var mid := a.lerp(b, float(p.get("fraction", 0.5)))
+		var line := b - a
+		line.y = 0.0
+		var across := Vector3.UP.cross(line.normalized()) if line.length_squared() > 0.0001 else Vector3.RIGHT
+		cam_pos = mid + across * float(p.get("side", 0.0))
+		cam_pos.y = mid.y + float(p.get("height", 0.5))
 	if p.has("y"):
 		cam_pos.y = float(p.y)
 	var look := origin + Vector3.UP * float(p.get("look_height", 0.3))

@@ -24,6 +24,12 @@ const WORKER_COUNT := 14
 const FALL_HEIGHT := 17.5
 ## Where the Queen settles to talk, relative to the hero (who faces -Z).
 const QUEEN_SPOT := Vector3(1.7, 0.0, -2.4)
+## How far behind the ball the Queen stands to swing at it (her origin to
+## the ball's center).
+const QUEEN_SWING_GAP := 1.05
+## Looking into the jail cell from in front, off to the side away from the
+## door's hinge so the open door is out of the way.
+const CELL_SHOT := {"distance": 5.5, "height": 1.6, "yaw": -24.0, "look_height": 0.9}
 const INTRO_CUTSCENE := "res://cutscenes/hub_intro.json"
 
 ## The hero has hit the floor after the fall.
@@ -236,53 +242,82 @@ func cutscene_action(action: String, _step: Dictionary, player: CutscenePlayer) 
 			await _jail_sequence(player)
 
 
-## The hero is banished: the bars rise, the ball rolls into the cell by
-## itself (the camera following), and the bars slam shut behind it.
+## The hero is banished: the cell door swings open, the furious Queen
+## lines up behind the ball and swings her thorax into it, the ball flies
+## across the cave, through the doorway and bounces off the back of the
+## cell, and the door slams shut behind it.
 func _jail_sequence(cut: CutscenePlayer) -> void:
 	var ball := get_tree().get_first_node_in_group("player") as PlayerBall
 	if ball == null:
 		return
-	await cut.shot(jail, {"distance": 9.0, "height": 2.4, "yaw": 35.0, "look_height": 1.2}, 1.2)
+	# The door swings open (seen from the middle of the cave).
+	await cut.shot(jail, {"distance": 9.0, "height": 2.4, "yaw": 35.0, "look_height": 1.2}, 1.0)
 	jail.open()
-	await get_tree().create_timer(1.0).timeout
-	# Take the ball out of the physics and roll it in along a path.
-	ball.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
-	ball.freeze = true
-	ball.linear_velocity = Vector3.ZERO
-	var points: Array[Vector3] = [ball.global_position, jail.approach_point(), jail.cell_center()]
-	var total := points[0].distance_to(points[1]) + points[1].distance_to(points[2])
-	cut.shot(ball, {"distance": 6.0, "height": 2.2, "yaw": 150.0, "look_height": 0.3, "follow": true, "front_toward": "jail"}, 1.0)
-	var tween := create_tween()
-	tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
-	var last := [ball.global_position]
-	tween.tween_method(func(d: float):
-		var p := _along(points, d)
-		var moved: Vector3 = p - last[0]
-		last[0] = p
-		ball.global_position = p
-		# Roll the ball visually as it moves (axis = up x direction).
-		if moved.length() > 0.0001:
-			var axis := Vector3.UP.cross(moved.normalized())
-			if axis.length() > 0.001:
-				ball.rotate(axis.normalized(), moved.length() / ball.radius),
-		0.0, total, total / 5.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	await tween.finished
-	await cut.shot(jail, {"distance": 5.5, "height": 1.6, "yaw": 12.0, "look_height": 0.9}, 0.0)
-	await get_tree().create_timer(0.35).timeout
-	jail.slam()
+	await get_tree().create_timer(1.1).timeout
+	# The Queen walks round behind the ball, lined up with the cell.
+	var start := ball.global_position
+	var toward := jail.mouth_point(start.y) - start
+	toward.y = 0.0
+	toward = toward.normalized()
+	var side := Vector3.UP.cross(toward)
+	var stand := start - toward * QUEEN_SWING_GAP
+	stand.y = 0.0
+	cut.shot(ball, {"at": start - toward * 1.5 + side * 5.5 + Vector3.UP * 1.6, "look_height": 0.2, "track": true}, 0.9)
+	await queen.walk_floor_to(stand, 3.5)
+	await queen.face_point(start, 0.35)
+	# Wind up... and swing.
+	queen.swing_thorax()
+	await queen.struck
+	await _fling_into_cell(cut, ball, start, toward, side)
+	# Slam.
 	await get_tree().create_timer(0.3).timeout
+	jail.slam()
+	await get_tree().create_timer(0.22).timeout
 	cut.shake(0.4)
 	await get_tree().create_timer(1.3).timeout
 
 
-## A point `distance` meters along a polyline.
-static func _along(points: Array[Vector3], distance: float) -> Vector3:
-	for i in points.size() - 1:
-		var seg := points[i].distance_to(points[i + 1])
-		if distance <= seg or i == points.size() - 2:
-			return points[i].lerp(points[i + 1], clampf(distance / maxf(seg, 0.0001), 0.0, 1.0))
-		distance -= seg
-	return points[points.size() - 1]
+## The ball, taken out of the physics, flies in an arc to the doorway,
+## straight on into the back wall (dust, squash, shake), bounces back to
+## the middle of the cell with a hop, and settles.
+func _fling_into_cell(cut: CutscenePlayer, ball: PlayerBall, start: Vector3, toward: Vector3, side: Vector3) -> void:
+	ball.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+	ball.freeze = true
+	ball.linear_velocity = Vector3.ZERO
+	Sounds.play("thud", 0.0, 1.2)
+	Effects.impact(Tuning.impact_big, toward, start - toward * 0.5)
+	ball._play_squash(toward, Tuning.impact_big)
+	cut.shake(0.25)
+	var mouth := jail.mouth_point(1.0)
+	var back := jail.back_wall_point(1.0)
+	var cell := jail.cell_center()
+	# Watch from the side, half-way along the flight, turning to follow.
+	var middle := start.lerp(mouth, 0.5)
+	cut.shot(ball, {"at": middle + side * 9.0 + Vector3.UP * 3.0, "look_height": 0.0, "track": true}, 0.0)
+	var spin_axis := side.normalized()
+	var fly := func(from: Vector3, to: Vector3, peak: float, seconds: float, spin: float) -> void:
+		var tween := create_tween()
+		tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
+		tween.tween_method(func(t: float):
+			ball.global_position = from.lerp(to, t) + Vector3.UP * sin(t * PI) * peak
+			ball.rotate(spin_axis, -spin * get_physics_process_delta_time()),
+			0.0, 1.0, seconds)
+		await tween.finished
+	await fly.call(start, mouth, 4.5, 0.95, 18.0)
+	# Cut to a view through the doorway (from the side away from the open
+	# door) to see it hit the back of the cell.
+	cut.shot(jail, CELL_SHOT, 0.0)
+	await fly.call(mouth, back, 0.0, 0.14, 18.0)
+	# Smack into the back wall.
+	Sounds.play("thud", 3.0, 0.8)
+	Effects.impact(Tuning.impact_big * 1.5, -toward, back + toward * 0.5)
+	ball._play_squash(-toward, Tuning.impact_big * 1.5)
+	cut.shake(0.35)
+	await fly.call(back, cell, 0.7, 0.42, -8.0)
+	Sounds.land(4.0)
+	ball._play_squash(Vector3.UP, Tuning.impact_big * 0.6)
+	await fly.call(cell, cell, 0.2, 0.25, -3.0)
+	Sounds.land(2.0)
 
 
 ## The tunnel that leads to a level index, or null.

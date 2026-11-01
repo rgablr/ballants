@@ -12,6 +12,8 @@ extends CanvasLayer
 ##   Transition.fade_in(0.5)               # black lifts off the new level
 
 const TITLE_SIZE := 64
+## The watermark in the bottom-left corner of every screen.
+const WATERMARK := "made by rgablr"
 const TIME_SIZE := 56
 const LINE_SIZE := 28
 
@@ -66,6 +68,28 @@ func _ready() -> void:
 	_prompt = _label(24, Color(1, 0.95, 0.7))
 	_prompt.text = "[press any button to continue]"
 	_prompt.visible = false
+	_build_watermark()
+
+
+## "made by rgablr", small in the bottom-left corner, on every screen
+## (this layer sits above all the others and never goes away).
+func _build_watermark() -> void:
+	var mark := Label.new()
+	mark.name = "Watermark"
+	mark.text = WATERMARK
+	mark.add_theme_font_size_override("font_size", 15)
+	mark.add_theme_color_override("font_color", Color(1, 1, 1, 0.55))
+	mark.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
+	mark.add_theme_constant_override("shadow_offset_x", 1)
+	mark.add_theme_constant_override("shadow_offset_y", 1)
+	mark.anchor_top = 1.0
+	mark.anchor_bottom = 1.0
+	mark.offset_left = 16.0
+	mark.offset_right = 400.0
+	mark.offset_top = -28.0
+	mark.offset_bottom = -6.0
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(mark)
 
 
 func _label(size: int, color: Color) -> Label:

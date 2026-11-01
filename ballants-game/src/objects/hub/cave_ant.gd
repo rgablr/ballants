@@ -22,6 +22,8 @@ extends Node3D
 @export var speed := 2.4
 
 signal path_finished
+## The thorax swing just hit (see swing_thorax).
+signal struck
 
 enum State { HIDDEN, PEEKING, TRAVELLING, IDLE }
 
@@ -38,6 +40,9 @@ const EYE := Color(0.02, 0.02, 0.02)
 
 var _body: Node3D
 var _head: Node3D
+var _eye_material: StandardMaterial3D
+var _brows: Node3D
+var _steam: Array[GPUParticles3D] = []
 var _legs: Array[Dictionary] = []
 var _antennae: Array[Node3D] = []
 var _time := 0.0
@@ -68,6 +73,10 @@ func _build() -> void:
 	var body_mat := CritterParts.material(QUEEN_BODY if queen else BODY, 0.85)
 	var dark_mat := CritterParts.material(QUEEN_DARK if queen else DARK, 0.8)
 	var eye_mat := CritterParts.material(EYE, 0.3)
+	if queen:
+		# Her own eye material, so only her eyes turn red when she's angry.
+		eye_mat = eye_mat.duplicate() as StandardMaterial3D
+		_eye_material = eye_mat
 	var s := body_scale * (2.4 if queen else 1.0)
 	scale = Vector3.ONE * s
 	_body = Node3D.new()
@@ -129,6 +138,7 @@ func _build() -> void:
 		ring_instance.mesh = ring
 		ring_instance.position = Vector3(0.0, 0.05, -0.045)
 		_head.add_child(ring_instance)
+		_build_anger(dark_mat)
 	# Six legs: hip on the thorax, knee up and out, foot on the ground.
 	for i in 3:
 		for side in [1.0, -1.0]:
@@ -391,6 +401,7 @@ func walk_floor_to(point: Vector3, walk_speed := 4.0) -> void:
 ##   walk_to  to (a spot or actor), speed
 ##   face     target (an actor)
 ##   nod
+##   mood     mood ("angry" / "calm"), hold (seconds to wait after)
 func cutscene_action(action: String, step: Dictionary, player: Node) -> void:
 	match action:
 		"emerge":
@@ -410,6 +421,112 @@ func cutscene_action(action: String, step: Dictionary, player: Node) -> void:
 			await face_point(player.position_of(player.resolve(str(step.get("target", "")))))
 		"nod":
 			nod()
+		"mood":
+			set_mood(str(step.get("mood", "calm")))
+			await get_tree().create_timer(float(step.get("hold", 0.6))).timeout
+
+
+# -------------------------------------------------------------- anger ----
+
+## The Queen's angry face, hidden until set_mood("angry"): heavy brows
+## slanting down to the middle, and steam puffing out of both sides of
+## her head.
+func _build_anger(brow_material: Material) -> void:
+	_brows = Node3D.new()
+	_brows.name = "Brows"
+	_brows.visible = false
+	_head.add_child(_brows)
+	var brow_black := CritterParts.material(Color(0.02, 0.01, 0.01), 0.6)
+	for side in [1.0, -1.0]:
+		# Outer end high, inner end low and forward: a scowl, sitting just
+		# above each eye, thick and black so it reads on her dark head.
+		CritterParts.rod(_brows, Vector3(side * 0.078, 0.066, -0.098), Vector3(side * 0.014, 0.036, -0.128), 0.015, brow_black)
+	var puff := SphereMesh.new()
+	puff.radius = 0.5
+	puff.height = 1.0
+	puff.radial_segments = 8
+	puff.rings = 4
+	var steam_material := StandardMaterial3D.new()
+	steam_material.albedo_color = Color(1.0, 1.0, 1.0, 0.75)
+	steam_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	steam_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	steam_material.vertex_color_use_as_albedo = true
+	puff.material = steam_material
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1, 1, 1, 0.9))
+	fade.set_color(1, Color(1, 1, 1, 0.0))
+	var fade_texture := GradientTexture1D.new()
+	fade_texture.gradient = fade
+	var grow := Curve.new()
+	grow.max_value = 2.5   # set before the points, or they get clamped to 1
+	grow.add_point(Vector2(0.0, 0.5))
+	grow.add_point(Vector2(1.0, 2.2))
+	var grow_texture := CurveTexture.new()
+	grow_texture.curve = grow
+	for side in [1.0, -1.0]:
+		# Puffs of steam from the top of her head, rising and swelling. Local
+		# coordinates keep them at her head (and scaled with her).
+		var steam := GPUParticles3D.new()
+		steam.name = "Steam"
+		steam.emitting = false
+		steam.amount = 10
+		steam.lifetime = 0.75
+		steam.local_coords = true
+		steam.draw_pass_1 = puff
+		steam.position = Vector3(side * 0.05, 0.08, -0.03)
+		var process := ParticleProcessMaterial.new()
+		process.direction = Vector3(side * 0.6, 1.0, 0.0)
+		process.spread = 14.0
+		process.initial_velocity_min = 0.22
+		process.initial_velocity_max = 0.32
+		process.gravity = Vector3(0.0, 0.12, 0.0)
+		process.damping_min = 0.15
+		process.damping_max = 0.25
+		process.scale_min = 0.045
+		process.scale_max = 0.065
+		process.scale_curve = grow_texture
+		process.color_ramp = fade_texture
+		steam.process_material = process
+		_head.add_child(steam)
+		_steam.append(steam)
+
+
+## "angry": red glowing eyes, scowling brows, steam, a furious head
+## shake. Anything else: back to calm.
+func set_mood(mood: String) -> void:
+	var angry := mood == "angry"
+	if _brows:
+		_brows.visible = angry
+	for steam in _steam:
+		steam.emitting = angry
+	if _eye_material:
+		_eye_material.albedo_color = Color(0.9, 0.05, 0.03) if angry else EYE
+		_eye_material.emission_enabled = angry
+		_eye_material.emission = Color(1.0, 0.1, 0.05)
+		_eye_material.emission_energy_multiplier = 2.5
+	if angry:
+		var shake := create_tween()
+		for i in 6:
+			shake.tween_property(_head, "rotation:z", 0.18 if i % 2 == 0 else -0.18, 0.06)
+		shake.tween_property(_head, "rotation:z", 0.0, 0.08)
+
+
+## Winds her body back, then swings her thorax forward through whatever is
+## in front of her head. `struck` fires at the moment of contact. Awaitable.
+func swing_thorax() -> void:
+	var tween := create_tween()
+	# Wind-up: twist away and rear up.
+	tween.tween_property(_body, "rotation", Vector3(0.35, 0.9, 0.0), 0.45).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(_body, "position:z", 0.06, 0.45)
+	tween.tween_interval(0.2)
+	# The swing: fast, lunging forward and down.
+	tween.tween_property(_body, "rotation", Vector3(-0.3, -0.6, 0.0), 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(_body, "position:z", -0.12, 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_callback(func(): struck.emit())
+	tween.tween_interval(0.35)
+	tween.tween_property(_body, "rotation", Vector3.ZERO, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.parallel().tween_property(_body, "position:z", 0.0, 0.5)
+	await tween.finished
 
 
 ## A little nod of the head (talking).

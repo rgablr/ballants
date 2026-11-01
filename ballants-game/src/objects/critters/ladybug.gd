@@ -95,6 +95,7 @@ func _physics_process(delta: float) -> void:
 			_take_off(Vector3(to_me.x, 0, to_me.z).normalized())
 	if _flying <= 0.0:
 		_wander(delta)
+	Sounds.critter_touch(self, global_position, 0.3)
 
 
 func _wander(delta: float) -> void:

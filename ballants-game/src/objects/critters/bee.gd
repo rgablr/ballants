@@ -83,6 +83,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if player and _body.global_position.distance_to(player.global_position) < 1.0:
 		_dizzy = 1.5
+		Sounds.critter_bump(_body.global_position)
 		return
 	if _t < 1.0:
 		# Flying between flowers on a lazy arc.

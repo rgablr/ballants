@@ -54,6 +54,7 @@ func _build() -> void:
 func _physics_process(delta: float) -> void:
 	_time += delta
 	var player := CritterParts.find_player(self)
+	Sounds.critter_touch(self, global_position, 0.2)
 	match _state:
 		State.PERCHED:
 			if _perch:

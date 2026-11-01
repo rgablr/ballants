@@ -72,6 +72,7 @@ func _physics_process(delta: float) -> void:
 	var near := false
 	if player:
 		near = _body.global_position.distance_to(player.global_position) < startle_distance
+	Sounds.critter_touch(self, _body.global_position, 0.35)
 	if hanging:
 		_update_hanging(delta, near)
 	else:

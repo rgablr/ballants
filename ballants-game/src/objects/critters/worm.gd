@@ -69,6 +69,7 @@ func _physics_process(delta: float) -> void:
 	elif player and _sink < 0.05:
 		for part in _parts:
 			if part.global_position.distance_to(player.global_position) < touch_distance + 0.25:
+				Sounds.critter_bump(part.global_position)
 				_burrow()
 				break
 	_sink = move_toward(_sink, 1.0 if _hidden > 0.0 else 0.0, delta * 1.4)

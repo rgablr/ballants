@@ -32,6 +32,7 @@ var _time := 0.0
 
 
 func _ready() -> void:
+	add_to_group("enemy")   # for the drone that warns you one is near
 	_home = global_position
 	_time = randf() * 10.0
 

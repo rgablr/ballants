@@ -54,6 +54,8 @@ const SOUNDS := {
 	"hit_tone": "res://assets/audio/sounds/kenney/phaserDown2.ogg",
 	# Back at the spawn after being knocked off: a little pop.
 	"respawn": "res://assets/audio/sounds/kenney/pepSound1.ogg",
+	# Bumping into a friendly bug: a bouncy "boing-plip".
+	"critter_bump": ["res://assets/audio/sounds/kenney/pluck_001.ogg", "res://assets/audio/sounds/kenney/pluck_002.ogg", "res://assets/audio/sounds/kenney/bong_001.ogg"],
 	# Snapping through a blade of thick grass.
 	"grass": ["res://assets/audio/sounds/kenney/footstep_grass_000.ogg", "res://assets/audio/sounds/kenney/footstep_grass_001.ogg", "res://assets/audio/sounds/kenney/footstep_grass_002.ogg", "res://assets/audio/sounds/kenney/footstep_grass_003.ogg", "res://assets/audio/sounds/kenney/footstep_grass_004.ogg"],
 	# An enemy has noticed you and is about to attack (a scratchy chitter).

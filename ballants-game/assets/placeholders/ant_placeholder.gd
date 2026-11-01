@@ -51,9 +51,9 @@ const FLAIL_RATE := 13.0        # how fast legs kick and arms wave in the air (r
 # --- Crawling (top speed) -------------------------------------------------
 # At 75% of top speed and up the ant drops onto all six legs and scuttles
 # along the top of the ball, body flat; it stands back up when it slows.
-const CRAWL_PITCH := 1.3        # how far the body tips forward (radians, ~75°)
-const CRAWL_BACK := 0.2         # body slides back so it lies on top of the ball (m)
-const CRAWL_LOWER := 0.06       # and drops this much (m)
+const CRAWL_PITCH := 1.2        # how far the body tips forward (radians, ~70°)
+const CRAWL_BACK := 0.17        # body slides back so it lies on top of the ball (m)
+const CRAWL_LOWER := 0.0        # and drops this much (m); 0 keeps the legs in view
 const CRAWL_CADENCE := 1.6      # extra leg-cycle speed when crawling (x)
 # --- Teetering (sharp turns) ----------------------------------------------
 const TEETER_SWAY := 0.25       # side-to-side body wobble (radians)

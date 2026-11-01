@@ -30,6 +30,7 @@ var _lean_velocity := Vector3.ZERO   # spring velocity of the lean
 var _previous_velocity := Vector3.ZERO
 var _bounce_tween: Tween
 var _crawling := false
+var _crawl_blend := 0.0     # 0 standing .. 1 crawling, eased (for the lean)
 var _teeter := 0.0
 var _teeter_time := 0.0
 var _lateral := 0.0         # sideways acceleration this step (m/s²), from turning
@@ -37,6 +38,9 @@ var _lateral := 0.0         # sideways acceleration this step (m/s²), from turn
 ## Crawl at or above this fraction of top speed; stand up below the second.
 const CRAWL_ON := 0.75
 const CRAWL_OFF := 0.68
+## While crawling, the lean is cut to this share so the ant runs along the
+## top of the ball instead of sliding far round the front.
+const CRAWL_LEAN := 0.2
 ## Sideways acceleration (m/s²) where teetering starts, and where it's full.
 const TEETER_START := 7.0
 const TEETER_FULL := 16.0
@@ -115,7 +119,8 @@ func _process(delta: float) -> void:
 
 	# Which way is "up" for the ant: straight up, tilted in the lean direction.
 	var up := Vector3.UP
-	var lean_amount := _lean.length()
+	_crawl_blend = move_toward(_crawl_blend, 1.0 if _crawling else 0.0, delta * 3.0)
+	var lean_amount := _lean.length() * lerpf(1.0, CRAWL_LEAN, _crawl_blend)
 	if lean_amount > 0.001:
 		var axis := Vector3.UP.cross(_lean / lean_amount).normalized()
 		up = Vector3.UP.rotated(axis, lean_amount)

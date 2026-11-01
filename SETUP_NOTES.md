@@ -1240,3 +1240,10 @@ Known limits: I can't hear the game, so the volumes come from the numbers. If an
 **Questions:**
 - **Q25.** Volume sliders? (a) a Music volume and an Effects volume slider in the menu, (b) on/off is enough for now
 - **Q26.** Different music per area? (a) one calm song for the title meadow and the other songs in the levels, (b) keep shuffling all of them everywhere
+
+## 25. Crawl on top of the ball, quieter fast rolling, bug bumps, enemy drone
+
+- **Crawling ant stays on top.** At full speed, the ant's lean toward where you're pushing (up to about 47°) slid it round the front of the ball. While crawling, the lean is now cut to 20%, so it runs along the top, within about 4° of upright at full speed. The crawl pose also sits a little higher so the running legs show.
+- **Quieter at speed.** The rolling rumble is loudest at a medium roll and eases off toward top speed. It's also quieter overall (about -24 dB at its loudest, -29 dB at top speed). This also fixes a bug where, on screens faster than 60 fps, the rumble kept dipping toward silence.
+- **Bumping friendly bugs** (ladybug, spider, fly, bee, worm) makes a bouncy pluck from where the bug is, at most once a second per bug.
+- **Enemy drone.** A low, uneasy hum (two slowly beating tones a tritone apart) fades in from about 13 m from the nearest enemy and is strongest within 3 m. It's made in code, so it isn't beeping. Measured: silent at 19 m, -36 dB at 8.5 m, -18 dB up close.

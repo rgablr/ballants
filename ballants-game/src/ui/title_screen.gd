@@ -46,6 +46,8 @@ func _ready() -> void:
 	_prompt.offset_top = -130
 	_prompt.offset_bottom = -70
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# With the main menu up, the menu is the prompt.
+	_prompt.visible = not GameMenu.enabled
 
 
 ## The biggest font size at which "BALL" / "ANTS" fits the top-left

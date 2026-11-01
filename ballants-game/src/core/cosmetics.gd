@@ -75,6 +75,7 @@ const PARTS := [
 ]
 
 ## Current choices: palette index per part, and the ball index.
+## (Each save profile keeps its own; see set_all / src/core/save_game.gd.)
 var choices := {
 	"ball": 0,
 	"head": 0, "thorax": 0, "abdomen": 0,
@@ -147,6 +148,14 @@ func apply_to_ball(model: Node) -> void:
 		mat.shader = SPORTS_SHADER
 		mat.set_shader_parameter("style", style)
 	mesh.material_override = mat
+
+
+## Replaces every choice at once (a save profile being loaded); missing
+## or out-of-range values fall back to the first option.
+func set_all(values: Dictionary) -> void:
+	for key in choices:
+		choices[key] = clampi(int(values.get(key, 0)), 0, option_count(key) - 1)
+	changed.emit()
 
 
 func save_choices() -> void:

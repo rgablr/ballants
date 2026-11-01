@@ -48,7 +48,11 @@ func start(config: Dictionary) -> void:
 	Levels.run_finished.connect(func(t: float):
 		_reached_goal = true
 		_goal_time = t)
-	Levels.run_failed.connect(func(): _falls += 1)
+	Levels.run_failed.connect(func():
+		_falls += 1
+		var ball := get_tree().get_first_node_in_group("player") as Node3D
+		print("[drive]   fell near waypoint %d of %d at %s" % [_index, _waypoints.size(),
+				ball.global_position.snapped(Vector3.ONE * 0.1) if ball else Vector3.ZERO]))
 	# The title area's giant hill counts as its goal.
 	Levels.entered_through_hill.connect(func(_index: int):
 		_reached_goal = true

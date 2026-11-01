@@ -46,6 +46,8 @@ credit, but they are placeholders to be replaced:
 | Level 4 Worker Rush pieces: crumb-carrying worker lines (crumbs, the glinting carried crystal, dark ant holes), crumb piles, the sliding storage gate with its lamps | `src/objects/nest/worker_line.gd`, `crumb_pile.gd`, `storage_gate.gd` (workers reuse `cave_ant.gd`) | Optional: low-poly CC0 crumb and door models; paths, timing and collision stay |
 | Dialogue "jibber" voices | `src/cutscene/voice_synth.gd` (short pitched tones computed in code; no recording, no AI) | Keep, or CC0 recorded blips per character |
 | Collapsing floor tiles (cracked slab, crack lines, dust puffs) and the falling-dust trickle (Level 5) | `src/objects/nest/collapsing_tile.gd`, `src/objects/nest/falling_dust.gd` | Optional: a few CC0 cracked-stone/dirt slab models (top face at the origin); the touch timer and collision stay |
+| Birthday easter egg: the tiny brass key, the red cell button, the confetti pieces | `src/objects/hub/mystery_key.gd`, `cell_button.gd`, `birthday_party.gd` | Optional: a low-poly CC0 key and button; triggers stay |
+| "Happy Birthday to You" dance-band arrangement (lead voice, waltz bass and chord stabs, kick, claps, hi-hat) | `src/objects/hub/birthday_song.gd` (the melody is in the public domain; the arrangement is computed in code, no recording, no AI) | Keep, or a CC0 recorded arrangement of the public-domain tune |
 
 ## Searched but not used
 

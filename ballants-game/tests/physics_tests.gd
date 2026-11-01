@@ -33,6 +33,7 @@ func _ready() -> void:
 	await test_angled_overlapping_slabs_do_not_launch_ball()
 	await test_ramp_crest_does_not_launch_ball()
 	await test_stacked_crates_settle_without_jitter()
+	await test_jump_on_contact_toggle()
 	print("[tests] %s: %d passed, %d failed" % ["ALL PASSED" if _failures == 0 else "FAILED", _passes, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)
 
@@ -205,6 +206,37 @@ func test_stacked_crates_settle_without_jitter() -> void:
 
 
 # -------------------------------------------------------------- helpers ----
+
+## The speedrun option (Tuning.jump_on_contact): a jump pressed while the
+## ball is skimming a few centimetres over the floor after a tiny hop, past
+## the coyote time, is ignored with the option off and works with it on.
+func test_jump_on_contact_toggle() -> void:
+	var saved: bool = Tuning.jump_on_contact
+	var results := {}
+	for on in [false, true]:
+		Tuning.jump_on_contact = on
+		var player := await _flat_world_with_player()
+		await _seconds(0.5)
+		# A tiny hop: 9 cm up, already longer ago than the coyote time.
+		# (One step first, so the physics engine drops the old floor contact.)
+		player.global_position += Vector3.UP * 0.09
+		player.linear_velocity = Vector3.ZERO
+		await _physics_frames(1)
+		player._time_since_grounded = 999.0
+		Input.action_press("jump")
+		var top := 0.0
+		for i in 6:
+			await _physics_frames(1)
+			top = maxf(top, player.linear_velocity.y)
+		Input.action_release("jump")
+		results[on] = top
+		_teardown()
+	Tuning.jump_on_contact = saved
+	var launch := sqrt(2.0 * Tuning.gravity * Tuning.jump_height)
+	_check("jump-on-contact option: skimming jump ignored when off, works when on",
+			results[false] < 1.0 and results[true] > launch * 0.8,
+			"upward speed off %.2f m/s, on %.2f m/s (a jump is %.2f)" % [results[false], results[true], launch])
+
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok:

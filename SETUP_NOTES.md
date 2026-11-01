@@ -2119,3 +2119,414 @@ garden levels get tunnels their crystals would join the total.**
 Each level's notes file carries its builder's own questions too (bounce
 height, spore grip, gate rhythm, which worker carries the crystal, the
 warning demo, tile look); say the word and I'll pull them up here.
+
+# Part F – The birthday easter egg (2026-11-01)
+
+Branch: `main` (uncommitted until you've seen it). Your brief: a key hidden
+in the hub that you need a bounce pad to reach, a jail cell that says
+"locked" without it and opens with it, a small red button on the cell's
+left wall, and a line dance by the ants (the Queen in the middle) to a
+copyright-free "Happy Birthday", with "Happy Birthday Martha!" and
+confetti, watched from behind the hero.
+
+## 46. What was built, in plain words
+
+**How to trigger it (in the hub):**
+1. Between the WORKER RUSH and COLLAPSING GALLERY tunnels, at the foot of
+   the wall, there is an orange **bounce pad**. Roll onto it: it throws
+   you about 6 m up (a jump only gets 1.6 m), straight through a **tiny
+   brass key** hanging in the dark up there. It is a quarter the length
+   of the hero ant (14 cm), plain yellow metal, no glow, turning slowly.
+   "You found a mysterious key" appears for three seconds. The key is
+   kept for the session (`Progress.has_mystery_key`).
+2. Roll up to the **jail cell** (between TUNNEL DROP and COLLAPSING
+   GALLERY). Within 5 m of the door the HUD says **Locked** in a small
+   box at the bottom of the screen; it goes away when you leave. With
+   the key, arriving there swings the barred door open ("The mysterious
+   key fits!"), and it stays open for the session
+   (`Progress.jail_unlocked`; coming back from a level it is already
+   open).
+3. Inside, on the **left wall** as you roll in, a small **red button** on
+   a dark plate (faint red glow so it shows in the dim cell). Within
+   1.7 m the HUD prompts **Push the button (Space)** / **(A)** on a pad.
+   Press it: the button clicks in, and the party starts.
+4. **The party** (about 38 s; hold Esc / Start to skip):
+   - Close-up of the button being pushed; the hero rolls out of the cell
+     and stops a few metres in front of it, facing the cave; the camera
+     settles **behind the hero**, a little up and to one side, looking
+     out over their shoulder.
+   - Twelve worker ants pour out of the small holes on the far wall,
+     run down the wall and across the floor, and form **two rows** in
+     front of the hero (seven in front, five behind). The **Queen**
+     crawls out of her own hole with her happy face and takes the
+     **middle of the front row**.
+   - The band strikes up **"Happy Birthday to You"** (8 drum beats, then
+     the tune twice: the second time through is "dear Mar-tha"), and the
+     whole line dances the same routine in step, whenever each ant
+     arrived: grapevine right, hop and clap, grapevine left, hop and
+     clap, three steps back, three forward, a full spin, then rear up and
+     "raise the roof". The hero bobs on every downbeat.
+   - On the first downbeat **"Happy Birthday Martha!"** pops onto the
+     screen in gold with a dark-red outline, pulsing to the beat, and
+     **confetti** (seven colours) starts falling over the dancers and
+     over the hero.
+   - At the end everyone rears up and claps (the results jingle plays
+     under it), the banner fades, the troupe scurries back into the
+     holes, the camera glides back and you have control again, standing
+     where you watched. The button can be pushed again.
+
+**The music is copyright-free by construction.** The *melody* of "Happy
+Birthday to You" is in the public domain (the US settlement in 2016, the
+EU from 2017). Rather than find a recording with a clean license, the
+arrangement is *computed* in `birthday_song.gd`: a lead voice with a bit
+of vibrato, a waltz bass with chord stabs on beats 2 and 3, a kick drum,
+hand claps and a hi-hat, all from sine waves and noise, rendered once on
+a worker thread when the hub loads (about a second of CPU). 132 beats
+per minute, 3/4 time, 27 s long. The background music pauses while it
+plays and fades back in after.
+
+**Files**
+```
+src/objects/hub/birthday_party.gd  the whole egg: builds the pad, key, cell trigger, button, dancers; runs the party
+src/objects/hub/mystery_key.gd     the key pickup
+src/objects/hub/cell_button.gd     the red button: prompt and push
+src/objects/hub/birthday_song.gd   the song, rendered in code
+src/objects/hub/cave_ant.gd        + start_dance / stop_dance / dance_beat (the routine)
+src/objects/hub/jail_cell.gd       + open(instant)
+levels/hub/anthill_hub.gd          owns one BirthdayParty; makes the cutscene player on every arrival
+src/ui/hud.gd                      + show_prompt / hide_prompt / popup (the bottom prompt, the top message)
+src/core/progress.gd               + has_mystery_key, jail_unlocked (session only, like everything else)
+src/core/music.gd                  + set_hold (pause the songs during the party)
+src/player/ant_rider.gd            + face_toward (the hero turns to watch)
+src/core/dev_tools.gd              + --eggtest, --hub-from=N
+run_tests.sh                       + the egg test
+```
+
+## 47. Acceptance criteria – the easter egg
+
+`godot --headless -- --eggtest` (also part of `./run_tests.sh`) plays it
+by machine and checks, in order: the hub loads with the party set up; no
+cutscene on a return arrival; the key hangs 6.0 m over the pad (beyond a
+jump); the key is tiny with no light; 12 dancers wait in holes; "Locked"
+at the cell and the door stays shut; the prompt goes away when you
+leave; dropping onto the pad finds the key and shows the message; back
+at the cell the door opens; no "Locked" once open; by the button the
+push prompt appears; pressing jump starts the party with the controls
+locked and the cutscene camera live; all 12 ants come out of the holes;
+the band is playing; the line dances with the Queen in it; the banner
+is on screen; two confetti showers are falling; the camera is within
+5 m behind the hero facing their way; the party ends on its own
+(about 37 s); control and the game camera come back; the hero is
+outside the cell and back in the physics; everyone is back in the
+holes; the button is armed again. All 29 checks pass.
+
+Pictures taken on the way (windowed, `--eggtest --screenshot --shots`):
+the Locked box; the door swinging open with the key message; the red
+button close-up; the hero rolling out past the open door; the view from
+behind the hero with the line forming; the Queen mid-line, banner and
+confetti; the troupe walking home.
+
+## 48. Known issues and notes
+
+- **Nothing is saved**: the key and the open door reset when the game
+  closes, like the crystals (Q31).
+- The key is deliberately hard to see: 14 cm, unlit, 6 m up in the dark.
+  The orange pad is the only hint. If it is too hidden, a faint glint
+  (a slow emission pulse) is a one-line change in `mystery_key.gd`.
+- Pushing the button while the ball is moving: the party freezes the
+  ball where it is and rolls it out along a straight line, which passes
+  through nothing solid from anywhere inside the cell.
+- The dance clock runs on the wall clock from the moment the song
+  starts (minus the audio output latency), not on the audio stream's
+  own position, so it also works headless. If the game stutters hard
+  the ants could drift from the beat by that much.
+- The 12 dancers are extra `CaveAnt`s with no wandering brain, kept in
+  their far-wall holes between parties; the 14 wandering workers are
+  untouched and may wander across the dance floor.
+- Skipping (hold Esc / Start) puts everyone straight back in their
+  holes and hands control back; the Queen's mood resets to calm.
+- During the party the HUD is hidden, as in the opening cutscene; the
+  customize menu (C / Y) is not blocked.
+- **Fixed: "Godot quit unexpectedly" during the tests.** The first
+  version kept the rendered song in a static variable, which lives until
+  the very end of Godot's shutdown, after the audio server has been torn
+  down. Freeing the sound then touched the gone server and Godot aborted
+  on the way out (exit code 134, after every test had already printed
+  PASS). Any run that ended in the hub crashed: the level drives, the
+  hub tests and the egg test. The song now belongs to the party node,
+  which waits for the background render and lets go of the sound when
+  the hub closes. `run_tests.sh` now also checks Godot's exit code and
+  prints `CRASH:` for a run that dies by a signal, so a crash on exit
+  can no longer hide behind a PASS.
+- **Not from this work:** the physics test "angled overlapping slabs do
+  not launch the ball" fails (1.48 m/s upward, limit lower) on the last
+  commit as well, since the max_speed 12.8 tuning.
+- Pictured up close, the key is a yellow speck about a fifth the height
+  of the hero on screen: exactly as asked, and exactly as hard to see.
+
+## 49. Questions for you
+
+**Q43. The key's hiding place.** It hangs over a bounce pad at the foot
+of the wall between tunnels 4 and 5.
+- (a) Keep.
+- (b) Move the pad somewhere more out of the way (behind a fungus
+  cluster, or up on a ledge you have to find first).
+- (c) Make the key glint faintly so sharp eyes can spot it from the
+  floor.
+
+**Q44. The song: twice through at 132 bpm (27 s), the second time "dear
+Mar-tha".**
+- (a) Keep.
+- (b) Once through (about 16 s).
+- (c) Three times, with a "...and many more" tag.
+
+**Q45. Who dances.** Twelve workers in two rows plus the Queen in the
+middle.
+- (a) Keep.
+- (b) More ants (a third row).
+- (c) The wandering wall workers should join in too.
+
+**Q46. After the party.** The cell door stays open and the button can
+be pushed again any time.
+- (a) Keep (it's a party button).
+- (b) Once per session.
+- (c) The hero gets something (a crystal? a party hat cosmetic?).
+
+## 50. Changes from your second look (2026-11-01)
+
+- **The dance is in the spotlight in the middle of the cave.** The two
+  rows now stand under the daylight from the hole in the top. The hero
+  rolls out of the cell toward the middle and stops 5.5 m short to
+  watch, with the camera behind them as before. During the party the
+  hazy beam of "dusty air" fades out, because seen from outside it made
+  the dancers look washed out. The light on the floor shines three
+  times brighter, and the rest of the cave dims to about a third
+  ("house lights down"), so the dance floor is a bright pool with the
+  crowd round its edge. Everything goes back to normal when the party
+  ends or is skipped.
+- **A crowd comes out to watch.** 18 more ants come out of low holes all
+  round the cave as the dancers do. They stand in an arc round the dance
+  floor, open on the hero's side so nobody blocks the view, each facing
+  the dancers, up on their back legs. They clap in bursts, bounce and
+  look around. Their claps are silent (18 clapping ants drowned the
+  band). At the end they sit back down on six legs and head home with
+  everyone else.
+- **The Queen no longer walks onto the other ants.** Dance steps used to
+  grow with the ant's size, so the Queen (2.4 times bigger) travelled
+  2.7 m per grapevine against the workers' 1.1 m. Every dancer now steps
+  the same 0.38 m. Her gap in the front row is a little wider too, and
+  the back row stands a little further back. In the test she is never
+  closer than 1.68 m to another dancer.
+- **No jolt at the end.** The routine used to keep looping, and the song
+  ended three counts into a third time through, so everyone snapped
+  back to their spots. Now the line dances exactly two routines (one per
+  verse). The second ends on "raise the roof" on their own spots, and
+  they hold that pose, clapping, for the final chord. The closing cheer
+  carries straight on from that pose.
+- **"Happy Birthday, Martha!"** now has the comma. It is correct: Martha
+  is being spoken to, so her name is set off with a comma.
+- **Fixed earlier today:** the unlocked cell could not be entered (the
+  door's invisible collision stayed shut while the bars swung open);
+  and the crash on quitting after any visit to the hub (see the end of
+  section 48).
+
+The egg test gained checks for each: the line is centred in the middle,
+at least 16 of 18 spectators are standing and cheering, the Queen keeps
+clear of the others all through the dance, and when the song ends every
+dancer is on its own spot, reared up. It now runs 35 checks.
+
+## 51. Changes from your third look (2026-11-01)
+
+**The party**
+- **The music waits for the line.** The band starts only once all 12
+  dancers and the Queen are on their marks (it gives up waiting after
+  15 s, so a stuck ant can't hold the party forever). The test checks
+  the line was complete when the music started.
+- **The hero stands just outside the spotlight,** 8 m from the middle
+  (the pool of light is about 6.8 m across from the middle), in the dark
+  with the camera behind, watching the lit dance floor.
+- **The spotlight beam stays on during the dance.** Before, the hazy
+  cone faded out completely, which looked like the spotlight switching
+  off. Now it stays, at 40% of its usual haze so the dancers inside it
+  still read; the light on the floor is still three times brighter and
+  the rest of the cave is still dimmed.
+- **Confetti forever.** When the party ends (or is skipped), confetti
+  starts drifting down all through the nest, from head height to high
+  in the dome, and never stops. It's there every time you come back to
+  the hub (already filling the air) until you quit the game, because
+  nothing is saved yet (`Progress.birthday_party_done`, like the key).
+
+**Collapsing Gallery (level 5)**
+- Tiles now start crumbling (shaking, cracks, dust, the crunch) the
+  instant you touch them and drop **half a second** later
+  (`tile_crack_delay` 0.0, was 0.55; `tile_fall_delay` 0.5, was 0.75).
+- The opening "warning floor" no longer gives you extra time
+  (`gallery_warning_scale` 1.0, was 2.6), so the urgency starts at once.
+  The ledge bridges now use the same half second
+  (`gallery_ledge_bridge_scale` 1.0, was 0.5: at a quarter second the
+  narrow bridge back from the crystal couldn't be crossed). Two sections
+  stay faster than half a second, as they were designed: the final
+  sprint's slope (0.25 s) and the inside row of each curve (about
+  0.15 s, it falls away as you enter the curve so you take the outside
+  line).
+- **Fixed with it:** the first patch of tiles shared one countdown with
+  the falling demo, so touching any of it started the whole 7 m patch.
+  At half a second that patch was impossible. Now those tiles only set
+  off the demo (a new tile setting, `triggers_group`) and each keeps its
+  own half second from its own touch. The level is regenerated from
+  `tools/make_collapsing_gallery.py` (only those 9 tiles changed).
+- All three level 5 drives pass with 0 falls: the main route 0:52.8,
+  the ledge crystal 0:55.7, the dead-end crystal 0:58.7 (target time
+  1:05). The level bot now prints the waypoint and position of every
+  fall.
+- Unchanged, so the two hidden crystals stay possible: the ledge
+  bridges' head start (`gallery_ledge_bridge_delay`) and the dead end's
+  grace time (`gallery_dead_end_time`) still count before those tiles'
+  half-second begins, and the three demonstration tiles that fall in
+  front of you at the start keep their own timing.
+
+**Jump whenever touching the ground (F1 → JUMP)**
+- New checkbox **`jump_on_contact`** (off by default). On: a jump works
+  any time the ball touches the ground, including while it's bouncing
+  up off a landing, or while it's skimming just above the floor after
+  one of the tiny hops it makes at speed. The normal rule only allows a
+  jump while "grounded" plus the 0.115 s coyote time, and treats a ball
+  moving up off a landing as airborne, which is what was eating timed
+  jumps on fast runs.
+- New slider **`jump_contact_margin`** (0.12 m): how far above the floor
+  still counts as touching with the option on.
+- Physics test "jump-on-contact option": a jump pressed 9 cm over the
+  floor, past the coyote time, is ignored with the option off
+  (0.00 m/s up) and launches a full jump with it on (6.03 m/s).
+
+# Part G – Menus, save profiles and progress (2026-11-01)
+
+## 52. What was built
+
+**Main menu** (the title meadow, with the camera circling the hero): a
+panel on the right with **Play — <name>**, **Select User**, **Progress**,
+**Customize**, **Exit**, and "Playing as <name>" underneath. The ball is
+held still while it's up. Play closes it and you play as before (roll
+into the giant ant hill). Play with no user picked opens Select User.
+The last user is picked again automatically at the next start.
+
+**Select User**: four slots. A used slot shows its name, crystals and
+time played, with **Rename** and **Delete** (Delete asks first: "All of
+this user's progress will be gone for good"). An empty slot says "New
+game"; choosing it asks for a name (typed on the keyboard; up to 16
+letters; left blank it becomes "Player N").
+
+**Pause menu** (Esc / Start, in the meadow after Play, the hub and every
+level; not during cutscenes, transitions or the results card):
+**Resume**, **Restart Level** and **Back to the Anthill** (in a level),
+**Customize**, **Progress**, **Controls**, **Main Menu**, **Exit Game**.
+The game is frozen meanwhile (the level timer too). Esc / B / Start goes
+back a page, and from the first page resumes.
+
+**Progress** (from either menu): the user's crystals and time played,
+then
+- *Sugar crystals*, per level: its best time ("not finished yet" until
+  then) and its four crystals: "Finished the level", "Beat the target
+  time (1:25.00)", and the two hidden crystals with where they are
+  ("Hidden crystal: In the shortcut tunnel behind the false wall at the
+  first hairpin"). Each is **???** until you have it.
+- *Items*: the Crystal Pouch (given by the Queen) and the Mysterious Key
+  (where it hangs), ??? until found.
+- *Secrets*: the jail cell, the birthday party, ??? until done.
+- *Cutscenes*: "The Queen's Request" and "Happy Birthday, Martha!", ???
+  until seen, then a **Watch** button. Watch takes you to the anthill
+  and plays it (the intro with the fall in; the party from the red
+  button), then you're in the hub as normal.
+
+**Controls**: every key and button, and the developer keys under their
+own heading. The long key list across the top of the screen is gone;
+the HUD just says "Esc / Start: pause".
+
+**Saving**: each user is a file in Godot's user data folder (on your
+Mac: ~/Library/Application Support/Godot/app_userdata/Ballants/
+profiles/slot_1.cfg ... slot_4.cfg). It saves **by itself** the moment
+anything changes (a crystal, a best time, the pouch, the key, the cell,
+the party, seeing the intro, a new color in Customize) and when you quit.
+Each save goes to a .tmp file first and is then swapped in, so a crash
+can't corrupt it. What a user keeps: crystals per level, best times, the
+pouch, the key, "intro seen", the open cell, the party (so the confetti
+is back every visit), their ant and ball look, and time played. The
+debug "U" switch is never saved. Each file has a version number so
+later updates can add things without breaking old saves.
+
+So: once you've said yes to the Queen, the intro never plays again for
+that user (watch it from Progress instead); crystals, items, the open
+gate and the confetti come back when you pick the user.
+
+**Buttons changed**: Start now pauses (it used to restart the level).
+R still restarts instantly on the keyboard, and C / Y still opens
+Customize anywhere.
+
+**Files**
+```
+src/core/save_game.gd   the profiles: create, pick, rename, delete, auto-save ("Saves")
+src/ui/game_menu.gd     main menu, pause menu, users, name entry, progress, controls ("GameMenu")
+src/core/progress.gd    + to_dict / from_dict / reset / set_flag, best_times, replay
+src/core/cosmetics.gd   + set_all (each user has their own look)
+levels/garden/title_meadow.gd, src/ui/title_screen.gd   the menu instead of "move to play"
+levels/hub/anthill_hub.gd   replays a cutscene when Progress asks
+src/ui/hud.gd           the pause hint instead of the key list
+project.godot           + "pause" (Esc, Start); restart is R only
+src/core/dev_tools.gd   + --menutest, --menushots=<png>
+```
+
+## 53. Acceptance criteria – menus and saving
+
+`godot --headless -- --menutest` (in `./run_tests.sh`) plays it all by
+machine in a throwaway profiles folder (your real saves are never
+touched): the main menu opens on the title with the ball held; four
+empty slots; Play with no user opens Select User; an empty slot asks for
+a name; "  Martha  " is created and picked; progress saves by itself;
+forgetting everything and picking Martha again brings back her crystals,
+key, best time and her ant's colors; the progress screen shows what was
+found with where, ??? for the rest (22 of them), no Watch for unseen
+cutscenes and a Watch once seen; rename; a blank name becomes "Player
+3"; a new user starts from nothing; delete; the other user untouched;
+Play starts the game; Esc pauses, the Controls page, Esc back, Esc
+resumes; in a level, Restart Level reloads it unpaused; Main Menu goes
+back to the title's menu; Watch plays the party again; the last user is
+remembered. 31 checks, all pass.
+
+`godot -- --menushots=/path/menu.png` saves a picture of every page.
+
+## 54. Suggestions and questions
+
+Things I'd suggest (say which you want):
+- **Play from the hub**: a user who has already met the Queen could skip
+  the meadow and drop straight into the anthill (the meadow would still
+  be one tunnel / hill away). Today Play always starts in the meadow.
+- **Typing a name with a controller**: names are typed on the keyboard;
+  with only a controller you get "Player N" (rename later). An on-screen
+  letter grid would fix that.
+- **A settings page**: music on/off and sound volume, camera
+  sensitivity, invert camera, the speedrun jump option, full screen.
+  Music on/off is in Customize today and the rest only in F1.
+- **Confirm before Restart / Main Menu / Exit** mid-level? (Nothing is
+  lost by any of them, since progress is saved as it happens, but a
+  run's time is.)
+- **Best times on the Progress screen** are there; a **"world complete"**
+  summary and a **100% indicator** (all 20 crystals + all secrets) could
+  go at the top.
+
+**Q47. Where should Play put a returning user?**
+- (a) The meadow, as now.
+- (b) Straight into the anthill (fall in through the top).
+- (c) Back where they last were (the hub or the start of the last level).
+
+**Q48. Should the Progress screen show level names you haven't reached
+(tunnels 4 and 5 before they open)?**
+- (a) Yes (as now: the names are on the tunnels anyway).
+- (b) ??? until the tunnel opens.
+
+**Q49. The hidden-crystal descriptions (once found)**, e.g. "In the
+shortcut tunnel behind the false wall at the first hairpin". Keep my
+wording, or send me yours.
+
+**Q50. Developer keys (1–8, 0, H, T, U, F1, F2)** still work and are
+listed on the Controls page. Hide them from players (only in debug
+builds), or keep?

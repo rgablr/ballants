@@ -106,6 +106,11 @@ func _build_gate() -> void:
 		_hinge.add_child(knuckle)
 	# The door's solid body moves with it.
 	var body := AnimatableBody3D.new()
+	# Follow the door straight away. With sync_to_physics on, the body only
+	# moves when its OWN transform is animated; here the hinge (a parent)
+	# turns, so the collision box stayed shut while the bars swung open and
+	# the ball could not get into an unlocked cell.
+	body.sync_to_physics = false
 	body.name = "GateBody"
 	_gate_shape = CollisionShape3D.new()
 	var box := BoxShape3D.new()
@@ -120,11 +125,15 @@ func is_open() -> bool:
 	return _is_open
 
 
-## The door swings open, out into the cave.
-func open() -> void:
+## The door swings open, out into the cave (`instant`: already open, no
+## swing and no sound, for a cell unlocked on an earlier visit).
+func open(instant := false) -> void:
 	if _is_open:
 		return
 	_is_open = true
+	if instant:
+		_hinge.rotation.y = deg_to_rad(OPEN_ANGLE)
+		return
 	var tween := create_tween()
 	tween.tween_property(_hinge, "rotation:y", deg_to_rad(OPEN_ANGLE), 0.9) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

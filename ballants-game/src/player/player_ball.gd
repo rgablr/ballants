@@ -50,6 +50,9 @@ var radius := 0.5
 var knocked := false
 
 var _grounded := false
+## Raw contact with a ground-like surface this step (jump_on_contact uses
+## it: unlike _grounded it stays true while bouncing up off a landing).
+var _touching_ground := false
 var _ground_normal := Vector3.UP
 var _time_since_grounded := 999.0
 var _time_since_jump_pressed := 999.0
@@ -299,6 +302,8 @@ func _camera_relative(input: Vector2) -> Vector3:
 func _try_jump() -> void:
 	var can_jump := _time_since_grounded <= Tuning.coyote_time
 	var wants_jump := _time_since_jump_pressed <= Tuning.jump_buffer_time
+	if wants_jump and not can_jump and Tuning.jump_on_contact:
+		can_jump = _touching_ground or _near_ground(Tuning.jump_contact_margin)
 	if not (can_jump and wants_jump):
 		return
 	_time_since_grounded = 999.0
@@ -314,6 +319,15 @@ func _try_jump() -> void:
 	_launch_grace = 0.25
 	jumped.emit()
 	Sounds.jump()
+
+
+## Is there ground-like floor within `margin` meters under the ball?
+func _near_ground(margin: float) -> bool:
+	var from := global_position
+	var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * (radius + margin))
+	query.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	return not hit.is_empty() and (hit.normal as Vector3).y >= Tuning.ground_normal_min
 
 
 ## Compares this step's velocity with the last one. After removing what
@@ -358,6 +372,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			grounded = true
 			_ground_normal = normal
 			break
+	_touching_ground = grounded
 	# A jump that just launched this step shouldn't be cancelled by a
 	# lingering floor contact.
 	if grounded and state.linear_velocity.y > 2.0 and not was_grounded:

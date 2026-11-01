@@ -192,6 +192,10 @@ func _process(delta: float) -> void:
 	_time += delta
 	if not _path.is_empty():
 		_follow_path(delta)
+	elif dancing:
+		_dance_pose(delta)
+	elif cheering:
+		_cheer_pose(delta)
 	elif shell and not queen:
 		_worker_brain(delta)
 	# Legs step when moving; otherwise a little breathing and antenna waving.
@@ -200,7 +204,7 @@ func _process(delta: float) -> void:
 	_pose_legs(_gait, moving)
 	_clap(delta)
 	_body.position.y = sin(_time * 2.4) * 0.004 * (1.0 - moving) + absf(sin(_gait * TAU * 2.0)) * 0.006 * moving \
-			+ sin(_rear * CLAP_REAR) * 0.2
+			+ sin(_rear * CLAP_REAR) * 0.2 + _dance_bob
 	_look = lerpf(_look, _look_target, 1.0 - exp(-delta * 4.0))
 	_head.rotation.y = _look + sin(_time * 1.1) * 0.05
 	for i in _antennae.size():
@@ -606,7 +610,8 @@ func _clap(delta: float) -> void:
 		var count := int(phase + 0.5)
 		if count > _claps_heard and shut > 0.9:
 			_claps_heard = count
-			Sounds.play_at("menu_change", global_position + Vector3.UP, -2.0, randf_range(1.5, 1.8))
+			if clap_sound:
+				Sounds.play_at("menu_change", global_position + Vector3.UP, -2.0, randf_range(1.5, 1.8))
 	# While she is up (rearing, or coming back down after the claps) the
 	# front legs are held up in front of her; as she sits down they ease
 	# back to the ground instead of snapping.
@@ -677,3 +682,208 @@ func nod() -> void:
 	var tween := create_tween()
 	tween.tween_property(_head, "rotation:x", 0.25, 0.12)
 	tween.tween_property(_head, "rotation:x", 0.0, 0.18)
+
+
+# ------------------------------------------------------------ dancing ----
+
+## LINE DANCING (the birthday party, see src/objects/hub/birthday_party.gd).
+## The party sets `dance_beat` on every dancer each frame from the song's
+## clock (count 0 = the first downbeat; the song is in 3/4, so counts come
+## in threes), and each ant works out where it stands in its routine from
+## that count, so the whole line stays in step however late an ant joined.
+## The routine repeats every DANCE_COUNTS counts (one verse of the song):
+##   counts  0-2   grapevine right: three steps to the right
+##   counts  3-5   hold there, hopping and clapping
+##   counts  6-8   three steps back to the left
+##   counts  9-11  hold, hop and clap
+##   counts 12-14  three steps back (away from the audience)
+##   counts 15-17  three steps forward again
+##   counts 18-20  a full spin on the spot
+##   counts 21-23  rear up and "raise the roof" (clapping the front legs)
+## Before count 0 (the song's intro) the ant stands on its spot bobbing.
+## After `dance_cycles` full routines (0 = forever) it holds the finale on
+## its spot: reared up, front legs raised, so the line never starts a move
+## the song won't finish.
+##
+## Every dancer steps the same distance, whatever its size: the Queen is
+## 2.4 times bigger, and steps scaled with her walked her into her
+## neighbours.
+
+const DANCE_COUNTS := 24
+const DANCE_STEP := 0.38      # meters per step, the same for every ant
+const DANCE_SECONDS_PER_COUNT := 0.4545   # 132 beats per minute
+
+var dancing := false
+var dance_beat := -10.0
+## Full routines to dance before holding the finale (0 = keep going).
+var dance_cycles := 0
+## Whether this ant's claps make a sound (a big crowd clapping is too much).
+var clap_sound := true
+var _dance_home := Transform3D.IDENTITY
+var _dance_offset := Vector3.ZERO
+var _dance_bob := 0.0
+var _dance_clapped_at := -1   # the last routine cycle that got its claps
+
+
+## Starts dancing on `home` (feet on the floor, -Z toward the audience).
+func start_dance(home: Transform3D) -> void:
+	_path = []
+	dancing = true
+	_dance_home = Transform3D(home.basis.orthonormalized(), home.origin)
+	_dance_offset = Vector3.ZERO
+	_dance_clapped_at = -1
+	global_transform = _scaled(_dance_home)
+
+
+## Stops dancing but keeps the pose it is in (reared up at the finale), so
+## a celebrate() can carry on from it without a jolt.
+func end_dance() -> void:
+	if not dancing:
+		return
+	dancing = false
+	_dance_bob = 0.0
+	_moving_speed = 0.0
+	_clap_time = -1.0
+	_body.rotation.z = 0.0
+	global_transform = _scaled(_dance_home)
+
+
+func stop_dance() -> void:
+	if not dancing:
+		return
+	dancing = false
+	_dance_bob = 0.0
+	_moving_speed = 0.0
+	_rear = 0.0
+	_clap_time = -1.0
+	_body.rotation = Vector3.ZERO
+	global_transform = _scaled(_dance_home)
+
+
+## Eased step count: within each count the ant covers its step in the first
+## 60% and plants the foot for the rest, so the steps read as steps.
+static func _steps(counts: float) -> float:
+	var whole := floorf(counts)
+	return whole + smoothstep(0.0, 0.6, counts - whole)
+
+
+func _dance_pose(delta: float) -> void:
+	var step := DANCE_STEP
+	var offset := Vector3.ZERO
+	var yaw := 0.0
+	var rear_goal := 0.0
+	var beat := dance_beat
+	var bob := 0.0
+	if beat < 0.0:
+		# The intro: on the spot, swaying to the beat.
+		bob = absf(sin(beat * PI)) * 0.012
+		_body.rotation.z = sin(beat * PI) * 0.1
+	elif dance_cycles > 0 and beat >= float(dance_cycles * DANCE_COUNTS):
+		# The finale: hold "raise the roof" on the spot to the end.
+		rear_goal = 1.0
+		bob = absf(sin(beat * PI)) * 0.02
+		_body.rotation.z = 0.0
+		if _clap_time < 0.0 and _dance_clapped_at < dance_cycles:
+			_dance_clapped_at = dance_cycles
+			_clap_total = DANCE_SECONDS_PER_COUNT * 3.6
+			_clap_time = _clap_total
+			_claps_heard = 0
+	else:
+		var c := fposmod(beat, float(DANCE_COUNTS))
+		var pulse := absf(sin(c * PI))   # one bounce per count
+		if c < 3.0:
+			offset.x = step * _steps(c)
+		elif c < 6.0:
+			offset.x = step * 3.0
+			bob = pulse * 0.05
+		elif c < 9.0:
+			offset.x = step * (3.0 - _steps(c - 6.0))
+		elif c < 12.0:
+			bob = pulse * 0.05
+		elif c < 15.0:
+			offset.z = step * _steps(c - 12.0)
+		elif c < 18.0:
+			offset.z = step * (3.0 - _steps(c - 15.0))
+		elif c < 21.0:
+			yaw = TAU * smoothstep(0.0, 1.0, (c - 18.0) / 3.0)
+			bob = pulse * 0.02
+		else:
+			rear_goal = 1.0
+			bob = pulse * 0.03
+			var cycle := int(floorf(beat / DANCE_COUNTS))
+			if _dance_clapped_at != cycle:
+				_dance_clapped_at = cycle
+				_clap_total = DANCE_SECONDS_PER_COUNT * 2.6
+				_clap_time = _clap_total
+				_claps_heard = 0
+		# Rock side to side on the grapevines, a bob everywhere.
+		bob += pulse * 0.012
+		_body.rotation.z = sin(c * PI) * (0.13 if c < 12.0 else 0.05)
+	_dance_bob = bob
+	# Rearing up for "raise the roof" eases in and out.
+	_rear = move_toward(_rear, rear_goal, delta * 4.0)
+	_body.rotation.x = _rear * CLAP_REAR
+	# Legs step at the speed the feet actually move.
+	var moved := (offset - _dance_offset).length() / maxf(delta, 0.0001)
+	_moving_speed = lerpf(_moving_speed, moved, 1.0 - exp(-delta * 14.0))
+	_dance_offset = offset
+	var basis := _dance_home.basis.rotated(_dance_home.basis.y, yaw)
+	global_transform = _scaled(Transform3D(basis, _dance_home.origin + _dance_home.basis * offset))
+
+
+# ----------------------------------------------------------- cheering ----
+
+## Watching the party: standing up on the back legs on `home` (facing the
+## dance), front legs raised, clapping in bursts and bouncing, each ant on
+## its own rhythm. stop_cheer() sits it back down.
+var cheering := false
+var _cheer_home := Transform3D.IDENTITY
+var _cheer_wait := 0.0
+var _cheer_hop := 0.0
+
+
+func start_cheer(home: Transform3D) -> void:
+	_path = []
+	dancing = false
+	cheering = true
+	_cheer_home = Transform3D(home.basis.orthonormalized(), home.origin)
+	_cheer_wait = _rng.randf_range(0.2, 1.0)
+	_cheer_hop = _rng.randf_range(0.0, TAU)
+	global_transform = _scaled(_cheer_home)
+
+
+## Sits back down on all six legs (eased unless `instant`). Awaitable.
+func stop_cheer(instant := false) -> void:
+	if not cheering:
+		return
+	cheering = false
+	_clap_time = -1.0
+	_dance_bob = 0.0
+	_look_target = 0.0
+	if instant:
+		_rear = 0.0
+		_body.rotation = Vector3.ZERO
+		return
+	var down := create_tween().set_parallel(true)
+	down.tween_property(_body, "rotation", Vector3.ZERO, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	down.tween_property(self, "_rear", 0.0, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await down.finished
+
+
+func _cheer_pose(delta: float) -> void:
+	_moving_speed = 0.0
+	_rear = move_toward(_rear, 1.0, delta * 3.0)
+	_body.rotation.x = _rear * CLAP_REAR
+	_body.rotation.z = sin(_time * 3.1 + _cheer_hop) * 0.08
+	# Bursts of clapping with a moment between (front legs stay up).
+	if _clap_time < 0.0 and _rear > 0.8:
+		_cheer_wait -= delta
+		if _cheer_wait <= 0.0:
+			_clap_total = _rng.randf_range(1.0, 2.2)
+			_clap_time = _clap_total
+			_claps_heard = 0
+			_cheer_wait = _rng.randf_range(0.3, 1.2)
+	# Little excited bounces, and looking around a bit.
+	_dance_bob = absf(sin(_time * 5.5 + _cheer_hop)) * 0.03
+	_look_target = sin(_time * 0.7 + _cheer_hop) * 0.25
+	global_transform = _scaled(_cheer_home)

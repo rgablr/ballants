@@ -3,9 +3,12 @@ extends Node
 ## crystals earned per level, the Queen's Crystal Pouch, and whether the
 ## hub's opening cutscene has played.
 ##
-## NOTHING IS SAVED TO DISK YET. Everything here resets when the game is
-## closed. When saving is built, this is the one object to serialize
-## (`level_crystals`, `has_queen_item`, `hub_intro_seen`).
+## SAVING: the save profiles (src/core/save_game.gd, global "Saves") write
+## this object out with to_dict() whenever `changed` fires, and read it
+## back with from_dict() when a profile is picked. Anything that should be
+## kept must be listed in to_dict() and must emit `changed` when it
+## changes (set_flag() does both for the simple yes/no ones).
+## debug_unlock_all and the run bookkeeping are never saved.
 ##
 ## CRYSTALS. Every level has four sugar crystals, one per SLOT:
 ##   SLOT_COMPLETE  finish the level
@@ -36,6 +39,21 @@ var has_queen_item := false
 var hub_intro_seen := false
 ## Debug switch (key U): every tunnel counts as unlocked.
 var debug_unlock_all := false
+## The birthday easter egg (see src/objects/hub/birthday_party.gd): the
+## mysterious key has been found, and the jail cell has been opened with it.
+var has_mystery_key := false
+var jail_unlocked := false
+## The party has been thrown: confetti falls in the hub from then on (the
+## "you found the easter egg" reward).
+var birthday_party_done := false
+## Best finishing time per level index (seconds).
+var best_times := {}
+## A cutscene to replay from the progress screen ("intro" / "party"); the
+## hub reads and clears it on arrival.
+var replay := ""
+
+## The yes/no things a profile keeps (set_flag / to_dict use this list).
+const FLAGS := ["has_queen_item", "hub_intro_seen", "has_mystery_key", "jail_unlocked", "birthday_party_done"]
 
 ## Why the hub was just loaded; the hub reads and clears this.
 ##   -1  fresh arrival: fall in through the top of the hill
@@ -45,6 +63,57 @@ var hub_return_from := -1
 ## Slots earned since the current run started (level load), so the
 ## results card can say "new" against "earned before".
 var _earned_this_run := {}
+
+
+## Sets one of FLAGS and tells the save system.
+func set_flag(flag: String, on := true) -> void:
+	if not flag in FLAGS or bool(get(flag)) == on:
+		return
+	set(flag, on)
+	changed.emit()
+
+
+## Back to a brand-new game (a new or switched profile).
+func reset() -> void:
+	level_crystals = {}
+	best_times = {}
+	for flag in FLAGS:
+		set(flag, false)
+	_earned_this_run = {}
+	hub_return_from = -1
+	replay = ""
+	_recount()
+	changed.emit()
+
+
+## Everything a save profile keeps.
+func to_dict() -> Dictionary:
+	var data := {"level_crystals": level_crystals.duplicate(true), "best_times": best_times.duplicate()}
+	for flag in FLAGS:
+		data[flag] = get(flag)
+	return data
+
+
+## Loads what to_dict() wrote (missing entries start empty, so older saves
+## still load after new things are added).
+func from_dict(data: Dictionary) -> void:
+	level_crystals = {}
+	var crystals_in: Dictionary = data.get("level_crystals", {})
+	for key in crystals_in:
+		var flags: Array = crystals_in[key]
+		var row := [false, false, false, false]
+		for slot in mini(flags.size(), SLOT_COUNT):
+			row[slot] = bool(flags[slot])
+		level_crystals[int(key)] = row
+	best_times = {}
+	var times_in: Dictionary = data.get("best_times", {})
+	for key in times_in:
+		best_times[int(key)] = float(times_in[key])
+	for flag in FLAGS:
+		set(flag, bool(data.get(flag, false)))
+	_earned_this_run = {}
+	_recount()
+	changed.emit()
 
 
 ## The level manager calls this on every scene change.
@@ -59,6 +128,9 @@ func record_finish(level_index: int, time: float, par: float) -> Array:
 	_award(level_index, SLOT_COMPLETE)
 	if time <= par:
 		_award(level_index, SLOT_TIME)
+	if level_index >= 0 and (not best_times.has(level_index) or time < float(best_times[level_index])):
+		best_times[level_index] = time
+		changed.emit()
 	return slot_states(level_index)
 
 
@@ -170,8 +242,7 @@ func debug_set_crystals(count: int) -> void:
 
 
 func give_queen_item() -> void:
-	has_queen_item = true
-	changed.emit()
+	set_flag("has_queen_item")
 
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -60,6 +60,10 @@ extends StaticBody3D
 ## Tiles sharing a non-empty group all start their timers when any one of
 ## them is touched (each still uses its own delays).
 @export var trigger_group := ""
+## Touching this tile also starts the countdown of every tile in this
+## group, without this tile joining it (its own countdown still starts
+## from its own touch). The opening patch sets off the falling demo this way.
+@export var triggers_group := ""
 ## Base dirt color; each tile shifts it a little (from `seed`).
 @export var color := Color(0.5, 0.3, 0.15):
 	set(v):
@@ -140,6 +144,8 @@ func _physics_process(delta: float) -> void:
 					trigger()
 				else:
 					get_tree().call_group(_group_name(), "trigger")
+				if not triggers_group.is_empty():
+					get_tree().call_group("collapse_" + triggers_group, "trigger")
 		State.WAITING:
 			_t += delta
 			if _t >= _crack_at:

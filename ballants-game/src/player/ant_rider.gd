@@ -106,6 +106,14 @@ func get_visual() -> Node3D:
 	return _visual
 
 
+## Cutscenes: turn to face a direction while the ball is standing still
+## (normally the ant faces the way the ball is rolling).
+func face_toward(direction: Vector3) -> void:
+	var flat := Vector3(direction.x, 0.0, direction.z)
+	if flat.length_squared() > 0.0001:
+		_facing = flat.normalized()
+
+
 func _physics_process(delta: float) -> void:
 	if ball == null:
 		return

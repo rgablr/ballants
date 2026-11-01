@@ -1,7 +1,8 @@
 extends Level
 ## TITLE MEADOW -- the first thing you see: the title screen and a garden
-## playground in one. The camera circles the ant until you move; then you
-## play. The ground funnels gently downhill toward a giant ant hill;
+## playground in one. The camera circles the ant while the MAIN MENU is up
+## (src/ui/game_menu.gd); choosing Play starts the game here. (With the
+## menu switched off, for the automated tests, the first input starts it.) The ground funnels gently downhill toward a giant ant hill;
 ## dropping into it starts Level 1.
 ##
 ## Everything else here is for fooling around: thick grass to bash through,
@@ -29,6 +30,9 @@ func _ready() -> void:
 	if _rig and "attract" in _rig:
 		_rig.attract = true
 	_set_hud_visible(false)
+	if GameMenu.enabled:
+		GameMenu.play_pressed.connect(_start)
+		GameMenu.open_main.call_deferred(self)
 
 
 ## Moves every piece onto the ground: its editor Y becomes "height above
@@ -45,8 +49,13 @@ func _stand_on_ground() -> void:
 		node.global_position.y += ground.height_at(local.x, local.z)
 
 
+func _exit_tree() -> void:
+	if GameMenu.play_pressed.is_connected(_start):
+		GameMenu.play_pressed.disconnect(_start)
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if _started or event.is_action("customize"):
+	if _started or GameMenu.enabled or event.is_action("customize"):
 		return
 	var pressed: bool = (event is InputEventKey and event.pressed and not event.echo \
 			and event.keycode != KEY_F1 and event.keycode != KEY_F2) \
@@ -61,13 +70,15 @@ func _unhandled_input(event: InputEvent) -> void:
 ## fully-pushed axis. This also covers the test bot, which presses actions
 ## without sending input events.
 func _process(_delta: float) -> void:
-	if not _started and (Input.get_vector("move_left", "move_right", "move_forward", "move_back") != Vector2.ZERO \
+	if not _started and not GameMenu.enabled and (Input.get_vector("move_left", "move_right", "move_forward", "move_back") != Vector2.ZERO \
 			or Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down") != Vector2.ZERO \
 			or Input.is_action_pressed("jump")):
 		_start()
 
 
 func _start() -> void:
+	if _started:
+		return
 	_started = true
 	if _rig and "attract" in _rig:
 		_rig.attract = false

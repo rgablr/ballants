@@ -14,6 +14,9 @@ extends Level
 ##     time per session the opening cutscene follows
 ##   - back from a level: the hero appears in front of that level's tunnel
 ## Progress.hub_return_from says which (-1 = fall in).
+##
+## The birthday easter egg (bounce pad, key, the cell's button, the dance)
+## lives in src/objects/hub/birthday_party.gd.
 
 const TUNNEL_ANGLES := [180.0, 108.0, 36.0, 324.0, 252.0]
 const JAIL_ANGLE := 216.0
@@ -44,9 +47,13 @@ var tunnels: Array[TunnelEntrance] = []
 var jail: JailCell
 var queen: CaveAnt
 var queen_hole: Dictionary = {}
+var party: BirthdayParty
 
 ## How the hero got here this time (see Progress.hub_return_from).
 var arrived_from := -1
+## A cutscene being watched again from the progress screen ("intro" /
+## "party"), or "".
+var replaying := ""
 
 
 func _ready() -> void:
@@ -109,6 +116,13 @@ func _build_cave() -> void:
 			hole = shell.holes[rng.randi() % shell.holes.size()]
 		ant.hide_in_hole(hole)
 
+	# The birthday easter egg: the pad, the key, the cell's button and the
+	# dancers waiting in their holes.
+	party = BirthdayParty.new()
+	party.name = "BirthdayParty"
+	add_child(party)
+	party.setup(self, shell, jail, queen, queen_hole)
+
 
 ## A transform on the floor at the foot of the wall, with +Z pointing into
 ## the wall (the convention the tunnel and jail pieces use).
@@ -146,9 +160,22 @@ func _build_environment() -> void:
 func _arrive() -> void:
 	arrived_from = Progress.hub_return_from
 	Progress.hub_return_from = -1
+	replaying = Progress.replay
+	Progress.replay = ""
 	var player := get_tree().get_first_node_in_group("player") as PlayerBall
 	var rig := find_child("CameraRig", true, false)
 	if player == null:
+		return
+	_make_cutscene(player)   # the party borrows its camera and skip bar
+	if replaying == "party":
+		# Watching the party again: start in the cell by the red button,
+		# and push it.
+		var spot := jail.to_global(Vector3(0.9, 0.5, 3.0))
+		player.teleport(spot)
+		player.set_spawn(Transform3D(Basis.IDENTITY, spot))
+		await get_tree().create_timer(0.6).timeout
+		if is_inside_tree():
+			party.play_again()
 		return
 	if arrived_from >= 0:
 		# Back from a level: in front of its tunnel, looking into the cave.
@@ -197,8 +224,8 @@ func _fall_in(player: PlayerBall, rig: Node3D) -> void:
 	await get_tree().create_timer(1.0).timeout
 	if not is_inside_tree():
 		return
-	if not Progress.hub_intro_seen:
-		Progress.hub_intro_seen = true
+	if not Progress.hub_intro_seen or replaying == "intro":
+		Progress.set_flag("hub_intro_seen")
 		var outcome: String = await cutscene.play(INTRO_CUTSCENE)
 		if not is_inside_tree():
 			return   # "No" ended in game over and a scene change

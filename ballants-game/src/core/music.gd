@@ -61,6 +61,16 @@ func duck(seconds: float) -> void:
 	_duck_time = maxf(_duck_time, seconds)
 
 
+## Pauses the songs altogether (a scene with its own music, such as the
+## birthday party) and resumes them, fading back in.
+func set_hold(on: bool) -> void:
+	if _player == null or _player.stream_paused == on:
+		return
+	_player.stream_paused = on
+	if not on:
+		_fade = 0.0
+
+
 func set_enabled(on: bool) -> void:
 	enabled = on
 	_apply_mute()

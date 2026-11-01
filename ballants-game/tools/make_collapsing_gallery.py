@@ -358,7 +358,9 @@ def build():
     c.marks["s1_first_tiles"] = c.at(TILE * 1.5, 0)
     # The first patch: touching it also starts a "demo" -- three middle
     # tiles of the next patch crack and fall while you watch.
-    c.tiles(3, opts=lambda r, lane: {"timing_setting": "gallery_warning_scale", "trigger_group": "warn_demo"}, speed=8)
+    # (They only SET OFF the demo: each keeps its own countdown from its own
+    # touch, so the patch never drops all at once.)
+    c.tiles(3, opts=lambda r, lane: {"timing_setting": "gallery_warning_scale", "triggers_group": "warn_demo"}, speed=8)
     c.solid(7.0, speed=8)
     c.arch(3.5)
     demo = lambda r, lane: ({"trigger_group": "warn_demo", "crack_delay": 0.2, "fall_delay": 0.6, "extra_delay": 0.2 * (r - 1)}

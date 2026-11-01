@@ -31,7 +31,95 @@ func _ready() -> void:
 	_refresh_level_name()
 	_build_gyro_indicator()
 	_build_crystal_counter()
+	_build_prompt()
 	Progress.changed.connect(_refresh_crystals)
+
+
+var _prompt: PanelContainer
+var _prompt_label: Label
+var _popup: Label
+var _popup_tween: Tween
+
+## Bottom centre: a short prompt from something nearby ("Locked", "Push
+## the button (Space)"), shown while show_prompt() keeps setting it. And a
+## centred message near the top that fades after a moment (popup()).
+func _build_prompt() -> void:
+	_prompt = PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.55)
+	style.set_corner_radius_all(10)
+	style.set_content_margin_all(12)
+	style.content_margin_left = 22
+	style.content_margin_right = 22
+	_prompt.add_theme_stylebox_override("panel", style)
+	_prompt.anchor_left = 0.5
+	_prompt.anchor_right = 0.5
+	_prompt.anchor_top = 1.0
+	_prompt.anchor_bottom = 1.0
+	_prompt.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_prompt.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_prompt.offset_top = -124.0
+	_prompt.offset_bottom = -76.0
+	_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_prompt.visible = false
+	add_child(_prompt)
+	_prompt_label = Label.new()
+	_prompt_label.add_theme_font_size_override("font_size", 24)
+	_prompt_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.8))
+	_prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_prompt_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_prompt_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_prompt.add_child(_prompt_label)
+	_popup = Label.new()
+	_popup.add_theme_font_size_override("font_size", 34)
+	_popup.add_theme_color_override("font_color", Color(1.0, 0.95, 0.8))
+	_popup.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	_popup.add_theme_constant_override("shadow_offset_x", 2)
+	_popup.add_theme_constant_override("shadow_offset_y", 2)
+	_popup.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_popup.anchor_left = 0.0
+	_popup.anchor_right = 1.0
+	_popup.offset_top = 110.0
+	_popup.offset_bottom = 160.0
+	_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_popup.visible = false
+	add_child(_popup)
+
+
+## Shows a prompt at the bottom of the screen ("" hides it).
+func show_prompt(text: String) -> void:
+	_prompt_label.text = text
+	_prompt.visible = not text.is_empty() and visible
+	# Re-centre: the panel sizes itself to the text.
+	_prompt.reset_size()
+	_prompt.offset_left = -_prompt.size.x * 0.5
+	_prompt.offset_right = _prompt.size.x * 0.5
+
+
+func hide_prompt() -> void:
+	show_prompt("")
+
+
+func prompt_text() -> String:
+	return _prompt_label.text if _prompt.visible else ""
+
+
+## A centred message that fades in, stays `seconds`, and fades out.
+func popup(text: String, seconds := 2.5) -> void:
+	_popup.text = text
+	_popup.visible = true
+	_popup.modulate.a = 0.0
+	if _popup_tween and _popup_tween.is_valid():
+		_popup_tween.kill()
+	_popup_tween = create_tween()
+	_popup_tween.tween_property(_popup, "modulate:a", 1.0, 0.25)
+	_popup_tween.tween_interval(seconds)
+	_popup_tween.tween_property(_popup, "modulate:a", 0.0, 0.5)
+	_popup_tween.tween_callback(func(): _popup.visible = false)
+
+
+func popup_text() -> String:
+	return _popup.text if _popup.visible else ""
 
 
 var _crystals: Label
@@ -104,14 +192,13 @@ func _refresh_crystals() -> void:
 		_pouch_level.text = "this level  " + " ".join(marks)
 
 
+## Just the pause hint: every control is listed on the pause menu's
+## Controls page now (Esc / Start).
 func _refresh_controls_text() -> void:
 	if Controls.gyro_active():
-		_controls.text = ("Left stick: forward = go, back = brake     TILT the controller: steer     "
-				+ "Right stick click / G: recenter     A: jump     R: restart     F1: tuning     F2: debug")
+		_controls.text = "Left stick: go / brake     TILT: steer     Esc / Start: pause"
 	else:
-		_controls.text = ("WASD / left stick: roll     Space / A: jump     "
-				+ "Mouse / right stick: camera     R: restart     C / Y: customize     1-5: levels     0: arena     H: hub     T: title     "
-				+ "U: unlock all (debug)     F1: tuning     F2: debug")
+		_controls.text = "Esc / Start: pause"
 
 
 ## A small bar at the bottom showing how far the controller is tilted,

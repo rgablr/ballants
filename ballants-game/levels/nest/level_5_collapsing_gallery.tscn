@@ -97,7 +97,7 @@ position = Vector3(-2.4, 12, -15.2)
 rotation = Vector3(0, 0, 0)
 size = Vector3(2.4, 0.6, 2.4)
 timing_setting = "gallery_warning_scale"
-trigger_group = "warn_demo"
+triggers_group = "warn_demo"
 seed = 7
 
 [node name="Tile8" parent="S1" type="StaticBody3D"]
@@ -106,7 +106,7 @@ position = Vector3(0, 12, -15.2)
 rotation = Vector3(0, 0, 0)
 size = Vector3(2.4, 0.6, 2.4)
 timing_setting = "gallery_warning_scale"
-trigger_group = "warn_demo"
+triggers_group = "warn_demo"
 seed = 8
 
 [node name="Tile9" parent="S1" type="StaticBody3D"]
@@ -115,7 +115,7 @@ position = Vector3(2.4, 12, -15.2)
 rotation = Vector3(0, 0, 0)
 size = Vector3(2.4, 0.6, 2.4)
 timing_setting = "gallery_warning_scale"
-trigger_group = "warn_demo"
+triggers_group = "warn_demo"
 seed = 9
 
 [node name="Tile10" parent="S1" type="StaticBody3D"]
@@ -124,7 +124,7 @@ position = Vector3(-2.4, 12, -17.6)
 rotation = Vector3(0, 0, 0)
 size = Vector3(2.4, 0.6, 2.4)
 timing_setting = "gallery_warning_scale"
-trigger_group = "warn_demo"
+triggers_group = "warn_demo"
 seed = 10
 
 [node name="Tile11" parent="S1" type="StaticBody3D"]
@@ -133,7 +133,7 @@ position = Vector3(0, 12, -17.6)
 rotation = Vector3(0, 0, 0)
 size = Vector3(2.4, 0.6, 2.4)
 timing_setting = "gallery_warning_scale"
-trigger_group = "warn_demo"
+triggers_group = "warn_demo"
 seed = 11
 
 [node name="Tile12" parent="S1" type="StaticBody3D"]
@@ -142,7 +142,7 @@ position = Vector3(2.4, 12, -17.6)
 rotation = Vector3(0, 0, 0)
 size = Vector3(2.4, 0.6, 2.4)
 timing_setting = "gallery_warning_scale"
-trigger_group = "warn_demo"
+triggers_group = "warn_demo"
 seed = 12
 
 [node name="Tile13" parent="S1" type="StaticBody3D"]
@@ -151,7 +151,7 @@ position = Vector3(-2.4, 12, -20)
 rotation = Vector3(0, 0, 0)
 size = Vector3(2.4, 0.6, 2.4)
 timing_setting = "gallery_warning_scale"
-trigger_group = "warn_demo"
+triggers_group = "warn_demo"
 seed = 13
 
 [node name="Tile14" parent="S1" type="StaticBody3D"]
@@ -160,7 +160,7 @@ position = Vector3(0, 12, -20)
 rotation = Vector3(0, 0, 0)
 size = Vector3(2.4, 0.6, 2.4)
 timing_setting = "gallery_warning_scale"
-trigger_group = "warn_demo"
+triggers_group = "warn_demo"
 seed = 14
 
 [node name="Tile15" parent="S1" type="StaticBody3D"]
@@ -169,7 +169,7 @@ position = Vector3(2.4, 12, -20)
 rotation = Vector3(0, 0, 0)
 size = Vector3(2.4, 0.6, 2.4)
 timing_setting = "gallery_warning_scale"
-trigger_group = "warn_demo"
+triggers_group = "warn_demo"
 seed = 15
 
 [node name="Wall16" parent="S1" type="StaticBody3D"]

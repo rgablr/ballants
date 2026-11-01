@@ -146,6 +146,16 @@ var jump_buffer_time := 0.0425
 ## 1.0 = only perfectly flat. 0.5 = up to about 60 degrees. 0 = even walls.
 var ground_normal_min := 0.5
 
+## Speedrun jumping. true = you can jump whenever the ball is touching the
+## ground, or skimming just above it after one of the tiny hops it makes at
+## speed (within jump_contact_margin), even while it is bouncing up off a
+## landing. false = the normal rule (on the ground, plus coyote_time).
+var jump_on_contact := false
+
+## With jump_on_contact on: how far above the ground, in meters under the
+## ball, still counts as touching it.
+var jump_contact_margin := 0.12
+
 
 # --------------------------------------------------------------- CAMERA ----
 
@@ -390,10 +400,10 @@ var storage_gate_slide_time := 0.5
 # section scales below multiply both delays for the tiles of one section.
 
 ## Seconds from the ball touching a collapsing tile until it starts to crack and shake.
-var tile_crack_delay := 0.55
+var tile_crack_delay := 0.0
 
 ## Seconds a cracked tile shakes before it drops away (its floor is gone the moment it drops).
-var tile_fall_delay := 0.75
+var tile_fall_delay := 0.5
 
 ## How fast a dropped tile falls out of sight, as a fraction of gravity. Looks only.
 var tile_fall_speed := 1.0
@@ -402,7 +412,7 @@ var tile_fall_speed := 1.0
 var tile_shake := 0.05
 
 ## Collapsing Gallery, section 1 (warning floor): its tiles take this many times longer to crack and fall.
-var gallery_warning_scale := 2.6
+var gallery_warning_scale := 1.0
 
 ## Collapsing Gallery, the curves: the inside row of tiles all start their countdown when you enter the curve, and take this fraction of the normal time.
 var gallery_curve_inside_scale := 0.3
@@ -411,7 +421,7 @@ var gallery_curve_inside_scale := 0.3
 var gallery_sprint_scale := 0.5
 
 ## Collapsing Gallery, the narrow bridges to the side ledge (hidden crystal 0): this fraction of the normal time.
-var gallery_ledge_bridge_scale := 0.5
+var gallery_ledge_bridge_scale := 1.0
 
 ## Collapsing Gallery, the first bridge out to the side ledge starts its countdown when you roll past its approach, then waits this many seconds before its own crack countdown begins (each tile further out waits 0.25 s more). Turn onto it at once or it is gone.
 var gallery_ledge_bridge_delay := 1.5
@@ -440,6 +450,7 @@ const RANGES := {
 	"coyote_time": [0.0, 0.5],
 	"jump_buffer_time": [0.0, 0.5],
 	"ground_normal_min": [0.0, 1.0],
+	"jump_contact_margin": [0.0, 0.5],
 	"camera_distance": [1.0, 20.0],
 	"camera_height_offset": [-2.0, 4.0],
 	"camera_pitch_default": [-10.0, 80.0],

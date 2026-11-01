@@ -12,6 +12,8 @@ extends Node3D
 ##     crawl; it stands back up below about 68% (the gap stops flickering)
 ##   - in sharp turns it sways and windmills like it's about to fall off
 ##   - it squashes on landing and stretches on take-off
+##   - in the air it flails; after a real jump or fall it lands with a quick
+##     forward somersault on top of the ball
 ##   - when an enemy knocks it off, it tumbles off the ball in an arc and
 ##     lands on its back, legs kicking, until the respawn puts it back
 ##
@@ -44,6 +46,18 @@ const CRAWL_LEAN := 0.2
 ## Sideways acceleration (m/s²) where teetering starts, and where it's full.
 const TEETER_START := 7.0
 const TEETER_FULL := 16.0
+# In the air: judged by how high the ball really is above the ground (with
+# a gap between "up" and "down"), so landing bounces and bumpy ground don't
+# leave the ant flailing after it has landed.
+const AIR_UP := 0.5          # clearance that counts as airborne (m); the ball's
+                             # little bounces after landing stay below this
+const AIR_DOWN := 0.12       # clearance that counts as landed again (m)
+const TUMBLE_MIN_AIR := 0.35 # seconds in the air before landing earns a somersault
+const TUMBLE_TIME := 0.45
+const TUMBLE_HOP := 0.22     # how high it springs up during the roll (m)
+var _in_air := false
+var _air_time := 0.0
+var _tumble_time := -1.0     # < 0 = not somersaulting
 # Knocked off: the tumble from where the ant was to where it lands.
 var _fallen := false
 var _fall_time := 0.0
@@ -82,6 +96,7 @@ func _ball_radius() -> float:
 func _physics_process(delta: float) -> void:
 	if ball == null:
 		return
+	_update_air(delta)
 	var velocity := ball.linear_velocity
 	var acceleration := (velocity - _previous_velocity) / delta
 	_previous_velocity = velocity
@@ -164,8 +179,58 @@ func _process(delta: float) -> void:
 	_teeter = move_toward(_teeter, want, delta * (6.0 if want > _teeter else 1.5))
 	if _visual.has_method("set_teeter"):
 		_visual.set_teeter(_teeter)
-	if _visual.has_method("set_airborne") and ball.has_method("is_grounded"):
-		_visual.set_airborne(not ball.is_grounded() and not ball.is_coyote_active())
+	if _visual.has_method("set_airborne"):
+		_visual.set_airborne(_in_air and _tumble_time < 0.0)
+	_somersault(delta)
+
+
+## Height of the gap under the ball (m); large if there's no ground below.
+func _clearance() -> float:
+	var center := ball.global_position
+	var query := PhysicsRayQueryParameters3D.create(center, center + Vector3.DOWN * 4.0)
+	query.exclude = [ball.get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return 4.0
+	return center.distance_to(hit.position) - _ball_radius()
+
+
+func _update_air(delta: float) -> void:
+	if _fallen or ball.freeze:
+		_in_air = false
+		_air_time = 0.0
+		return
+	var grounded: bool = ball.is_grounded() if ball.has_method("is_grounded") else true
+	var gap := _clearance()
+	if _in_air:
+		_air_time += delta
+		if grounded or gap < AIR_DOWN:
+			_in_air = false
+			if _air_time >= TUMBLE_MIN_AIR:
+				_tumble_time = 0.0
+			_air_time = 0.0
+	elif not grounded and gap > AIR_UP:
+		_in_air = true
+		_air_time = 0.0
+		_tumble_time = -1.0
+
+
+## The landing somersault: one quick forward roll around the ant's middle
+## with a little spring up, ending standing again.
+func _somersault(delta: float) -> void:
+	if _tumble_time < 0.0:
+		return
+	_tumble_time += delta
+	var t := clampf(_tumble_time / TUMBLE_TIME, 0.0, 1.0)
+	var angle := -TAU * smoothstep(0.0, 1.0, t)       # negative = head goes forward
+	var middle := Vector3(0.0, 0.2, 0.0) * model_scale
+	var lift := Vector3.UP * sin(t * PI) * TUMBLE_HOP
+	_visual.rotation.x = angle
+	_visual.position = middle - Basis(Vector3.RIGHT, angle) * middle + lift
+	if t >= 1.0:
+		_tumble_time = -1.0
+		_visual.rotation.x = 0.0
+		_visual.position = Vector3.ZERO
 
 
 func _on_knocked_off(direction: Vector3) -> void:
@@ -205,6 +270,10 @@ func _tumble(delta: float) -> void:
 
 func _on_respawned() -> void:
 	_fallen = false
+	_tumble_time = -1.0
+	_in_air = false
+	_visual.rotation.x = 0.0
+	_visual.position = Vector3.ZERO
 	_lean = Vector3.ZERO
 	_lean_velocity = Vector3.ZERO
 
@@ -217,6 +286,9 @@ func _on_landed() -> void:
 
 ## A smaller stretch on take-off.
 func _on_jumped() -> void:
+	_in_air = true   # a jump is airborne at once, before the gap opens up
+	_air_time = 0.0
+	_tumble_time = -1.0
 	var stretch := Tuning.ant_land_squash * 0.5
 	_play_bounce(Vector3(1.0 - stretch * 0.5, 1.0 + stretch, 1.0 - stretch * 0.5))
 

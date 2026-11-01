@@ -1247,3 +1247,9 @@ Known limits: I can't hear the game, so the volumes come from the numbers. If an
 - **Quieter at speed.** The rolling rumble is loudest at a medium roll and eases off toward top speed. It's also quieter overall (about -24 dB at its loudest, -29 dB at top speed). This also fixes a bug where, on screens faster than 60 fps, the rumble kept dipping toward silence.
 - **Bumping friendly bugs** (ladybug, spider, fly, bee, worm) makes a bouncy pluck from where the bug is, at most once a second per bug.
 - **Enemy drone.** A low, uneasy hum (two slowly beating tones a tritone apart) fades in from about 13 m from the nearest enemy and is strongest within 3 m. It's made in code, so it isn't beeping. Measured: silent at 19 m, -36 dB at 8.5 m, -18 dB up close.
+
+## 26. No more flailing after landing; a landing somersault
+
+- **The bug:** after a jump, the ball bounces about 25 cm on landing (ball bounce 0.47 in the tuning file), and on the bumpy meadow it also loses ground contact for a moment. The ant's "in the air" pose followed the ball's ground contact exactly, so it kept flailing and looked like it was hovering for up to half a second while the ball rolled on.
+- **The fix:** a jump puts the ant in the air straight away. Otherwise the ant only counts as airborne when there's more than 0.5 m of gap under the ball, and as landed again at 0.12 m. Landing bounces and bumps stay under that, so they no longer set off the flailing. The ball's own bounce is unchanged.
+- **The somersault:** after more than 0.35 s in the air (any real jump or drop), the ant does one quick forward roll over its middle with a little spring up (0.45 s), then is back standing and running. Short hops and bumps don't trigger it.

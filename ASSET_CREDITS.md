@@ -42,6 +42,7 @@ credit, but they are placeholders to be replaced:
 | Worker ants on the cave walls and the Queen Ant (crown, big abdomen) | `src/objects/hub/cave_ant.gd` | Optional: a low-poly CC0 ant (crawling pose) and a queen variant; the gait and path code stay |
 | The Queen's gift (a glowing orb) | `src/cutscene/cutscene_player.gd` (`_make_orb`) | Whatever the item turns out to be (see SETUP_NOTES Q27) |
 | Dialogue "jibber" voices | `src/cutscene/voice_synth.gd` (short pitched tones computed in code; no recording, no AI) | Keep, or CC0 recorded blips per character |
+| Collapsing floor tiles (cracked slab, crack lines, dust puffs) and the falling-dust trickle (Level 5) | `src/objects/nest/collapsing_tile.gd`, `src/objects/nest/falling_dust.gd` | Optional: a few CC0 cracked-stone/dirt slab models (top face at the origin); the touch timer and collision stay |
 
 ## Searched but not used
 

@@ -289,6 +289,72 @@ var seesaw_plank_mass := 1.5
 var bounce_pad_height := 6.01
 
 
+# ------------------------- LEVEL 4: WORKER RUSH ----
+# Worker ants carrying crumbs (src/objects/nest/worker_line.gd) and the
+# storage gate (src/objects/nest/storage_gate.gd). Every line's position
+# is time-since-level-load x speed, so these change the rhythm, never add
+# randomness.
+
+## How hard a worker ant knocks the ball away when you bump into it (m/s,
+## straight out from the ant's body). Firm but fair: about the speed of a
+## gentle roll, so you lose your momentum but stay on course.
+var worker_knock_speed := 6.0
+
+## Upward speed a worker bump gives the ball (m/s): a little hop.
+var worker_knock_lift := 1.4
+
+## Part of the ball's sideways speed (along the ant) kept through a bump.
+## 0 = all of it lost, 1 = slides on past.
+var worker_knock_keep := 0.4
+
+## Seconds after a bump during which no worker can bump the ball again.
+var worker_bump_grace := 0.5
+
+## Section 1, the single line: walking speed of its workers (m/s).
+var worker_rush_single_speed := 1.5
+
+## Section 1: meters from one worker's middle to the next.
+var worker_rush_single_spacing := 4.5
+
+## Section 2, the crossing lines, first lane you meet: walking speed (m/s).
+var worker_rush_cross_a_speed := 1.8
+
+## Section 2, first lane: meters between workers.
+var worker_rush_cross_a_spacing := 5.0
+
+## Section 2, second lane: walking speed (m/s).
+var worker_rush_cross_b_speed := 1.8
+
+## Section 2, second lane: meters between workers.
+var worker_rush_cross_b_spacing := 5.0
+
+## Section 3, the crumb highway, oncoming lane (on your left): walking
+## speed (m/s).
+var worker_rush_highway_on_speed := 2.0
+
+## Section 3, oncoming lane: meters between workers.
+var worker_rush_highway_on_spacing := 10.0
+
+## Section 3, lane going your way: walking speed (m/s).
+var worker_rush_highway_with_speed := 1.4
+
+## Section 3, lane going your way: meters between workers.
+var worker_rush_highway_with_spacing := 7.0
+
+## Section 4: the workers filing through the storage gate (their spacing
+## is always speed x the gate's period, one worker per opening).
+var worker_rush_gate_speed := 2.0
+
+## The storage gate: seconds for one open-and-shut cycle.
+var storage_gate_period := 4.0
+
+## Part of the gate's cycle it stands fully open (0..1).
+var storage_gate_open_fraction := 0.45
+
+## Seconds the gate takes to slide open or shut.
+var storage_gate_slide_time := 0.5
+
+
 # ------------------------------------------------------- SLIDER RANGES ----
 # Lowest and highest value the F1 panel's slider allows for each value.
 # Only affects the panel. Values not listed get a guessed range.
@@ -350,6 +416,24 @@ const RANGES := {
 	"boulder_mass": [0.1, 20.0],
 	"seesaw_plank_mass": [0.1, 10.0],
 	"bounce_pad_height": [0.5, 15.0],
+	"worker_knock_speed": [0.0, 20.0],
+	"worker_knock_lift": [0.0, 6.0],
+	"worker_knock_keep": [0.0, 1.0],
+	"worker_bump_grace": [0.0, 2.0],
+	"worker_rush_single_speed": [0.2, 6.0],
+	"worker_rush_single_spacing": [2.0, 15.0],
+	"worker_rush_cross_a_speed": [0.2, 6.0],
+	"worker_rush_cross_a_spacing": [2.0, 15.0],
+	"worker_rush_cross_b_speed": [0.2, 6.0],
+	"worker_rush_cross_b_spacing": [2.0, 15.0],
+	"worker_rush_highway_on_speed": [0.2, 6.0],
+	"worker_rush_highway_on_spacing": [2.0, 20.0],
+	"worker_rush_highway_with_speed": [0.2, 6.0],
+	"worker_rush_highway_with_spacing": [2.0, 20.0],
+	"worker_rush_gate_speed": [0.5, 6.0],
+	"storage_gate_period": [1.0, 12.0],
+	"storage_gate_open_fraction": [0.05, 0.95],
+	"storage_gate_slide_time": [0.05, 2.0],
 }
 
 

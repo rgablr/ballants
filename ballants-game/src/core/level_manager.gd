@@ -26,7 +26,13 @@ signal knock_recovered
 ## An enemy hit the player (the HUD flashes a red border).
 signal player_hit(attacker: String)
 ## The ball dropped into an entrance hill (the title area's giant hill).
+## level_index is HUB_INDEX when the hill leads into the anthill hub.
 signal entered_through_hill(level_index: int)
+## The ball rolled into one of the hub's tunnels; the level is loading.
+signal entered_tunnel(level_index: int)
+
+## Stands for "the hub" where a level index is expected.
+const HUB_INDEX := -2
 
 ## Seconds to watch the ball sink into the hill before the wipe starts.
 const DROP_DELAY := 0.9
@@ -76,16 +82,72 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if Game.cutscene_active:
+		return   # hold Esc / Start to skip the cutscene instead
 	if event.is_action_pressed("level_1"):
 		load_level(0)
 	elif event.is_action_pressed("level_2"):
 		load_level(1)
 	elif event.is_action_pressed("level_3"):
 		load_level(2)
+	elif event.is_action_pressed("level_4"):
+		load_level(3)
+	elif event.is_action_pressed("level_5"):
+		load_level(4)
 	elif event.is_action_pressed("level_0"):
 		load_test_arena()
+	elif event.is_action_pressed("hub"):
+		load_hub()
 	elif event.is_action_pressed("title_screen"):
 		load_title()
+
+
+## True when the anthill hub is the current scene.
+func is_in_hub() -> bool:
+	var scene := get_tree().current_scene
+	return scene != null and scene.scene_file_path == LevelList.HUB
+
+
+## Loads the hub. return_from = the level index the player just finished
+## (they appear in front of that tunnel), or -1 to fall in through the top.
+func load_hub(return_from := -1) -> void:
+	current_index = -1
+	Progress.hub_return_from = return_from
+	_change_scene(LevelList.HUB)
+
+
+## Called by a hub tunnel when the ball rolls into it: a moment of rolling
+## into the dark, a wipe to black, then the level.
+func enter_level_from_hub(index: int) -> void:
+	if _loading or index < 0 or index >= LevelList.LEVELS.size():
+		return
+	_run_done = true
+	Game.control_locked = true
+	entered_tunnel.emit(index)
+	var my_run := _run_id
+	await get_tree().create_timer(0.35).timeout
+	if my_run != _run_id:
+		return
+	await Transition.fade_out(FADE_TIME)
+	if my_run == _run_id:
+		load_level(index)
+
+
+## Called by the title meadow's giant hill: watch the ball sink, wipe to
+## black, then the hub (where the hero falls in through the top).
+func enter_hub_through_hill() -> void:
+	if _run_done or _loading:
+		return
+	_run_done = true
+	timer_running = false
+	entered_through_hill.emit(HUB_INDEX)
+	var my_run := _run_id
+	await get_tree().create_timer(DROP_DELAY).timeout
+	if my_run != _run_id:
+		return
+	await Transition.fade_out(FADE_TIME)
+	if my_run == _run_id:
+		load_hub(-1)
 
 
 ## True when a listed level is playing (false in the test arena).
@@ -182,6 +244,8 @@ func _change_scene(path: String) -> void:
 	timer_running = false
 	_run_done = false
 	Game.level_complete = false
+	Game.control_locked = false
+	Game.cutscene_active = false
 	Engine.time_scale = 1.0
 	var was_dark := Transition.is_dark()
 	get_tree().change_scene_to_file(path)
@@ -205,6 +269,7 @@ func _on_level_completed() -> void:
 	run_finished.emit(run_time)
 	if is_in_level():
 		session_times[current_index] = run_time
+		Progress.record_finish(current_index, run_time, float(current_info().par_time))
 	var my_run := _run_id
 	await get_tree().create_timer(DROP_DELAY).timeout
 	if my_run != _run_id:
@@ -219,17 +284,18 @@ func _on_level_completed() -> void:
 	await Transition.wait_for_continue()
 	if my_run != _run_id:
 		return
-	if is_in_level() and current_index == LevelList.LEVELS.size() - 1:
-		# Last level of the world: a "world complete" card, then the title.
+	if is_in_level() and LevelList.is_last_of_world(current_index):
+		# Last level of its world: a "world complete" card first.
 		Transition.show_world_complete(current_info().world, _world_times())
 		await get_tree().create_timer(CONTINUE_DELAY).timeout
 		if my_run != _run_id:
 			return
 		await Transition.wait_for_continue()
-		if my_run == _run_id:
-			load_title()
-	elif is_in_level():
-		load_next()
+		if my_run != _run_id:
+			return
+	if is_in_level():
+		# Every level leads back to the hub, in front of its own tunnel.
+		load_hub(current_index)
 	else:
 		restart()
 

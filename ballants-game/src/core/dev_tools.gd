@@ -60,6 +60,9 @@ func _ready() -> void:
 			level = 0
 		elif arg.begins_with("--level="):
 			level = int(arg.get_slice("=", 1))
+		elif arg == "--hub":
+			# The anthill hub, arriving by the fall from the top.
+			level = -3
 		elif arg.begins_with("--scene="):
 			# Any scene by path, e.g. --scene=res://levels/garden/garden_showcase.tscn
 			Levels.current_index = -1
@@ -99,7 +102,9 @@ func _ready() -> void:
 ## Switches to a level once the tree is up. 0 = arena, 1..n = list order.
 func _load_level_later(level: int) -> void:
 	await get_tree().process_frame
-	if level < 0:
+	if level == -3:
+		Levels.load_hub()
+	elif level < 0:
 		Levels.load_title()
 	elif level == 0:
 		Levels.load_test_arena()
@@ -132,7 +137,8 @@ func _run_drive(path: String) -> void:
 		await _save_screenshot(_screenshot_path.get_basename() + "_results.png")
 	if passed and int(config.get("level", 1)) < 0:
 		await get_tree().create_timer(Levels.DROP_DELAY + Levels.FADE_TIME + 1.0).timeout
-		print("[drive] after entering the giant ant hill the game loaded level %d" % [Levels.current_index + 1])
+		var where := "the anthill hub" if Levels.is_in_hub() else "level %d" % [Levels.current_index + 1]
+		print("[drive] after entering the giant ant hill the game loaded %s" % where)
 	elif passed and Levels.is_in_level():
 		# Confirm the level system moves on to the next level by itself.
 		var before := Levels.current_index
@@ -147,7 +153,14 @@ func _run_drive(path: String) -> void:
 			Transition.press_continue()
 		await get_tree().create_timer(1.0).timeout
 		var now := "the title area" if get_tree().current_scene.scene_file_path == LevelList.TITLE \
-				else "level %d" % [Levels.current_index + 1]
+				else ("the anthill hub" if Levels.is_in_hub() else "level %d" % [Levels.current_index + 1])
+		if Levels.is_in_hub():
+			var hub := get_tree().current_scene
+			var tunnel = hub.tunnel_for(before) if hub.has_method("tunnel_for") else null
+			var player := get_tree().get_first_node_in_group("player") as Node3D
+			if tunnel and player:
+				var gap: float = player.global_position.distance_to(tunnel.return_transform().origin)
+				now += ", %.1f m from tunnel %d's mouth" % [gap, before + 1]
 		print("[drive] after completing level %d the game loaded %s" % [before + 1, now])
 	get_tree().quit(0 if passed else 1)
 

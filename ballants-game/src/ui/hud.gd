@@ -24,10 +24,44 @@ func _ready() -> void:
 	Levels.knock_recovered.connect(func(): _message.visible = false)
 	Levels.player_hit.connect(func(_attacker: String): _flash_hit())
 	_build_hit_border()
-	Levels.level_loaded.connect(func(_index: int): _refresh_level_name())
+	Levels.level_loaded.connect(func(_index: int):
+		_refresh_level_name()
+		_refresh_crystals())
 	Controls.gyro_device_changed.connect(func(_device: int): _refresh_controls_text())
 	_refresh_level_name()
 	_build_gyro_indicator()
+	_build_crystal_counter()
+	Progress.changed.connect(_refresh_crystals)
+
+
+var _crystals: Label
+
+## Top right: how many sugar crystals you have (hidden while it's zero
+## outside the hub).
+func _build_crystal_counter() -> void:
+	_crystals = Label.new()
+	_crystals.add_theme_font_size_override("font_size", 22)
+	_crystals.add_theme_color_override("font_color", Color(0.85, 0.97, 1.0))
+	_crystals.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_crystals.add_theme_constant_override("shadow_offset_x", 1)
+	_crystals.add_theme_constant_override("shadow_offset_y", 1)
+	_crystals.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_crystals.anchor_left = 1.0
+	_crystals.anchor_right = 1.0
+	_crystals.offset_left = -320.0
+	_crystals.offset_right = -16.0
+	_crystals.offset_top = 40.0
+	_crystals.offset_bottom = 70.0
+	add_child(_crystals)
+	_refresh_crystals()
+
+
+func _refresh_crystals() -> void:
+	if _crystals == null:
+		return
+	var show := Progress.crystals > 0 or Levels.is_in_hub()
+	_crystals.visible = show
+	_crystals.text = "sugar crystals: %d%s" % [Progress.crystals, "   (debug: all tunnels open)" if Progress.debug_unlock_all else ""]
 
 
 func _refresh_controls_text() -> void:
@@ -36,8 +70,8 @@ func _refresh_controls_text() -> void:
 				+ "Right stick click / G: recenter     A: jump     R: restart     F1: tuning     F2: debug")
 	else:
 		_controls.text = ("WASD / left stick: roll     Space / A: jump     "
-				+ "Mouse / right stick: camera     R: restart     C / Y: customize     1 2 3: levels     0: arena     T: title     "
-				+ "F1: tuning     F2: debug")
+				+ "Mouse / right stick: camera     R: restart     C / Y: customize     1-5: levels     0: arena     H: hub     T: title     "
+				+ "U: unlock all (debug)     F1: tuning     F2: debug")
 
 
 ## A small bar at the bottom showing how far the controller is tilted,

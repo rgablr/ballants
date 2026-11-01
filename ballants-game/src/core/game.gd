@@ -11,6 +11,14 @@ signal level_restarting
 var level_complete := false
 ## True while a panel (F1 tuning) wants the mouse free.
 var ui_open := false
+## True while the player is not allowed to steer or jump: the hub arrival
+## fall and cutscenes. The ball reads it every step. Cleared on every
+## scene change by the level manager.
+var control_locked := false
+## True while a cutscene is running: restart and the dev level keys are
+## ignored so they can't yank the scene out from under it (hold Esc/Start
+## to skip instead).
+var cutscene_active := false
 
 
 func _ready() -> void:
@@ -31,7 +39,8 @@ func _apply_gravity() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("restart"):
-		restart_level()
+		if not cutscene_active:
+			restart_level()
 	elif event.is_action_pressed("ui_cancel"):
 		release_mouse()
 	elif event is InputEventMouseButton and event.pressed and not ui_open \

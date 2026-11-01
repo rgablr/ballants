@@ -65,6 +65,9 @@ extends StaticBody3D
 ## hill is an entrance: dropping in loads that level from the level list
 ## (the title area's giant hill uses 0, the first level).
 @export var enter_level := -1
+## This hill is the way into the anthill hub (the title meadow's giant
+## hill): dropping in loads the hub and the hero falls in through its top.
+@export var enter_hub := false
 
 ## Seconds the ball takes to slide to the middle, then to sink out of sight.
 const SINK_CENTER_TIME := 0.25
@@ -281,7 +284,9 @@ static func _profile_normal(profile: PackedVector2Array, row: int) -> Vector2:
 func _on_ball_crossed(ball: PlayerBall) -> void:
 	_done = true
 	_sink(ball)
-	if enter_level >= 0:
+	if enter_hub:
+		Levels.enter_hub_through_hill()
+	elif enter_level >= 0:
 		Levels.enter_level_through_hill(enter_level)
 	else:
 		Game.complete_level()

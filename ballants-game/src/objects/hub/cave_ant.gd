@@ -1,0 +1,393 @@
+class_name CaveAnt
+extends Node3D
+## CAVE ANT -- a low-poly six-legged ant built from shapes, crawling on
+## all six legs (unlike the hero, who stands on two). No collision: these
+## are decoration, and the Queen is a cutscene actor.
+##
+## Worker ants live on the hub's walls: they wait inside a small hole, poke
+## their head out and look around, or crawl across the wall and ceiling to
+## another hole and disappear into it (see src/objects/hub/cave_shell.gd
+## for the holes and the wall surface they walk on).
+##
+## With `queen` on it is the Queen Ant: twice the size, a bigger abdomen, a
+## crown of spikes on her head, and no mind of her own; the cutscene moves
+## her with emerge_from_hole(), walk_floor_to() and face_point().
+##
+## Local space: feet at y = 0, facing -Z, "up" is +Y. On a wall the whole
+## node is tilted so +Y is the wall's inward normal.
+
+@export var queen := false
+@export var body_scale := 1.0
+## Crawling speed in m/s (workers; the Queen gets her own when asked to walk).
+@export var speed := 2.4
+
+signal path_finished
+
+enum State { HIDDEN, PEEKING, TRAVELLING, IDLE }
+
+## The cave shell whose holes this ant uses (workers).
+var shell: CaveShell
+var state := State.IDLE
+
+const BODY := Color(0.42, 0.18, 0.09)
+const DARK := Color(0.2, 0.08, 0.04)
+const QUEEN_BODY := Color(0.5, 0.15, 0.1)
+const QUEEN_DARK := Color(0.25, 0.07, 0.05)
+const CROWN := Color(0.95, 0.75, 0.25)
+const EYE := Color(0.02, 0.02, 0.02)
+
+var _body: Node3D
+var _head: Node3D
+var _legs: Array[Dictionary] = []
+var _antennae: Array[Node3D] = []
+var _time := 0.0
+var _gait := 0.0
+var _moving_speed := 0.0
+var _look := 0.0            # extra head yaw, for looking around
+var _look_target := 0.0
+
+# Path following: keyframes with distances along the path.
+var _path: Array[Transform3D] = []
+var _path_dist: PackedFloat32Array
+var _dist := 0.0
+var _path_speed := 0.0
+# Worker behaviour.
+var _hole: Dictionary = {}
+var _timer := 0.0
+var _rng := RandomNumberGenerator.new()
+
+
+func _ready() -> void:
+	_build()
+	_rng.seed = get_instance_id() % 10007
+
+
+# -------------------------------------------------------------- body ----
+
+func _build() -> void:
+	var body_mat := CritterParts.material(QUEEN_BODY if queen else BODY, 0.85)
+	var dark_mat := CritterParts.material(QUEEN_DARK if queen else DARK, 0.8)
+	var eye_mat := CritterParts.material(EYE, 0.3)
+	var s := body_scale * (2.4 if queen else 1.0)
+	scale = Vector3.ONE * s
+	_body = Node3D.new()
+	add_child(_body)
+	var y := 0.13
+	# Abdomen: egg pointing back (and much bigger on the Queen).
+	var abdomen := CritterParts.sphere(_body, Vector3(0.0, y + 0.01, 0.15), 0.1,
+			Vector3(1.0, 0.95, 1.4) * (1.45 if queen else 1.0), body_mat, 10)
+	abdomen.rotation.x = -0.15
+	if queen:
+		abdomen.position = Vector3(0.0, y + 0.05, 0.22)
+		# Pale bands on the royal abdomen.
+		var band_mat := CritterParts.material(Color(0.78, 0.55, 0.35), 0.8)
+		for i in 3:
+			CritterParts.sphere(_body, abdomen.position + Vector3(0.0, 0.0, 0.03 + i * 0.07), 0.1,
+					Vector3(1.47, 1.4, 0.18) * 1.0, band_mat, 10)
+	# Thorax and the waist.
+	CritterParts.sphere(_body, Vector3(0.0, y, -0.02), 0.07, Vector3(1.0, 0.9, 1.1), body_mat, 10)
+	CritterParts.sphere(_body, Vector3(0.0, y + 0.005, 0.06), 0.035, Vector3.ONE, dark_mat, 8)
+	# Head on a pivot so it can look around and tilt.
+	_head = Node3D.new()
+	_head.position = Vector3(0.0, y + 0.01, -0.1)
+	_body.add_child(_head)
+	CritterParts.sphere(_head, Vector3(0.0, 0.0, -0.045), 0.07, Vector3(1.05, 0.95, 1.05), body_mat, 10)
+	for side in [1.0, -1.0]:
+		CritterParts.sphere(_head, Vector3(side * 0.045, 0.02, -0.095), 0.018, Vector3.ONE, eye_mat, 8)
+		# Mandibles.
+		CritterParts.rod(_head, Vector3(side * 0.03, -0.03, -0.1), Vector3(side * 0.01, -0.035, -0.14), 0.008, dark_mat)
+		var antenna := Node3D.new()
+		antenna.position = Vector3(side * 0.025, 0.04, -0.09)
+		_head.add_child(antenna)
+		CritterParts.rod(antenna, Vector3.ZERO, Vector3(side * 0.05, 0.08, -0.08), 0.007, dark_mat)
+		CritterParts.rod(antenna, Vector3(side * 0.05, 0.08, -0.08), Vector3(side * 0.09, 0.09, -0.14), 0.006, dark_mat)
+		_antennae.append(antenna)
+	if queen:
+		# A crown of spikes around the top of the head.
+		var crown_mat := CritterParts.material(CROWN, 0.4)
+		for i in 6:
+			var a := TAU * float(i) / 6.0
+			var spike := CylinderMesh.new()
+			spike.top_radius = 0.0
+			spike.bottom_radius = 0.014
+			spike.height = 0.06
+			spike.radial_segments = 5
+			spike.rings = 1
+			spike.material = crown_mat
+			var instance := MeshInstance3D.new()
+			instance.mesh = spike
+			instance.position = Vector3(cos(a) * 0.045, 0.065, -0.045 + sin(a) * 0.045)
+			instance.rotation = Vector3(sin(a) * 0.35, 0.0, -cos(a) * 0.35)
+			_head.add_child(instance)
+		var ring := TorusMesh.new()
+		ring.inner_radius = 0.04
+		ring.outer_radius = 0.055
+		ring.rings = 8
+		ring.ring_segments = 5
+		ring.material = crown_mat
+		var ring_instance := MeshInstance3D.new()
+		ring_instance.mesh = ring
+		ring_instance.position = Vector3(0.0, 0.05, -0.045)
+		_head.add_child(ring_instance)
+	# Six legs: hip on the thorax, knee up and out, foot on the ground.
+	for i in 3:
+		for side in [1.0, -1.0]:
+			var z := -0.09 + i * 0.07
+			var hip := Vector3(side * 0.04, y - 0.01, z)
+			var rest := Vector3(side * 0.19, 0.0, z + (-0.1 if i == 0 else (0.0 if i == 1 else 0.1)))
+			var femur := CritterParts.rod(self, hip, hip, 0.011, dark_mat)
+			var tibia := CritterParts.rod(self, hip, rest, 0.009, dark_mat)
+			_legs.append({"hip": hip, "rest": rest, "side": side, "femur": femur, "tibia": tibia,
+					"phase": 0.0 if (i == 1) == (side < 0.0) else 0.5})
+	_pose_legs(0.0, 0.0)
+
+
+func _pose_legs(gait: float, amount: float) -> void:
+	for leg in _legs:
+		var p := fposmod(gait + float(leg.phase), 1.0)
+		var step := _step(p)
+		var rest: Vector3 = leg.rest
+		var foot := rest + Vector3(0.0, step.y * 0.05 * amount, -step.x * 0.06 * amount)
+		var hip: Vector3 = leg.hip
+		var mid := (hip + foot) * 0.5
+		var knee := mid + Vector3(float(leg.side) * 0.05, 0.09, 0.0)
+		CritterParts.set_rod(leg.femur, hip, knee)
+		CritterParts.set_rod(leg.tibia, knee, foot)
+
+
+## Foot cycle: planted for 60% (sliding back), then lifted and swung forward.
+static func _step(phase: float) -> Vector2:
+	if phase < 0.6:
+		return Vector2(lerpf(1.0, -1.0, phase / 0.6), 0.0)
+	var u := (phase - 0.6) / 0.4
+	return Vector2(lerpf(-1.0, 1.0, smoothstep(0.0, 1.0, u)), sin(u * PI))
+
+
+func _process(delta: float) -> void:
+	_time += delta
+	if not _path.is_empty():
+		_follow_path(delta)
+	elif shell and not queen:
+		_worker_brain(delta)
+	# Legs step when moving; otherwise a little breathing and antenna waving.
+	var moving := clampf(_moving_speed / 1.5, 0.0, 1.0)
+	_gait = fposmod(_gait + delta * (1.6 + _moving_speed * 1.1) * moving, 1.0)
+	_pose_legs(_gait, moving)
+	_body.position.y = sin(_time * 2.4) * 0.004 * (1.0 - moving) + absf(sin(_gait * TAU * 2.0)) * 0.006 * moving
+	_look = lerpf(_look, _look_target, 1.0 - exp(-delta * 4.0))
+	_head.rotation.y = _look + sin(_time * 1.1) * 0.05
+	for i in _antennae.size():
+		var a := _antennae[i]
+		a.rotation.x = sin(_time * 1.7 + i * 2.0) * 0.12 + moving * sin(_gait * TAU * 2.0 + i * PI) * 0.1
+		a.rotation.z = (1.0 if i == 0 else -1.0) * 0.04 * sin(_time * 0.9 + i)
+
+
+# --------------------------------------------------------------- path ----
+
+## Follows a list of keyframes (origin = feet, Y = up, -Z = forward) at a
+## constant speed, blending orientation between them.
+func set_path(keys: Array[Transform3D], path_speed: float) -> void:
+	_path = keys
+	_path_speed = path_speed
+	_path_dist = PackedFloat32Array()
+	_path_dist.append(0.0)
+	for i in range(1, keys.size()):
+		_path_dist.append(_path_dist[i - 1] + keys[i - 1].origin.distance_to(keys[i].origin))
+	_dist = 0.0
+	if not keys.is_empty():
+		global_transform = _scaled(keys[0])
+
+
+func _follow_path(delta: float) -> void:
+	_dist += _path_speed * delta
+	_moving_speed = _path_speed
+	var total := _path_dist[_path_dist.size() - 1]
+	if _dist >= total or _path.size() < 2:
+		global_transform = _scaled(_path[_path.size() - 1])
+		_path = []
+		_moving_speed = 0.0
+		path_finished.emit()
+		return
+	var i := 0
+	while i < _path_dist.size() - 2 and _path_dist[i + 1] < _dist:
+		i += 1
+	var seg := _path_dist[i + 1] - _path_dist[i]
+	var u := (_dist - _path_dist[i]) / maxf(seg, 0.0001)
+	var a := _path[i]
+	var b := _path[i + 1]
+	var origin := a.origin.lerp(b.origin, u)
+	var basis := Basis(a.basis.get_rotation_quaternion().slerp(b.basis.get_rotation_quaternion(), u))
+	global_transform = _scaled(Transform3D(basis, origin))
+
+
+func _scaled(xf: Transform3D) -> Transform3D:
+	return Transform3D(xf.basis.orthonormalized().scaled(scale), xf.origin)
+
+
+## Keyframes along the cave wall between two (angle, t) spots.
+static func wall_path(cave: CaveShell, a0: float, t0: float, a1: float, t1: float) -> Array[Transform3D]:
+	var keys: Array[Transform3D] = []
+	var start := cave.surface_transform(a0, t0).origin
+	var end := cave.surface_transform(a1, t1).origin
+	var n := maxi(int(start.distance_to(end) / 0.5), 4)
+	var da := wrapf(a1 - a0, -180.0, 180.0)
+	var points: Array[Transform3D] = []
+	for i in n + 1:
+		var u := float(i) / n
+		points.append(cave.surface_transform(a0 + da * u, lerpf(t0, t1, u)))
+	for i in n + 1:
+		var xf := points[i]
+		var next := points[mini(i + 1, n)]
+		var prev := points[maxi(i - 1, 0)]
+		var forward := next.origin - prev.origin
+		var up := xf.basis.y
+		forward -= up * forward.dot(up)
+		if forward.length_squared() < 0.0001:
+			forward = -xf.basis.z
+		keys.append(Transform3D(Basis.looking_at(forward.normalized(), up), xf.origin))
+	return keys
+
+
+## Keyframes straight across the floor from a to b (both at foot height).
+static func floor_path(a: Vector3, b: Vector3) -> Array[Transform3D]:
+	var keys: Array[Transform3D] = []
+	var forward := b - a
+	forward.y = 0.0
+	if forward.length_squared() < 0.0001:
+		forward = Vector3.FORWARD
+	var basis := Basis.looking_at(forward.normalized(), Vector3.UP)
+	keys.append(Transform3D(basis, a))
+	keys.append(Transform3D(basis, b))
+	return keys
+
+
+## In and out of a hole: from `depth_in` meters inside the wall to
+## `depth_out` meters out of it (negative = still inside), facing out.
+static func hole_path(hole: Dictionary, depth_in: float, depth_out: float) -> Array[Transform3D]:
+	var xf: Transform3D = hole.transform
+	var normal := xf.basis.y
+	var keys: Array[Transform3D] = []
+	# Facing out of the hole: forward is along the normal; "up" for the ant
+	# is up the wall (so it crawls out like through a doorway in the wall),
+	# which keeps its feet on the lip as it turns onto the wall.
+	var up := -xf.basis.z
+	var basis := Basis.looking_at(normal, up)
+	keys.append(Transform3D(basis, xf.origin - normal * depth_in))
+	keys.append(Transform3D(basis, xf.origin + normal * depth_out))
+	return keys
+
+
+# ------------------------------------------------------------ workers ----
+
+## Puts a worker inside a hole, out of sight.
+func hide_in_hole(hole: Dictionary) -> void:
+	_hole = hole
+	state = State.HIDDEN
+	_timer = _rng.randf_range(0.5, 6.0)
+	var keys := hole_path(hole, 1.2, -1.2)
+	global_transform = _scaled(keys[0])
+	_moving_speed = 0.0
+
+
+func _worker_brain(delta: float) -> void:
+	_timer -= delta
+	match state:
+		State.HIDDEN:
+			if _timer <= 0.0 and not _hole.is_empty():
+				if _rng.randf() < 0.45:
+					_start_peek()
+				else:
+					_start_travel()
+		State.PEEKING:
+			if _timer <= 0.0:
+				_look_target = 0.0
+				state = State.HIDDEN
+				_timer = _rng.randf_range(0.8, 2.0)
+				set_path(hole_path(_hole, -0.25, -1.2), 1.2)
+				_timer += 1.0
+			elif fmod(_timer, 0.9) < delta:
+				_look_target = _rng.randf_range(-0.7, 0.7)
+		State.TRAVELLING:
+			pass   # path_finished moves things along
+		State.IDLE:
+			pass
+
+
+func _start_peek() -> void:
+	state = State.PEEKING
+	_timer = _rng.randf_range(1.5, 3.5)
+	set_path(hole_path(_hole, 1.2, -0.25), 1.0)
+
+
+func _start_travel() -> void:
+	if shell.holes.size() < 2:
+		return
+	var target: Dictionary = shell.holes[_rng.randi() % shell.holes.size()]
+	var tries := 0
+	while target == _hole and tries < 10:
+		target = shell.holes[_rng.randi() % shell.holes.size()]
+		tries += 1
+	state = State.TRAVELLING
+	# Out of the hole, across the wall, into the next hole.
+	var keys := hole_path(_hole, 1.2, 0.2)
+	var across := wall_path(shell, _hole.angle, _hole.t, target.angle, target.t)
+	keys.append_array(across)
+	keys.append_array(hole_path(target, -0.2, -1.3))
+	var next := target
+	set_path(keys, speed * _rng.randf_range(0.8, 1.2))
+	if not path_finished.is_connected(_on_travel_done):
+		path_finished.connect(_on_travel_done, CONNECT_ONE_SHOT)
+	_hole = next
+
+
+func _on_travel_done() -> void:
+	if state == State.TRAVELLING:
+		hide_in_hole(_hole)
+
+
+# -------------------------------------------------------------- queen ----
+
+## Crawls out of a hole, down the wall to the floor, and across the floor
+## to `settle_at`, ending up facing `face`. Awaitable.
+func emerge_from_hole(cave: CaveShell, hole: Dictionary, settle_at: Vector3, face: Vector3, walk_speed := 5.0) -> void:
+	var keys := hole_path(hole, 1.4, 0.3)
+	keys.append_array(wall_path(cave, hole.angle, hole.t, hole.angle, 0.0))
+	var foot := keys[keys.size() - 1].origin
+	foot.y = 0.0
+	var toward := settle_at - foot
+	toward.y = 0.0
+	keys.append_array(floor_path(foot, foot + toward.normalized() * 0.5))
+	keys.append_array(floor_path(foot + toward.normalized() * 0.5, settle_at))
+	set_path(keys, walk_speed)
+	await path_finished
+	await face_point(face)
+
+
+## Turns on the spot to look at a point. Awaitable.
+func face_point(point: Vector3, seconds := 0.5) -> void:
+	var forward := point - global_position
+	forward.y = 0.0
+	if forward.length_squared() < 0.0001:
+		return
+	var from := global_transform.basis.get_rotation_quaternion()
+	var to := Basis.looking_at(forward.normalized(), Vector3.UP).get_rotation_quaternion()
+	var t := 0.0
+	while t < seconds:
+		t += get_process_delta_time()
+		var q := from.slerp(to, smoothstep(0.0, 1.0, t / seconds))
+		global_transform = _scaled(Transform3D(Basis(q), global_position))
+		await get_tree().process_frame
+	global_transform = _scaled(Transform3D(Basis(to), global_position))
+
+
+## Walks straight across the floor. Awaitable.
+func walk_floor_to(point: Vector3, walk_speed := 4.0) -> void:
+	set_path(floor_path(global_position, point), walk_speed)
+	await path_finished
+
+
+## A little nod of the head (talking).
+func nod() -> void:
+	var tween := create_tween()
+	tween.tween_property(_head, "rotation:x", 0.25, 0.12)
+	tween.tween_property(_head, "rotation:x", 0.0, 0.18)

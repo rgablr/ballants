@@ -37,7 +37,7 @@ position = Vector3(0, 0, 0)
 [node name="StartPoint" parent="." instance=ExtResource("3_start")]
 position = Vector3(0, 0, 9)
 
-; Dropping into this starts Level 1.
+; Dropping into this takes you inside: the anthill hub.
 [node name="GiantAntHill" parent="." instance=ExtResource("4_hill")]
 position = Vector3(0, 0, -64)
 base_radius = 26.0
@@ -47,7 +47,7 @@ hole_radius = 1.6
 shaft_depth = 6.0
 segments = 72
 seed = 11
-enter_level = 0
+enter_hub = true
 
 ; Bash-through grass.
 [node name="ThickGrass1" parent="." instance=ExtResource("6_grass")]

@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://levels/hub/anthill_hub.gd" id="1_hub"]
+[ext_resource type="PackedScene" path="res://src/objects/start_point.tscn" id="2_start"]
+
+; The whole cave is built by the script (see levels/hub/anthill_hub.gd and
+; src/objects/hub/). Only the start point lives here: the middle of the floor,
+; facing tunnel 1 (-Z).
+[node name="AnthillHub" type="Node3D"]
+script = ExtResource("1_hub")
+level_name = "The Anthill"
+
+[node name="StartPoint" parent="." instance=ExtResource("2_start")]
+position = Vector3(0, 0, 0)

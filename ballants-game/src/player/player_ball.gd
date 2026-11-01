@@ -156,7 +156,7 @@ func _physics_process(delta: float) -> void:
 		return   # taken out of the physics (sinking into an ant hill)
 	_time_since_grounded += delta
 	_time_since_jump_pressed += delta
-	if Input.is_action_just_pressed("jump") and not knocked:
+	if Input.is_action_just_pressed("jump") and not knocked and not Game.control_locked:
 		_time_since_jump_pressed = 0.0
 
 	_detect_impact(delta)
@@ -203,8 +203,8 @@ func _process(_delta: float) -> void:
 
 func _apply_movement() -> void:
 	var input: Vector2 = Controls.get_move_vector()
-	if Game.level_complete or knocked:
-		input = Vector2.ZERO   # in the ant hill: no climbing back out
+	if Game.level_complete or knocked or Game.control_locked:
+		input = Vector2.ZERO   # in the ant hill / a cutscene: no steering
 	var velocity_h := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
 	var speed_h := velocity_h.length()
 
@@ -420,6 +420,22 @@ func knock_off(direction: Vector3, attacker := "") -> void:
 	Sounds.hit()
 	Effects.impact(Tuning.impact_big, away, global_position)
 	Levels.knocked_off(attacker)
+
+
+## Makes a transform the place respawn() goes back to (the hub moves the
+## spawn to wherever the hero arrived).
+func set_spawn(transform_now: Transform3D) -> void:
+	_spawn_transform = transform_now
+
+
+## Puts the ball somewhere at rest, with no interpolation smear.
+func teleport(point: Vector3) -> void:
+	global_position = point
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	_previous_velocity = Vector3.ZERO
+	_grounded_steps = 0
+	reset_physics_interpolation()
 
 
 func respawn() -> void:

@@ -164,12 +164,16 @@ func _build() -> void:
 
 
 func _pose_legs(gait: float, amount: float) -> void:
+	# The legs hang off this node, the body is its own node that rears,
+	# bobs and swings: so each hip is taken through the body's transform,
+	# and the legs stay attached whatever the body is doing.
+	var body_xf := _body.transform if _body else Transform3D.IDENTITY
 	for leg in _legs:
 		var p := fposmod(gait + float(leg.phase), 1.0)
 		var step := _step(p)
 		var rest: Vector3 = leg.rest
 		var foot := rest + Vector3(0.0, step.y * 0.05 * amount, -step.x * 0.06 * amount)
-		var hip: Vector3 = leg.hip
+		var hip: Vector3 = body_xf * (leg.hip as Vector3)
 		var mid := (hip + foot) * 0.5
 		var knee := mid + Vector3(float(leg.side) * 0.05, 0.09, 0.0)
 		CritterParts.set_rod(leg.femur, hip, knee)
@@ -589,17 +593,24 @@ func celebrate(claps := 6) -> void:
 ## While clapping, the front pair of legs is lifted in front of her and
 ## brought together and apart (overrides the walking pose).
 func _clap(delta: float) -> void:
-	if _clap_time < 0.0:
+	var clapping := _clap_time >= 0.0
+	if not clapping and _rear <= 0.001:
 		return
-	_clap_time -= delta
-	var elapsed := _clap_total - _clap_time
-	var phase := elapsed * CLAP_RATE
-	# 0 = legs apart, 1 = touching; snappy shut, slower open.
-	var shut := pow(0.5 + 0.5 * cos(phase * TAU), 3.0)
-	var count := int(phase + 0.5)
-	if count > _claps_heard and shut > 0.9:
-		_claps_heard = count
-		Sounds.play_at("menu_change", global_position + Vector3.UP, -2.0, randf_range(1.5, 1.8))
+	var shut := 0.0
+	if clapping:
+		_clap_time -= delta
+		var elapsed := _clap_total - _clap_time
+		var phase := elapsed * CLAP_RATE
+		# 0 = legs apart, 1 = touching; snappy shut, slower open.
+		shut = pow(0.5 + 0.5 * cos(phase * TAU), 3.0)
+		var count := int(phase + 0.5)
+		if count > _claps_heard and shut > 0.9:
+			_claps_heard = count
+			Sounds.play_at("menu_change", global_position + Vector3.UP, -2.0, randf_range(1.5, 1.8))
+	# While she is up (rearing, or coming back down after the claps) the
+	# front legs are held up in front of her; as she sits down they ease
+	# back to the ground instead of snapping.
+	var raised := clampf(_rear, 0.0, 1.0)
 	for i in 2:   # the two front legs come first in _legs
 		var leg: Dictionary = _legs[i]
 		var side: float = leg.side
@@ -608,10 +619,12 @@ func _clap(delta: float) -> void:
 		# now, since she's rearing).
 		var face := _body.transform * _head.position
 		var hand := face + Vector3(side * lerpf(0.12, 0.01, shut), 0.02, -0.14)
-		var knee := (hip + hand) * 0.5 + Vector3(side * 0.06, -0.02, 0.0)
+		var rest: Vector3 = leg.rest
+		hand = rest.lerp(hand, raised)
+		var knee := (hip + hand) * 0.5 + Vector3(side * 0.06, -0.02, 0.0).lerp(Vector3(side * 0.05, 0.09, 0.0), 1.0 - raised)
 		CritterParts.set_rod(leg.femur, hip, knee)
 		CritterParts.set_rod(leg.tibia, knee, hand)
-	if _clap_time < 0.0:
+	if clapping and _clap_time < 0.0:
 		_clap_time = -1.0
 
 

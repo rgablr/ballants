@@ -123,6 +123,7 @@ func show_complete(info: Dictionary, time: float) -> void:
 			_par.text = "Par %s  (%s over)" % [Levels.format_time(par), Levels.format_time(time - par)]
 	_time.text = Levels.format_time(time)
 	_box.visible = true
+	Sounds.level_complete()
 
 
 ## After the last level of a world: the world's name and this session's
@@ -145,6 +146,7 @@ func show_world_complete(world: String, rows: Array) -> void:
 	_par.text = "\n".join(lines)
 	_box.visible = true
 	_prompt.visible = false
+	Sounds.world_complete()
 
 
 func hide_complete() -> void:
@@ -167,6 +169,7 @@ func press_continue() -> void:
 	if _waiting:
 		_waiting = false
 		_prompt.visible = false
+		Sounds.ui("confirm")
 		continue_pressed.emit()
 
 

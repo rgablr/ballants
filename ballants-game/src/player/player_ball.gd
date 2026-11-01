@@ -158,6 +158,7 @@ func _physics_process(delta: float) -> void:
 		_time_since_jump_pressed = 0.0
 
 	_detect_impact(delta)
+	Sounds.rolling(linear_velocity.length(), _grounded)
 	_applied_force = Vector3.ZERO
 	_jumped_this_step = false
 
@@ -414,6 +415,7 @@ func knock_off(direction: Vector3, attacker := "") -> void:
 	away = away.normalized() if away.length() > 0.01 else Vector3.BACK
 	linear_velocity = linear_velocity * 0.25 + away * 3.0 + Vector3.UP * 2.0
 	knocked_off.emit(away)
+	Sounds.hit()
 	Effects.impact(Tuning.impact_big, away, global_position)
 	Levels.knocked_off(attacker)
 
@@ -427,3 +429,4 @@ func respawn() -> void:
 	_grounded_steps = 0
 	reset_physics_interpolation()   # no smear from the old spot to the new
 	respawned.emit()
+	Sounds.respawn()

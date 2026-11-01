@@ -1211,3 +1211,32 @@ hot cloud behind it. Say the word.
   close; your ant and ball look like that in the game. Quit and relaunch:
   still the same.
 - `./run_tests.sh`: all PASS.
+
+## 24. Sound and music
+
+The game had no sound before this. Now it does.
+
+**Sound effects** (all Kenney CC0 packs, listed in ASSET_CREDITS.md):
+- Rolling: a soft rumble that gets louder and higher the faster you roll, and goes quiet in the air.
+- Jump "boing", grassy landing (a heavy thud after a big fall), bumps and thuds when you hit things.
+- Thick grass makes a snap when you break a blade.
+- Bees buzz quietly when you're close.
+- Enemies make a scratchy chitter when they spot you and wind up (the ground beetle rearing, the tiger beetle crouching, the dragonfly aiming, the antlion's jaws opening). It's a sound warning on top of the visual one.
+- Getting hit: a punch and a sad falling tone. A little pop when you're put back at the spawn.
+- Rolling into an ant hill's hole: a falling whistle.
+- Results: a short jingle for level complete and another for world complete. The music dips out of the way for them.
+- Menus: clicks for open, close, moving between rows and changing a value, plus a confirm sound for "press any button" and for starting from the title.
+
+The rolling rumble and the bee buzz are made in code (filtered noise and a hum), like the placeholder models. They can be swapped for recordings later.
+
+**Music:** four CC0 songs from OpenGameArt by human composers, all uploaded 2016–2021 (before AI music tools were common): "Green Hills", "Sunflower Valley", "Summer Sunday" and "Napping on a Cloud". They play in a shuffled loop at a faint volume (about -18 dB) under the sound effects.
+
+**Music on/off:** in the customize menu (C / Y), bottom left, next to the Ball row. Left/right switches it. It's saved to `user://settings.cfg`.
+
+How it's built: `src/core/sound_hooks.gd` (global `Sounds`) plays effects by nickname from the asset manifest's SOUNDS table. `src/core/music.gd` (global `Music`) plays the songs. Effects and music are on separate mixer channels ("SFX" and "Music"), so either can get its own volume slider later. The music stays silent during the headless automated tests.
+
+Known limits: I can't hear the game, so the volumes come from the numbers. If anything is too loud or too quiet, tell me which sound. Each one has a single volume number in `sound_hooks.gd`, and the music level is `VOLUME_DB` in `music.gd`.
+
+**Questions:**
+- **Q25.** Volume sliders? (a) a Music volume and an Effects volume slider in the menu, (b) on/off is enough for now
+- **Q26.** Different music per area? (a) one calm song for the title meadow and the other songs in the levels, (b) keep shuffling all of them everywhere

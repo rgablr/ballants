@@ -112,6 +112,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _set_state(state: State) -> void:
+	if state == State.AIM:
+		Sounds.enemy_warn(global_position)
 	_state = state
 	_state_time = 0.0
 

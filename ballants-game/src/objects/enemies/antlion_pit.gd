@@ -46,6 +46,9 @@ var _flick_timer := 0.0
 var _enemy := Enemy.new()   # borrow the shared enemy helpers
 
 
+var _was_inside := false
+
+
 func _ready() -> void:
 	_built = true
 	_rebuild()
@@ -149,6 +152,9 @@ func _physics_process(delta: float) -> void:
 			if across < jaw_reach:
 				_snap = 0.4
 				ball.knock_off(ball.global_position - global_position, "antlion")
+	if inside and not _was_inside:
+		Sounds.enemy_warn(global_position)   # the jaws open: you're in the pit
+	_was_inside = inside
 	# The jaws: open wide while you're in the funnel, snap shut on a catch,
 	# otherwise twitch slowly.
 	var want := 0.9 if inside else 0.25 + 0.08 * sin(_time * 1.5)

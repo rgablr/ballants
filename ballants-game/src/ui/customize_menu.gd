@@ -5,7 +5,8 @@ extends CanvasLayer
 ## pauses. Your ant appears big in the middle of the screen, standing on
 ## its ball and slowly turning. Next to each part of the ant is a row with
 ## arrows: Antennae, Eyes, Head, Thorax, Abdomen, Legs, and under the ball
-## the Ball style. The selected part glows gently on the ant.
+## the Ball style. The selected part glows gently on the ant. Beside the
+## ball row is the Music on/off switch.
 ##
 ##   Up / Down (stick, d-pad, W/S, arrows): choose a part
 ##   Left / Right: change its color / the ball
@@ -15,7 +16,7 @@ extends CanvasLayer
 ##
 ## Loaded as a global called "CustomizeMenu".
 
-const ROW_SLOTS := ["antennae", "eyes", "head", "thorax", "abdomen", "legs", "ball"]
+const ROW_SLOTS := ["antennae", "eyes", "head", "thorax", "abdomen", "legs", "ball", "music"]
 ## Where on the ant each row points (the ant's own space; feet at 0).
 const ANCHORS := {
 	"antennae": Vector3(0.0, 0.56, -0.1),
@@ -47,6 +48,7 @@ func _ready() -> void:
 	_build()
 	_root.visible = false
 	Cosmetics.changed.connect(_refresh)
+	Music.changed.connect(_refresh)
 
 
 func _build() -> void:
@@ -147,13 +149,13 @@ func _make_row(slot: String) -> Dictionary:
 	left.text = "<"
 	left.custom_minimum_size = Vector2(44, 44)
 	left.add_theme_font_size_override("font_size", 24)
-	left.pressed.connect(func(): _select(slot); Cosmetics.step(slot, -1))
+	left.pressed.connect(func(): _select(slot); _change(slot, -1))
 	box.add_child(left)
 	var texts := VBoxContainer.new()
 	texts.custom_minimum_size = Vector2(170, 0)
 	texts.add_theme_constant_override("separation", -4)
 	box.add_child(texts)
-	var title := "Ball" if slot == "ball" else _part_label(slot)
+	var title := _part_label(slot)
 	var name := _label(title, 22, Color.WHITE)
 	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	texts.add_child(name)
@@ -163,22 +165,39 @@ func _make_row(slot: String) -> Dictionary:
 	var swatch := ColorRect.new()
 	swatch.custom_minimum_size = Vector2(26, 26)
 	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	swatch.visible = slot != "ball"
+	swatch.visible = _is_part(slot)
 	box.add_child(swatch)
 	var right := Button.new()
 	right.text = ">"
 	right.custom_minimum_size = Vector2(44, 44)
 	right.add_theme_font_size_override("font_size", 24)
-	right.pressed.connect(func(): _select(slot); Cosmetics.step(slot, 1))
+	right.pressed.connect(func(): _select(slot); _change(slot, 1))
 	box.add_child(right)
 	return {"box": box, "name": name, "value": value, "swatch": swatch}
 
 
 func _part_label(slot: String) -> String:
+	if slot == "ball":
+		return "Ball"
+	if slot == "music":
+		return "Music"
 	for p in Cosmetics.PARTS:
 		if p[0] == slot:
 			return p[1]
 	return slot
+
+
+func _is_part(slot: String) -> bool:
+	return slot != "ball" and slot != "music"
+
+
+## Left / right on a row: the next color or ball, or music on / off.
+func _change(slot: String, direction: int) -> void:
+	Sounds.ui("change")
+	if slot == "music":
+		Music.toggle()
+	else:
+		Cosmetics.step(slot, direction)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -203,9 +222,9 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_down") or event.is_action_pressed("move_back"):
 		_select_index(_selected + 1)
 	elif event.is_action_pressed("ui_left") or event.is_action_pressed("move_left"):
-		Cosmetics.step(ROW_SLOTS[_selected], -1)
+		_change(ROW_SLOTS[_selected], -1)
 	elif event.is_action_pressed("ui_right") or event.is_action_pressed("move_right"):
-		Cosmetics.step(ROW_SLOTS[_selected], 1)
+		_change(ROW_SLOTS[_selected], 1)
 	elif event is InputEventMouseButton or event is InputEventMouseMotion:
 		handled = false   # let the buttons get clicks
 	else:
@@ -218,6 +237,7 @@ func open() -> void:
 	if is_open:
 		return
 	is_open = true
+	Sounds.ui("open")
 	_was_paused = get_tree().paused
 	get_tree().paused = true
 	Game.set_ui_open(true)
@@ -236,6 +256,7 @@ func close() -> void:
 	if not is_open:
 		return
 	is_open = false
+	Sounds.ui("close")
 	_root.visible = false
 	get_tree().paused = _was_paused
 	Game.set_ui_open(false)
@@ -246,7 +267,10 @@ func _select(slot: String) -> void:
 
 
 func _select_index(index: int) -> void:
+	var before := _selected
 	_selected = posmod(index, ROW_SLOTS.size())
+	if is_open and _selected != before:
+		Sounds.ui("move")
 	_refresh()
 
 
@@ -256,8 +280,11 @@ func _refresh() -> void:
 	for i in ROW_SLOTS.size():
 		var slot: String = ROW_SLOTS[i]
 		var row: Dictionary = _rows[slot]
-		(row.value as Label).text = Cosmetics.option_name(slot)
-		if slot != "ball":
+		if slot == "music":
+			(row.value as Label).text = "On" if Music.enabled else "Off"
+		else:
+			(row.value as Label).text = Cosmetics.option_name(slot)
+		if _is_part(slot):
 			(row.swatch as ColorRect).color = Cosmetics.color_of(slot)
 		var chosen := i == _selected
 		(row.name as Label).add_theme_color_override("font_color", Color(1.0, 0.85, 0.3) if chosen else Color.WHITE)
@@ -273,7 +300,7 @@ func _place_rows_soon() -> void:
 
 ## Lines each row up with its part of the ant: rows alternate left and
 ## right of the preview, at the height of the part they color; the ball
-## row sits under the ball.
+## row sits under the ball, with the music switch to its left.
 func _place_rows() -> void:
 	var view_size := Vector2(_viewport.size)
 	var origin := _container.position
@@ -287,6 +314,9 @@ func _place_rows() -> void:
 		var height := box.get_combined_minimum_size().y
 		if slot == "ball":
 			box.position = Vector2(origin.x + _container.size.x * 0.5 - width * 0.5, origin.y + _container.size.y + 6)
+			continue
+		if slot == "music":
+			box.position = Vector2(origin.x - width - column_gap, origin.y + _container.size.y + 6)
 			continue
 		var on_screen := _camera.unproject_position(ANCHORS[slot]) * scale + origin
 		var left_side := i % 2 == 1
@@ -304,7 +334,7 @@ func _process(delta: float) -> void:
 		_ant.set_walk_speed(0.0)
 	# The selected part glows (pulses brighter).
 	var slot: String = ROW_SLOTS[_selected]
-	if slot != "ball" and _ant.has_method("set_part_color"):
+	if _is_part(slot) and _ant.has_method("set_part_color"):
 		Cosmetics.apply_to_ant(_ant)
 		var pulse := 0.5 + 0.5 * sin(_time * 5.0)
 		_ant.set_part_color(slot, Cosmetics.color_of(slot).lightened(0.35 * pulse))

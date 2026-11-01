@@ -93,6 +93,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _set_state(state: State) -> void:
+	if state == State.CROUCH and _state == State.WANDER:   # first spotted you
+		Sounds.enemy_warn(global_position)
 	_state = state
 	_state_time = 0.0
 

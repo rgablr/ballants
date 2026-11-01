@@ -7,6 +7,14 @@ assets only. No AI-generated content.
 | Asset | Used for | Source | Creator | License |
 |---|---|---|---|---|
 | Nunito (variable font) | All UI text | https://github.com/googlefonts/nunito | The Nunito Project Authors (Vernon Adams, Cyreal, Jacques Le Bailly) | SIL Open Font License 1.1 (`ballants-game/assets/fonts/Nunito-OFL.txt`) |
+| Kenney Impact Sounds (bumps, thuds, grassy landings, grass snapping, enemy hit punch) | Sound effects | https://kenney.nl/assets/impact-sounds | Kenney (kenney.nl) | CC0 1.0 (`ballants-game/assets/audio/sounds/kenney/Kenney-License.txt`) |
+| Kenney Digital Audio (jump boing, hill drop whistle, hit tone, respawn pop) | Sound effects | https://kenney.nl/assets/digital-audio | Kenney | CC0 1.0 |
+| Kenney Interface Sounds (menu open/close/move/change, confirm, enemy warning scratch) | Sound effects | https://kenney.nl/assets/interface-sounds | Kenney | CC0 1.0 |
+| Kenney Music Jingles (PIZZI07 level complete, STEEL07 world complete) | Results jingles | https://kenney.nl/assets/music-jingles | Kenney | CC0 1.0 |
+| "Green Hills" (2016) | Background music | https://opengameart.org/content/green-hills | Igor Gundarev | CC0 1.0 |
+| "Sunflower Valley" (2017) | Background music | https://opengameart.org/content/sunflower-valley | isaiah658 | CC0 1.0 |
+| "Summer Sunday" (2017, FamiTracker) | Background music | https://opengameart.org/content/summer-sunday | celestialghost8 | CC0 1.0 |
+| "Napping on a Cloud" (2021, MilkyTracker; tracker source file published with it) | Background music | https://opengameart.org/content/napping-on-a-cloud | congusbongus | CC0 1.0 |
 
 ## Code-built placeholders (no external asset)
 
@@ -25,6 +33,7 @@ credit, but they are placeholders to be replaced:
 | Garden sky: gradient, sun, clouds, horizon houses/hills/trees | `levels/garden/garden_sky.gdshader` (drawn by a shader, no image) | Optional: a hand-painted or CC0 sky panorama |
 | Bugs: ladybug, worm, spider, fly, bee | `src/objects/critters/*.gd` | Optional: low-poly CC0 insect models; behaviour scripts stay |
 | Ball styles: basketball, volleyball, beach, tennis, baseball, bowling, 8-ball, golf, playground | `assets/placeholders/sports_ball.gdshader` (drawn by a shader, no image) | Optional: CC0 ball models, ~1 m across |
+| Rolling rumble and bee buzz sounds | `src/core/sound_hooks.gd` (made from noise / a hum in code, no recording) | Optional: CC0 recorded rolling and buzzing loops |
 | Enemies: ground beetle, tiger beetle, antlion pit, dragonfly | `src/objects/enemies/*.gd` | Optional: low-poly CC0 insect models; behaviour scripts and hit distances stay |
 
 ## Searched but not used

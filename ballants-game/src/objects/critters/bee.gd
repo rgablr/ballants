@@ -28,6 +28,16 @@ var _home := Vector3.ZERO
 
 func _ready() -> void:
 	_build()
+	# The buzz: quiet, and only heard close by.
+	var buzz := AudioStreamPlayer3D.new()
+	buzz.stream = Sounds.buzz_stream()
+	buzz.bus = Sounds.SFX_BUS
+	buzz.volume_db = -14.0
+	buzz.unit_size = 1.5
+	buzz.max_distance = 12.0
+	buzz.pitch_scale = randf_range(0.9, 1.15)
+	buzz.autoplay = true
+	add_child(buzz)
 	_time = randf() * 10.0
 	_home = global_position
 	_from = global_position

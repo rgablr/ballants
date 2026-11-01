@@ -97,6 +97,7 @@ func start() -> void:
 	if _started:
 		return
 	_started = true
+	Sounds.ui("confirm")
 	var from: int = _title.get_theme_font_size("font_size")
 	var tween := create_tween().set_parallel()
 	tween.tween_property(_prompt, "modulate:a", 0.0, 0.4)

@@ -179,6 +179,7 @@ func _snap(blade: Dictionary, ball_velocity: Vector3) -> void:
 	var pivot: Node3D = blade.pivot
 	var source: MeshInstance3D = blade.mesh
 	pivot.visible = false
+	Sounds.grass_snap(source.global_position)
 
 	var piece := RigidBody3D.new()
 	piece.mass = 0.3

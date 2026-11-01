@@ -36,12 +36,47 @@ const MODELS := {
 const TEXTURES := {
 }
 
-## Short sound effects. (None yet.)
+## Short sound effects, all from Kenney's CC0 audio packs (license in
+## audio/sounds/kenney/). A nickname can list several takes of the same
+## sound; one is picked at random each time so repeats don't sound robotic.
 const SOUNDS := {
+	# The ball bumping into things: a soft knock, and a heavy thud.
+	"bump": ["res://assets/audio/sounds/kenney/impactSoft_medium_000.ogg", "res://assets/audio/sounds/kenney/impactSoft_medium_001.ogg", "res://assets/audio/sounds/kenney/impactSoft_medium_002.ogg", "res://assets/audio/sounds/kenney/impactSoft_medium_003.ogg", "res://assets/audio/sounds/kenney/impactSoft_medium_004.ogg"],
+	"thud": ["res://assets/audio/sounds/kenney/impactSoft_heavy_000.ogg", "res://assets/audio/sounds/kenney/impactSoft_heavy_001.ogg", "res://assets/audio/sounds/kenney/impactSoft_heavy_002.ogg", "res://assets/audio/sounds/kenney/impactSoft_heavy_003.ogg", "res://assets/audio/sounds/kenney/impactSoft_heavy_004.ogg"],
+	# Touching down after a small hop (a soft grassy step).
+	"land": ["res://assets/audio/sounds/kenney/footstep_grass_000.ogg", "res://assets/audio/sounds/kenney/footstep_grass_001.ogg", "res://assets/audio/sounds/kenney/footstep_grass_002.ogg", "res://assets/audio/sounds/kenney/footstep_grass_003.ogg", "res://assets/audio/sounds/kenney/footstep_grass_004.ogg"],
+	# Jump: a springy "boing".
+	"jump": ["res://assets/audio/sounds/kenney/phaseJump1.ogg", "res://assets/audio/sounds/kenney/phaseJump2.ogg", "res://assets/audio/sounds/kenney/phaseJump3.ogg", "res://assets/audio/sounds/kenney/phaseJump4.ogg", "res://assets/audio/sounds/kenney/phaseJump5.ogg"],
+	# Rolling into the ant hill's hole: a falling whistle.
+	"hill_drop": "res://assets/audio/sounds/kenney/highDown.ogg",
+	# An enemy got you: a punch and a sad falling tone.
+	"hit": ["res://assets/audio/sounds/kenney/impactPunch_heavy_000.ogg", "res://assets/audio/sounds/kenney/impactPunch_heavy_001.ogg", "res://assets/audio/sounds/kenney/impactPunch_heavy_002.ogg", "res://assets/audio/sounds/kenney/impactPunch_heavy_003.ogg", "res://assets/audio/sounds/kenney/impactPunch_heavy_004.ogg"],
+	"hit_tone": "res://assets/audio/sounds/kenney/phaserDown2.ogg",
+	# Back at the spawn after being knocked off: a little pop.
+	"respawn": "res://assets/audio/sounds/kenney/pepSound1.ogg",
+	# Snapping through a blade of thick grass.
+	"grass": ["res://assets/audio/sounds/kenney/footstep_grass_000.ogg", "res://assets/audio/sounds/kenney/footstep_grass_001.ogg", "res://assets/audio/sounds/kenney/footstep_grass_002.ogg", "res://assets/audio/sounds/kenney/footstep_grass_003.ogg", "res://assets/audio/sounds/kenney/footstep_grass_004.ogg"],
+	# An enemy has noticed you and is about to attack (a scratchy chitter).
+	"warn": ["res://assets/audio/sounds/kenney/scratch_001.ogg", "res://assets/audio/sounds/kenney/scratch_002.ogg", "res://assets/audio/sounds/kenney/scratch_003.ogg"],
+	# Menus.
+	"menu_open": "res://assets/audio/sounds/kenney/open_001.ogg",
+	"menu_close": "res://assets/audio/sounds/kenney/close_001.ogg",
+	"menu_move": ["res://assets/audio/sounds/kenney/scroll_001.ogg", "res://assets/audio/sounds/kenney/scroll_002.ogg", "res://assets/audio/sounds/kenney/scroll_003.ogg"],
+	"menu_change": ["res://assets/audio/sounds/kenney/click_001.ogg", "res://assets/audio/sounds/kenney/click_002.ogg", "res://assets/audio/sounds/kenney/click_003.ogg"],
+	"confirm": "res://assets/audio/sounds/kenney/confirmation_001.ogg",
+	# Results cards: level complete, world complete.
+	"level_complete": "res://assets/audio/sounds/kenney/jingles_PIZZI07.ogg",
+	"world_complete": "res://assets/audio/sounds/kenney/jingles_STEEL07.ogg",
 }
 
-## Background music. (None yet.)
+## Background songs, played one after another in a shuffled loop, quietly
+## under the sound effects. All CC0 from OpenGameArt.org, made by human
+## composers (see ASSET_CREDITS.md).
 const MUSIC := {
+	"green_hills": "res://assets/audio/music/green_hills.mp3",
+	"sunflower_valley": "res://assets/audio/music/sunflower_valley.ogg",
+	"summer_sunday": "res://assets/audio/music/summer_sunday.wav",
+	"napping_on_a_cloud": "res://assets/audio/music/napping_on_a_cloud.ogg",
 }
 
 ## Fonts. "ui" is applied to every piece of text in the game. Keep it a font
@@ -84,7 +119,12 @@ func texture(nickname: String) -> Texture2D:
 	return _load_typed(TEXTURES, nickname, "texture") as Texture2D
 
 
+## A sound effect. If the nickname lists several takes, a random one.
 func sound(nickname: String) -> AudioStream:
+	var entry: Variant = SOUNDS.get(nickname, "")
+	if entry is Array:
+		var takes: Array = entry
+		return _load_path(takes.pick_random(), nickname, "sound") as AudioStream
 	return _load_typed(SOUNDS, nickname, "sound") as AudioStream
 
 
@@ -101,6 +141,10 @@ func _load_typed(table: Dictionary, nickname: String, kind: String) -> Resource:
 	if path.is_empty():
 		push_error("Assets: no %s nicknamed '%s' in asset_manifest.gd" % [kind, nickname])
 		return null
+	return _load_path(path, nickname, kind)
+
+
+func _load_path(path: String, nickname: String, kind: String) -> Resource:
 	var res := load(path)
 	if res == null:
 		push_error("Assets: could not load %s '%s' from %s" % [kind, nickname, path])

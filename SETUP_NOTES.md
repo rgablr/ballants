@@ -1636,3 +1636,175 @@ Acceptance criteria:
   control.
 - `./run_tests.sh` passes; the Yes run checks she ends up in her hole.
 
+
+---
+
+# Part E – Sugar crystals and the five nest levels (2026-11-01)
+
+Branch: `anthill-levels` (made from `anthill-hub`). First commit: the
+Queen's legs now stay on her body while she rears up, claps and sits
+down (the legs hung off the ant node while the body was its own node;
+hips now follow the body). Then the crystal system and nest theme, level
+1, and the four levels built by subagents on branches
+`level/egg-chamber`, `level/fungus-farm`, `level/worker-rush`,
+`level/collapsing-gallery`, merged back here.
+
+## 36. The crystal system
+
+**Four sugar crystals per level** (`src/core/progress.gd`):
+1. **Finished** – reach the ant hill.
+2. **Target time** – finish at or under the level's target (`par_time` in
+   `levels/level_list.gd`; the HUD now says "target").
+3. **Hidden 1** and 4. **Hidden 2** – two `HiddenCrystal` pickups placed
+   in the level (`src/objects/hidden_crystal.tscn`, `which` = 0 or 1).
+
+Each counts **once**: replaying keeps your best. A hidden crystal is
+yours the moment you roll through it (a restart or a fall afterwards does
+not take it back; see Q34). Once owned it shows as a faded **ghost**
+(no glow, no light, slower spin) you can still roll through; nothing
+happens. Finishing and the target time are checked at the goal.
+
+**The pickup**: a glowing six-sided crystal (the same one that hovers
+over locked tunnels), slowly turning and bobbing, with its own light; a
+sphere pickup zone a little wider than the crystal. Rolling through it:
+a rising three-note chime made in code (`Sounds.crystal`, no
+recording), a burst of glowing shards, a flash, and the crystal shrinks
+away.
+
+**The results card** (`src/ui/transition.gd`) now shows the time, the
+target ("Target 1:25.00 – beaten by 0:11.53" / "– 0:04.10 over") and a
+row of four crystal icons with names: bright with a sparkle and "NEW!"
+when earned on this run, plain "(earned before)" when you already had it,
+a dim outline "–" when not. A line under them: "+3 sugar crystals (3 of 4
+from this level, 7 in the pouch)".
+
+**The Crystal Pouch** is the Queen's gift (Q27 answered as (a)): the
+cutscene now floats a small leather pouch with a crystal in its mouth
+from her to you, "Received: the Crystal Pouch". The HUD's top-right
+counter reads "Crystal Pouch  N / 20" with a crystal icon: always in the
+hub, elsewhere once you have the pouch or any crystal; in a level a
+second line "this level ◇ ◇ ◆ ◇" shows that level's four. 20 = four
+crystals in each of the five tunnel levels (the unassigned garden
+levels' crystals count in N but not in the 20).
+
+**Unlocks** (`crystals_required` in the level list): tunnels 1–3 open,
+tunnel 4 needs **5**, tunnel 5 needs **8**. The rubble clears by itself
+when you reach the count (animated if you are in the hub).
+
+**Dev / test:** `--drive` files may carry `"expect_hidden": [0, 1]`; the
+drive FAILS unless those hidden crystals were collected, and every drive
+prints which crystals the run earned. `Progress.debug_set_crystals(n)`
+fills slots in level order (the hub test uses it to check 4 → 5 → 7 → 8).
+Key **U** still opens everything.
+
+## 37. The tunnels and the garden levels
+
+`levels/level_list.gd` is now: 1 Tunnel Drop, 2 Egg Chamber, 3 Fungus
+Farm, 4 Worker Rush, 5 Collapsing Gallery (world "Inside the Nest"), then
+the three Backyard Garden levels marked `"unassigned": true`. The hub's
+tunnels are the first five entries (`LevelList.TUNNEL_COUNT`). Nothing of
+the garden was deleted: keys **6 / 7 / 8** load Sidewalk Crack, Flowerbed
+Slalom and Garden Hose Bridge; finishing one returns you to the middle of
+the hub (no tunnel to stand in front of). Their drive files are now
+`tests/levels/level_6_sidewalk_crack.json`, `level_7_flowerbed_*.json`,
+`level_8_garden_hose_bridge.json`.
+
+## 38. The anthill theme and the nest kit
+
+`levels/nest/anthill_theme.tscn` (drop it in a level like the garden
+theme): pitch-dark background, warm brown fog, a faint fill light, glow;
+colors in `AnthillTheme.COLORS`, shared materials via
+`AnthillTheme.material("dirt")`. There is no sun: every path is lit by
+glowing fungus or amber crystals (`GlowFungus`, `WallCrystal`), and the
+track piece plants fungus along its walls by itself.
+
+Pieces in `src/objects/nest/` (all code-built, collision separate):
+- **DirtTrack** – the workhorse: a smooth ribbon of packed dirt through a
+  list of points (up and down hill), with walls on either side per
+  point, an optional ceiling (a tunnel), banking, a visible thickness,
+  and fungus every N meters. One triangle-mesh collision of exactly the
+  surface, folded into the level's single static body (the merger now
+  takes any body with `merge_collision`), so there are no seams to
+  catch on. `frame_at(distance)` places things on it.
+- **DirtWall** (lumpy straight wall, box collider), **FalseWall** (looks
+  like a wall, no collision: hides a shortcut; `subtlety` 0–1), **Root**
+  (a bent root through points, solid or not, with rootlets), **GlowFungus**
+  (amber or blue-white, with light), **WallCrystal**, **DirtSlab** (a box).
+
+## 39. Level 1 – Tunnel Drop (teaches speed control)
+
+Full notes and the measurements table: `levels/nest/level_1_notes.md`.
+The scene is generated from a cursor walk (`tools/make_tunnel_drop.py`),
+one 114-point DirtTrack 477 m long dropping 70 m, plus the shortcut
+tunnel. Target time **1:25**; the bot's clean run 1:07, the shortcut run
+1:06 (narrow and steep, it saves little), a careful first run 3–4 min.
+
+1. **Gentle slope** – 100 m, 10 m wide, walls both sides, soft bends.
+2. **First open edges** – 7 m wide; two 9 m-radius bends with no outer
+   wall (an amber crystal cluster marks each edge). Full speed slides off.
+3. **Switchbacks** – four 5 m-radius hairpins down a 12° slope, walls both
+   sides. Brake to ~6 m/s before each or hit the wall.
+4. **The plunge** – a crest, then 50 m at 31° (the ball passes its push
+   cap, ~11 m/s), a 30 m flat landing, a walled right curve and the ant
+   hill on a plateau.
+
+Hidden crystals:
+- **Shortcut** – at the apex of hairpin 1 a 4.6 m section of the outer
+  wall is a FalseWall (same shape and lean, looser dirt, loose clods, two
+  thin cracks). Behind it a 2.8 m tunnel with a ceiling and blue fungus
+  drops at 14°, hairpins, and comes back through the outer wall at
+  hairpin 3's apex (you pop out sideways; brake). The crystal floats at
+  the tunnel's far bend. Skips two turns and two legs.
+- **Ledge** – at the crest before the plunge, a pocket in the right wall
+  behind a thick root arching over the uphill half of the opening. From
+  the approach you see the root and nothing behind it; the crystal sits
+  in the pocket's uphill-back corner. Stop at the crest and look back and
+  it is plain.
+
+## 40. Acceptance criteria – crystals, tunnels, theme, level 1
+
+**Crystals**
+- Finish any nest level for the first time: the results card shows four
+  icons; "Finished" is bright with NEW!, "Under m:ss" bright if you beat
+  the target, the hidden ones bright only if you rolled through them;
+  the others dim outlines. The line under them counts them and the pouch.
+- Finish the same level again: everything you already had reads "(earned
+  before)" in plain icons; only new ones say NEW!. The pouch total never
+  counts a crystal twice.
+- Roll through a hidden crystal: chime, burst of shards, a flash, it
+  shrinks away; the HUD's "this level" line gains a ◆ at once. Press R:
+  it is still yours; the crystal is now a faded ghost you roll through
+  with no effect.
+- The HUD top-right reads "Crystal Pouch N / 20" in the hub, and in
+  levels once you have the pouch; the cutscene's gift is a small pouch
+  and the popup says "Received: the Crystal Pouch".
+- Tunnels 4 and 5 are choked until the pouch holds 5 and 8; press U to
+  open them for testing. With exactly 4 crystals tunnel 4 stays shut;
+  the fifth clears its rubble (animated if you are in the hub).
+- Keys 6, 7, 8 load the three garden levels; they still play as before
+  and their finish returns you to the hub's middle. 1–5 load the nest.
+
+**Level 1 – Tunnel Drop**
+- From the start, hold forward: the wide walled slope keeps you on
+  whatever you do; the fungus lights make the next bend visible.
+- Section 2: enter the first open bend at full speed without braking and
+  you slide off the open outside ("Fell out!", restart); at ~8 m/s or
+  with an early turn you make it.
+- Hairpins: arriving above ~6.5 m/s you bump the outer wall and lose
+  speed; a tap of brake before each one gets round cleanly.
+- The plunge: the ball runs away past its usual top speed; the flat
+  landing gives room to brake for the final curve; overshoot the curve
+  and the wall stops you.
+- Shortcut: at hairpin 1's apex the outer wall has a slightly looser,
+  cracked section; rolling at it goes straight through into a narrow lit
+  tunnel that drops, bends and pops you out sideways into hairpin 3; the
+  crystal is in the tunnel's bend. From hairpin 3 you can also roll INTO
+  the tunnel's exit and climb it backwards.
+- Ledge: at the crest a big root arches across a gap in the right wall;
+  turn in behind it (downhill side of the root) and the crystal is in the
+  pocket's back corner. Rolling over the crest at speed you never see it.
+- Target: a clean run with good braking finishes under 1:25 without the
+  shortcut.
+- `./run_tests.sh`: three level-1 drives PASS (main, shortcut with hidden
+  crystal 0 collected, ledge with hidden crystal 1 collected).
+

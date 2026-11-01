@@ -289,6 +289,24 @@ var seesaw_plank_mass := 1.5
 var bounce_pad_height := 6.01
 
 
+# ------------------------------------------- LEVEL 3: FUNGUS FARM ----
+
+## How high a bounce mushroom throws the ball, in meters above the cap
+## (the ball's center peaks this far above where it rests on the cap).
+## Fungus Farm's tower mushrooms are 4.5 m apart in height, so keep this
+## above about 5.5 or the tower cannot be climbed.
+var mushroom_bounce_height := 6.5
+
+## How high the tall blue-white mushroom at the foot of Fungus Farm's
+## tower throws the ball (m above its cap). It must clear the tall
+## mushroom ledge 10 m up beside it (the hidden crystal).
+var mushroom_tall_bounce_height := 12.5
+
+## Grip on the pale spore floors (1 = normal dirt, lower = slicker). Both
+## the ball's friction and its push are multiplied by this while on spores.
+var spore_grip := 0.3
+
+
 # ------------------------------------------------------- SLIDER RANGES ----
 # Lowest and highest value the F1 panel's slider allows for each value.
 # Only affects the panel. Values not listed get a guessed range.
@@ -350,6 +368,9 @@ const RANGES := {
 	"boulder_mass": [0.1, 20.0],
 	"seesaw_plank_mass": [0.1, 10.0],
 	"bounce_pad_height": [0.5, 15.0],
+	"mushroom_bounce_height": [1.0, 15.0],
+	"mushroom_tall_bounce_height": [1.0, 25.0],
+	"spore_grip": [0.05, 1.0],
 }
 
 

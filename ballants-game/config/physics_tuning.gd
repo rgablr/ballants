@@ -559,7 +559,7 @@ func get_descriptions() -> Dictionary:
 	var source := FileAccess.get_file_as_string(SOURCE_PATH)
 	var section := ""
 	var comment := ""
-	var header := RegEx.create_from_string("^# -+ ([A-Z /()]+) -+$")
+	var header := RegEx.create_from_string("^# -+ ([A-Z0-9 /():]+) -+$")
 	var declaration := RegEx.create_from_string("^var (\\w+)\\s*:=")
 	for raw_line in source.split("\n"):
 		var line := raw_line.strip_edges()

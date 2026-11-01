@@ -9,6 +9,9 @@
 #    and checks rolling, jumping, restart and the seesaw.
 # 3. Level drives (tests/levels/*.json): a bot drives each level through
 #    its waypoints and must reach the goal without falling out.
+# 4. Hub tests (--hubtest=yes|no|skip): the anthill hub's arrival fall and
+#    opening cutscene played by machine, each answer, the skip, locked and
+#    open tunnels, small holes, and the return from a level.
 #
 # Exit code 0 = everything passed. Any FAIL line tells you what was
 # measured and what was expected.
@@ -35,6 +38,14 @@ for file in tests/levels/*.json; do
 	drive_output=$(godot --headless -- --drive="$(pwd)/$file" 2>&1)
 	echo "$drive_output" | grep -E "^\[drive\]|ERROR|SCRIPT" | grep -vE "leaked at exit|Pages in use"
 	echo "$drive_output" | grep -q "^\[drive\] PASS" || failed=1
+done
+
+echo
+echo "=== Anthill hub (arrival, cutscene, tunnels) ==="
+for mode in yes no skip; do
+	hub_output=$(godot --headless -- --hubtest=$mode 2>&1)
+	echo "$hub_output" | grep -E "^\[hubtest\]|SCRIPT ERROR" | grep -vE "leaked at exit|Pages in use"
+	echo "$hub_output" | grep -q "^\[hubtest\] ALL PASSED" || failed=1
 done
 
 echo

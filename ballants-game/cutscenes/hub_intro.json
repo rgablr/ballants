@@ -1,0 +1,42 @@
+{
+  "_about": "The opening cutscene in the anthill hub, played right after the hero's first landing. Edit the wording here. Speakers and camera targets are ids from characters.json or actors the hub registers (hero, queen, queen_hole, queen_spot). [Queen] / [Hero] camera targets are the 'camera' field on each line. Step kinds are listed at the top of src/cutscene/cutscene_player.gd.",
+  "characters": "res://cutscenes/characters.json",
+  "start": "intro",
+  "skip_to": "skipped",
+
+  "sections": {
+    "intro": [
+      {"do": "camera", "target": "hero", "shot": "face", "move": 1.8},
+      {"do": "wait", "seconds": 1.0},
+      {"do": "camera", "target": "queen_hole", "distance": 5.0, "height": 1.0, "yaw": 35, "look_height": 0.0, "front_toward": "hero", "move": 1.2},
+      {"do": "actor", "actor": "queen", "action": "emerge", "hole": "queen_hole", "settle": "queen_spot", "face": "hero", "speed": 6.0, "camera_follow": true},
+      {"do": "line", "speaker": "queen", "camera": "queen", "shot": "face", "text": "Oh boy! Am I glad you're finally back! A small group of rogue worker ants stole our supply of sugar crystals we saved for the winter!"},
+      {"do": "line", "speaker": "hero", "camera": "hero", "shot": "face", "gesture": "tilt", "text": "..."},
+      {"do": "line", "speaker": "queen", "camera": "queen", "shot": "face", "text": "They hid them all over the yard and deep inside the nest!"},
+      {"do": "line", "speaker": "hero", "camera": "hero", "shot": "face", "gesture": "blink", "text": "..."},
+      {"do": "line", "speaker": "queen", "camera": "queen", "shot": "face", "text": "Since you've been off practicing your balancing act, you can use your skills to quickly get the crystals back! Hopefully in time, before it gets too cold and we need to close the hill!"},
+      {"do": "line", "speaker": "queen", "camera": "queen", "shot": "face", "text": "Can you help us?"},
+      {"do": "choice", "speaker": "hero", "camera": "hero", "shot": "face", "options": [
+        {"text": "Yes", "input": "jump", "keyboard": "Space", "controller": "A", "goto": "yes"},
+        {"text": "No", "input": "dialogue_no", "keyboard": "N", "controller": "B", "goto": "no"}
+      ]}
+    ],
+
+    "yes": [
+      {"do": "line", "speaker": "queen", "camera": "queen", "shot": "face", "text": "Oh, thank goodness! Here, take this. It will help you on your journey."},
+      {"do": "give_item", "from": "queen", "to": "hero", "item": "the Queen's gift (placeholder)"},
+      {"do": "end", "outcome": "yes"}
+    ],
+
+    "no": [
+      {"do": "line", "speaker": "queen", "camera": "queen", "shot": "face", "text": "In that case, you shall be banished to the jail cell for turning your back on the colony..."},
+      {"do": "scene", "action": "jail"},
+      {"do": "game_over", "target": "hero"}
+    ],
+
+    "skipped": [
+      {"do": "give_item", "from": "queen", "to": "hero", "item": "the Queen's gift (placeholder)", "silent": true},
+      {"do": "end", "outcome": "yes"}
+    ]
+  }
+}

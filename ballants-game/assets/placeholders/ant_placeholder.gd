@@ -76,7 +76,47 @@ var _crawl_target := 0.0
 var _teeter := 0.0
 
 var _body: Node3D
+var _neck: Node3D                   # head pivot: tilts for gestures
+var _eyes: Array[MeshInstance3D] = []
+var _gesture_tween: Tween
 var _legs: Array[Dictionary] = []   # each: {side, femur, tibia}
+
+
+## Cutscene gestures: "blink" (eyes squeeze shut and open), "tilt" (head
+## cocks to one side, holds, comes back), "nod".
+func play_gesture(gesture: String) -> void:
+	if _neck == null:
+		return
+	if _gesture_tween and _gesture_tween.is_valid():
+		_gesture_tween.kill()
+	_neck.rotation = Vector3.ZERO
+	for eye in _eyes:
+		eye.scale = Vector3.ONE
+	_gesture_tween = create_tween()
+	match gesture:
+		"blink":
+			_gesture_tween.tween_interval(0.25)
+			for eye in _eyes:
+				_gesture_tween.parallel().tween_property(eye, "scale:y", 0.1, 0.07)
+			_gesture_tween.tween_interval(0.12)
+			for eye in _eyes:
+				_gesture_tween.parallel().tween_property(eye, "scale:y", 1.0, 0.1)
+			_gesture_tween.tween_interval(0.9)
+			for eye in _eyes:
+				_gesture_tween.parallel().tween_property(eye, "scale:y", 0.1, 0.07)
+			_gesture_tween.tween_interval(0.1)
+			for eye in _eyes:
+				_gesture_tween.parallel().tween_property(eye, "scale:y", 1.0, 0.1)
+		"tilt":
+			_gesture_tween.tween_interval(0.2)
+			_gesture_tween.tween_property(_neck, "rotation:z", 0.42, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			_gesture_tween.tween_interval(1.1)
+			_gesture_tween.tween_property(_neck, "rotation:z", 0.0, 0.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		"nod":
+			_gesture_tween.tween_property(_neck, "rotation:x", 0.3, 0.14)
+			_gesture_tween.tween_property(_neck, "rotation:x", 0.0, 0.2)
+		_:
+			_gesture_tween.kill()
 var _arms: Array[Dictionary] = []   # each: {pivot, side, front}
 var _antennae: Array[Node3D] = []
 ## One material per recolorable part (see set_part_color).
@@ -266,17 +306,21 @@ func _build() -> void:
 	# Abdomen: tilted egg pointing down and back.
 	var abdomen := _sphere(_body, Vector3(0.0, 0.17, 0.07), 0.08, Vector3(1.0, 1.0, 1.45), abdomen_mat)
 	abdomen.rotation_degrees.x = 40.0
-	# Thorax (middle) and head.
+	# Thorax (middle) and head. The head, eyes and antennae hang off a neck
+	# pivot so the head can tilt and the eyes blink (cutscene gestures).
 	_sphere(_body, Vector3(0.0, 0.3, -0.01), 0.06, Vector3.ONE, thorax)
-	_sphere(_body, Vector3(0.0, 0.42, -0.05), 0.07, Vector3.ONE, head)
+	_neck = Node3D.new()
+	_neck.position = Vector3(0.0, 0.38, -0.03)
+	_body.add_child(_neck)
+	_sphere(_neck, Vector3(0.0, 0.04, -0.02), 0.07, Vector3.ONE, head)
 	# Eyes.
-	_sphere(_body, Vector3(0.035, 0.44, -0.105), 0.016, Vector3.ONE, eye)
-	_sphere(_body, Vector3(-0.035, 0.44, -0.105), 0.016, Vector3.ONE, eye)
+	_eyes.append(_sphere(_neck, Vector3(0.035, 0.06, -0.075), 0.016, Vector3.ONE, eye))
+	_eyes.append(_sphere(_neck, Vector3(-0.035, 0.06, -0.075), 0.016, Vector3.ONE, eye))
 	# Antennae, on pivots at the head so they can bob.
 	for side in [1.0, -1.0]:
 		var antenna := Node3D.new()
-		antenna.position = Vector3(side * 0.02, 0.47, -0.07)
-		_body.add_child(antenna)
+		antenna.position = Vector3(side * 0.02, 0.09, -0.04)
+		_neck.add_child(antenna)
 		_rod(antenna, Vector3.ZERO, Vector3(side * 0.04, 0.11, -0.07), 0.008, antenna_mat)
 		_antennae.append(antenna)
 

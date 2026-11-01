@@ -82,8 +82,8 @@ func _build() -> void:
 		# Pale bands on the royal abdomen.
 		var band_mat := CritterParts.material(Color(0.78, 0.55, 0.35), 0.8)
 		for i in 3:
-			CritterParts.sphere(_body, abdomen.position + Vector3(0.0, 0.0, 0.03 + i * 0.07), 0.1,
-					Vector3(1.47, 1.4, 0.18) * 1.0, band_mat, 10)
+			CritterParts.sphere(_body, abdomen.position + Vector3(0.0, 0.0, -0.04 + i * 0.06), 0.1,
+					Vector3(1.36, 1.3, 0.3), band_mat, 10)
 	# Thorax and the waist.
 	CritterParts.sphere(_body, Vector3(0.0, y, -0.02), 0.07, Vector3(1.0, 0.9, 1.1), body_mat, 10)
 	CritterParts.sphere(_body, Vector3(0.0, y + 0.005, 0.06), 0.035, Vector3.ONE, dark_mat, 8)
@@ -384,6 +384,32 @@ func face_point(point: Vector3, seconds := 0.5) -> void:
 func walk_floor_to(point: Vector3, walk_speed := 4.0) -> void:
 	set_path(floor_path(global_position, point), walk_speed)
 	await path_finished
+
+
+## Cutscene steps aimed at this ant ({"do": "actor", "actor": ..., "action": ...}):
+##   emerge   hole, settle (a spot), face (an actor), speed, camera_follow
+##   walk_to  to (a spot or actor), speed
+##   face     target (an actor)
+##   nod
+func cutscene_action(action: String, step: Dictionary, player: Node) -> void:
+	match action:
+		"emerge":
+			var hole = player.resolve(str(step.get("hole", "")))
+			var cave = player.resolve("cave")
+			if hole is not Dictionary or cave is not CaveShell:
+				push_warning("CaveAnt: emerge needs a hole and the 'cave' actor")
+				return
+			var settle: Vector3 = player.position_of(player.resolve(str(step.get("settle", ""))))
+			var face: Vector3 = player.position_of(player.resolve(str(step.get("face", ""))))
+			if step.get("camera_follow", false):
+				player.shot(self, player.shot_params("queen", "walk"), 1.0)
+			await emerge_from_hole(cave, hole, settle, face, float(step.get("speed", 5.0)))
+		"walk_to":
+			await walk_floor_to(player.position_of(player.resolve(str(step.get("to", "")))), float(step.get("speed", 4.0)))
+		"face":
+			await face_point(player.position_of(player.resolve(str(step.get("target", "")))))
+		"nod":
+			nod()
 
 
 ## A little nod of the head (talking).

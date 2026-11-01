@@ -24,6 +24,9 @@ var gyro_device := -1
 var steer := 0.0
 ## Current tilt in degrees after recentering (for the HUD indicator).
 var tilt_degrees := 0.0
+## "keyboard" or "controller": whatever the player touched last, so prompts
+## can show the right button names.
+var last_device := "keyboard"
 
 var _roll_offset := 0.0
 var _raw_roll := 0.0
@@ -79,6 +82,14 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("gyro_recenter"):
 		recenter()
+
+
+## Sees every event (even ones the UI handles) to remember the device.
+func _input(event: InputEvent) -> void:
+	if event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > 0.5):
+		last_device = "controller"
+	elif event is InputEventKey or event is InputEventMouseButton:
+		last_device = "keyboard"
 
 
 ## Makes the controller's current tilt count as "straight".

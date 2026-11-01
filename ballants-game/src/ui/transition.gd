@@ -194,6 +194,70 @@ func _input(event: InputEvent) -> void:
 		press_continue()
 
 
+# ----------------------------------------------------------- game over ----
+
+const IRIS_SHADER := "
+shader_type canvas_item;
+uniform vec2 center = vec2(640.0, 360.0);
+uniform float radius = 2000.0;
+uniform float softness = 18.0;
+void fragment() {
+	float d = distance(FRAGCOORD.xy, center);
+	float a = smoothstep(radius - softness, radius + softness, d);
+	COLOR = vec4(0.0, 0.0, 0.0, a);
+}"
+
+var _iris: ColorRect
+var _game_over: Label
+
+## An iris wipe: a black circle closes in on `center` (screen pixels) until
+## the screen is black, "Game Over" shows for a moment, and the screen is
+## left black (the next scene change fades in from it). Awaitable.
+func game_over(center: Vector2, close_time := 1.4, hold_time := 2.2) -> void:
+	if _iris == null:
+		_iris = ColorRect.new()
+		_iris.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_iris.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var shader := Shader.new()
+		shader.code = IRIS_SHADER
+		var material := ShaderMaterial.new()
+		material.shader = shader
+		_iris.material = material
+		add_child(_iris)
+		move_child(_iris, 0)
+		_game_over = Label.new()
+		_game_over.text = "Game Over"
+		_game_over.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_game_over.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_game_over.add_theme_font_size_override("font_size", 72)
+		_game_over.add_theme_color_override("font_color", Color(1, 0.92, 0.75))
+		_game_over.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_game_over.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_game_over.visible = false
+		add_child(_game_over)
+	var material := _iris.material as ShaderMaterial
+	var size := get_viewport().get_visible_rect().size
+	var start_radius := size.length()
+	material.set_shader_parameter("center", center)
+	material.set_shader_parameter("radius", start_radius)
+	_iris.visible = true
+	var tween := create_tween()
+	tween.set_ignore_time_scale(true)
+	tween.tween_method(func(r: float): material.set_shader_parameter("radius", r), start_radius, 0.0, close_time) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await tween.finished
+	# Hand over to the plain black so the next scene's fade-in works.
+	_black.visible = true
+	_black.modulate.a = 1.0
+	_iris.visible = false
+	_game_over.visible = true
+	_game_over.modulate.a = 0.0
+	var show := create_tween()
+	show.tween_property(_game_over, "modulate:a", 1.0, 0.4)
+	await get_tree().create_timer(hold_time).timeout
+	_game_over.visible = false
+
+
 func _fade_to(alpha: float, duration: float) -> void:
 	if _tween:
 		_tween.kill()

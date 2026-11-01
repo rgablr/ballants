@@ -22,9 +22,9 @@ static func build(parent: Node3D, shell: CaveShell) -> void:
 	var root := Node3D.new()
 	root.name = "Decor"
 	parent.add_child(root)
-	var fungus_material := _glow_material(FUNGUS_CAP, FUNGUS_GLOW, 1.6)
+	var fungus_material := _glow_material(FUNGUS_CAP, FUNGUS_GLOW, 0.9)
 	var stem_material := CritterParts.material(FUNGUS_STEM, 0.9)
-	var crystal_material := _glow_material(Color(1.0, 0.75, 0.4), CRYSTAL_GLOW, 2.0)
+	var crystal_material := _glow_material(Color(1.0, 0.75, 0.4), CRYSTAL_GLOW, 1.3)
 
 	# Fungus: spread evenly around the wall, low down, staying off the
 	# tunnel mouths and their letters.
@@ -177,11 +177,13 @@ static func _light_shaft(root: Node3D, shell: CaveShell) -> void:
 	beam.height = shell.height
 	beam.radial_segments = 16
 	beam.rings = 1
+	beam.cap_top = false
+	beam.cap_bottom = false   # a cap on the floor would z-fight with it
 	beam.material = beam_material
 	var beam_instance := MeshInstance3D.new()
 	beam_instance.name = "LightBeam"
 	beam_instance.mesh = beam
-	beam_instance.position = Vector3(0.0, shell.height * 0.5, 0.0)
+	beam_instance.position = Vector3(0.0, shell.height * 0.5 + 0.15, 0.0)
 	beam_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(beam_instance)
 

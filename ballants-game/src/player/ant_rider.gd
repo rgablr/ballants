@@ -95,6 +95,17 @@ func _ball_radius() -> float:
 	return ball.radius if ball and "radius" in ball else 0.5
 
 
+## Cutscenes: a small acted moment ("blink", "tilt", "nod") if the model
+## can do it.
+func play_gesture(gesture: String) -> void:
+	if _visual and _visual.has_method("play_gesture"):
+		_visual.play_gesture(gesture)
+
+
+func get_visual() -> Node3D:
+	return _visual
+
+
 func _physics_process(delta: float) -> void:
 	if ball == null:
 		return

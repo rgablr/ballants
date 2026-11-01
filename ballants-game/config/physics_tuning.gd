@@ -47,7 +47,7 @@ var roll_acceleration := 10.085
 
 ## Top rolling speed on flat ground. Holding a direction will not push you
 ## faster than this. Gravity (rolling down a ramp) still can.
-var max_speed := 9.775
+var max_speed := 12.7975
 
 ## When you push AGAINST the direction you're already moving, your push is
 ## multiplied by this. 1.0 = no help (pure momentum). 1.5 = stopping and

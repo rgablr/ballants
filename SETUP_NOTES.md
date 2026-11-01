@@ -1274,3 +1274,293 @@ Known limits: I can't hear the game, so the volumes come from the numbers. If an
   2. When you roll at the camera, it backs straight up along its view without turning. It only turns when you're inside its comfortable range or pulling it along.
   3. Distances are measured from the ball's real position, not the slightly trailing camera rig, so it can't be caught.
 - **Result:** holding down for 5 s (with a sideways wiggle) keeps the ball heading straight at the camera the whole time, with the camera a steady 2 m ahead.
+
+---
+---
+
+# Part D – The anthill hub and its opening cutscene (2026-10-31, overnight)
+
+Branch: `anthill-hub` (made from `garden-world`; its first commit is the
+F1 tuning you had saved but not committed). Four commits: the hub cave,
+the arrival and cutscene, then tests and these notes.
+
+## 29. What was built, in plain words
+
+**The story loop now goes:** title meadow → roll into the giant ant hill →
+you drop through its top into **the anthill hub** (a cave) → the Queen
+asks for help (first time only) → five tunnels lead to the levels →
+finishing a level puts you back in the cave in front of that tunnel.
+
+**The cave** (`levels/hub/anthill_hub.tscn`, everything built by code in
+`src/objects/hub/`):
+- A round cave 52 m across and 21 m tall: flat floor (gently bumpy away
+  from the middle and the tunnels), walls leaning outward, a dome, and a
+  hole at the very top with daylight pouring through it as a visible
+  shaft. Warm browns and oranges, dim, with glowing fungus clusters low on
+  the walls and amber crystal clusters higher up, each with its own small
+  light. One mesh, one collision shape; the ball can never leave.
+- About 46 **small holes** on the walls and ceiling: a dirt lip with a pure
+  black, unlit disc set just inside it, and a collision plug behind the
+  disc. Too small for the ball (0.9 m across vs the 1 m ball) and blocked
+  anyway.
+- 14 **worker ants** (code-built, six legs, no collision) live in the holes:
+  they wait, poke their head out and look around, then duck back, or
+  crawl across the wall and ceiling to another hole and disappear into it.
+- **5 tunnel mouths** around the floor, each a dirt collar around an arched
+  passage that fades to black 11 m in. The level's name arches over the
+  mouth in chunky 3D letters sunk into the collar. Tunnel N is entry N of
+  `levels/level_list.gd`: 1–3 are the garden levels, 4–5 are empty
+  placeholder strips (`levels/nest/`). Rolling ~5 m into an open tunnel
+  loads the level. A **locked** tunnel is choked with rubble (solid), with
+  the number of crystals still needed standing on it and a glowing,
+  turning sugar crystal hovering above the number. Unlock costs live in
+  the level list too (`crystals_required`: 0, 0, 0, 2, 4 for now).
+- A **jail cell** between tunnels 1 and 5: a smaller barred alcove whose
+  bars slide up and slam down.
+- The **Queen's hole**, low on the wall between tunnels 1 and 2.
+
+**Progress** (`src/core/progress.gd`, a global): crystals, which levels
+have paid out, the Queen's gift, whether the intro has played. A level's
+first finish at or under par earns one crystal. **Nothing is saved to
+disk yet**: it all resets when the game closes. When saving is built,
+`Progress` is the one object to serialize. The HUD shows your crystal
+count top-right (always in the hub, elsewhere once you have one).
+
+**Arrival.** Coming from the meadow (or `--hub`, or key H) the hero
+appears 17.5 m up under the top hole and falls. A camera on the cave floor
+tracks the fall up the light shaft. Landing: dust, the ball squashes, the
+camera shakes, the ant somersaults. Control is locked during the fall. Coming
+back from a level you appear in front of that level's tunnel, looking into
+the cave, no fall.
+
+**Opening cutscene** (first arrival per session): the camera glides in on
+the hero's face, cuts to the Queen's hole, the Queen (twice a worker's
+size, a gold crown of spikes, a big banded abdomen) crawls out, down the
+wall and across the floor with the camera following, settles 3 m from the
+hero facing it, and the dialogue runs exactly as you wrote it, with the
+camera on whoever each line names. Hero lines show "..." under "You" with
+a head tilt / a double blink. The question shows "Yes (Space) / No (N)" or
+"Yes (A) / No (B)" depending on what you touched last.
+- **Yes:** her last line, then a small glowing orb floats from her to the
+  hero, "Received: the Queen's gift (placeholder)", the camera glides back
+  behind the hero, and the hub is yours.
+- **No:** her banishment line, the jail bars rise, the ball rolls over and
+  in by itself (camera following), the bars slam with a thud and a shake,
+  a black circle closes in on the hero, "Game Over" for two seconds, then
+  the title meadow fades in. **The title meadow is the main menu** for now
+  (see Q29).
+- **Skip:** hold Esc / Start for 1 s (a small bar fills top-left). Jumps to
+  the end as if you'd said Yes (gift given, no popup).
+
+**The cutscene system** (reusable; `src/cutscene/`):
+- `cutscenes/hub_intro.json` – the script: sections of steps (camera,
+  wait, line, choice, actor action, scene action, give_item, game_over,
+  goto, end). Lines carry speaker, text, camera target and an optional
+  gesture. Edit wording there; nothing in code knows the words.
+- `cutscenes/characters.json` – per character: display name, typing speed,
+  voice (pitch, blips per letters, variation, length, wave, loudness) and
+  named camera framings (face / wide / walk / fall).
+- `src/cutscene/cutscene_style.gd` – the one place for the text box's
+  look, default typing speed and pauses, voice defaults, camera defaults
+  and the skip hold time.
+- `cutscene_player.gd` runs a file, owns the cutscene camera and the
+  text box, locks the player (`Game.control_locked`) and the dev keys
+  (`Game.cutscene_active`), and hands the camera back with a glide.
+- `dialogue_box.gd` – the transparent black box to the right, name above,
+  letter-by-letter typing, ▼ when done, the two-way choice, the popup.
+- `voice_synth.gd` – the babble: short pitched tones computed in code (no
+  recordings, no AI), one every 2–3 letters, pitch per letter (vowels
+  higher) with a random nudge. The Queen's is low, buzzy and slow.
+- Any node can be a cutscene actor by having
+  `cutscene_action(action, step, player)`; the Queen (`CaveAnt`) does
+  emerge / walk_to / face / nod, the hub does `jail`.
+
+**Keys added:** 4, 5 (levels), **H** (hub), **U** (debug: all tunnels count
+as open; the HUD says so), Esc/Start held (skip a cutscene), N / B (the
+"No" answer). Dev flags: `--hub`, `--hubtest=yes|no|skip`,
+`--shots=1,3.5,8` (timed screenshots with `--screenshot`),
+`--press=jump@3,dialogue_no@6.5`.
+
+## 30. Files
+
+```
+ballants-game/
+  levels/level_list.gd              + crystals_required, HUB, two nest entries, is_last_of_world()
+  levels/hub/anthill_hub.tscn/.gd   the hub: builds the cave, arrival, cutscene hookup, jail sequence
+  levels/nest/level_4_placeholder.tscn, level_5_placeholder.tscn
+  src/core/progress.gd              global Progress (crystals, unlocks, flags)  ★ to be saved later
+  src/objects/hub/cave_shell.gd     cave mesh + collision, cuts, small holes, wall parametrization
+  src/objects/hub/arch_builder.gd   arch collar mesh + collision (tunnels, jail)
+  src/objects/hub/tunnel_entrance.gd  mouth, letters, rubble + number + crystal, trigger
+  src/objects/hub/block_letters.gd  the 5x7 block font
+  src/objects/hub/jail_cell.gd      the barred alcove
+  src/objects/hub/cave_ant.gd       worker ants and the Queen
+  src/objects/hub/cave_decor.gd     fungus, crystals, daylight shaft
+  src/cutscene/cutscene_player.gd, dialogue_box.gd, voice_synth.gd, cutscene_style.gd
+  cutscenes/characters.json, cutscenes/hub_intro.json
+  src/ui/transition.gd              + game_over(center): iris wipe + "Game Over"
+  src/core/level_manager.gd         + load_hub, enter_level_from_hub, enter_hub_through_hill, hub return
+  src/core/controls.gd              + last_device (keyboard / controller)
+  src/player/player_ball.gd         + control lock, set_spawn, teleport
+  assets/placeholders/ant_placeholder.gd  + neck pivot, play_gesture
+  src/core/dev_tools.gd             + --hub, --hubtest, --shots, --press@time
+```
+
+## 31. Acceptance criteria (test by playing)
+
+**Getting there**
+- Title meadow → drop into the giant hill: black wipe, then you are
+  falling inside a cave, seen from below, down a shaft of daylight.
+  You cannot steer or jump while falling.
+- The landing: a burst of dust, the ball flattens and springs back, the
+  picture shakes, the ant does a somersault. No big bounce back up.
+- Press **H** anywhere: the hub loads with the same fall. Press **R** in
+  the hub: it reloads with the fall (no cutscene the second time).
+
+**The cave**
+- Roll around freely with the normal controls; the ball never leaves the
+  cave; the walls stop you; the floor is flat in the middle and gently
+  uneven toward the edges (no hops on it).
+- It is dim but readable: warm brown walls, orange glowing fungus near the
+  floor, amber crystal clusters higher up, a bright shaft of daylight in
+  the middle, a disc of sky when you look up through the top hole.
+- Dozens of small holes on the walls and ceiling, each with a lip and a
+  pitch-black inside (no light ever shows anything inside, from any
+  angle). Ants poke their heads out and look around, crawl between holes
+  along the walls and ceiling, and vanish into them.
+- Roll at a low hole on the wall: you bump off the wall; you can never get
+  into a hole.
+- Five tunnel mouths around the floor with the level names arched over
+  them in block letters: SIDEWALK CRACK (straight ahead when you land),
+  FLOWERBED SLALOM, GARDEN HOSE BRIDGE, PLACEHOLDER 4, PLACEHOLDER 5.
+- Tunnels 1–3 are open: roll in, it gets dark, the screen wipes to black,
+  that level starts. Tunnels 4 and 5 are choked with rubble with a glowing
+  turning crystal over a "2" and a "4". Roll into the rubble: solid.
+- Press **U**: the rubble tumbles away and both tunnels open (the HUD
+  says "debug: all tunnels open"). Press U again: rubble is back.
+- Finish any level: results card as before, then the hub fades in with
+  you in front of that level's tunnel, facing the cave. No fall, no
+  cutscene. Finish level 3: the "Backyard Garden complete" card first.
+- Finish a level under par for the first time: the crystal count top-right
+  goes up by one. With 2 crystals, tunnel 4's rubble clears by itself the
+  next time you are in the hub (or at once if you are there).
+
+**Opening cutscene (first arrival per session)**
+- About a second after landing the camera glides in on your ant's face
+  (its antennae and arms sway a little), then cuts to a hole on the wall.
+- The Queen crawls out of the hole (the only ant that ever comes fully
+  out), down the wall, across the floor with the camera following, and
+  turns to face you. She is clearly bigger than the workers, with a
+  crown and a big striped abdomen.
+- Each line: the speaker's name above a see-through black box on the
+  right, text typing letter by letter with babbly blips (hers low and
+  slow, yours higher and quicker). The camera is on whoever the line
+  belongs to; between lines it pans. Hero lines show "..." with a head
+  tilt (first) and a double blink (second).
+- Press Space/A while typing: the whole line appears. Press again: the
+  next line. A ▼ pulses when a line is waiting.
+- "Can you help us?" → "Yes (Space)   No (N)" with the keyboard, or
+  "Yes (A)   No (B)" if you last touched the controller. Touch the other
+  device and the labels swap live.
+- You cannot move, jump, restart or switch levels during the cutscene.
+- **Yes:** "Oh, thank goodness…", a glowing orb floats from her to you,
+  "Received: the Queen's gift (placeholder)", the camera glides back
+  behind you and the HUD returns. You can play.
+- **No:** "In that case…", the camera shows the jail, its bars rise, your
+  ball rolls there by itself and in, the bars slam (thud, shake), a black
+  circle closes in on you until the screen is black, "Game Over", and the
+  title meadow fades in from black.
+- Hold Esc (or Start) for a second at any point in the cutscene: a
+  "skipping..." bar fills top-left, the scene ends at once as if you'd
+  said Yes, you can play. Tapping Esc does not skip (it only frees the
+  mouse as before).
+- Quit and relaunch: the cutscene plays again (no saving yet).
+
+**Terminal:** `./run_tests.sh` ends with `RESULT: all checks passed`:
+8 physics tests, 11 arena checks, 5 level drives (each now reporting it
+came back to the hub by its own tunnel, e.g. "0.1 m from tunnel 1's
+mouth"), and three hub runs (`--hubtest=yes`, `no`, `skip`) that check
+the fall, the landing, the cutscene, both answers, the skip, the locked
+tunnel, a small hole, tunnel 1 loading level 1, and the return.
+
+## 32. Known issues and notes
+
+- **Nothing is saved yet.** Crystals, the gift and "intro seen" live in
+  `Progress` for one session. The intro replays every launch. Saving
+  needs to be built (Q17c is the natural place).
+- Crystals are earned only by a first finish under par; the hidden bonus
+  crystals and the per-level time limit from your story notes are not
+  built (see Q28).
+- Pressing **R** in the hub reloads it with the fall (the hub has no
+  other "start"). Fine for testing; say if the fall should be once only.
+- The title meadow is standing in as the main menu (game over goes
+  there). A proper menu screen is Q29.
+- During a camera pan between the Queen and the hero the view sweeps
+  across the wall for a moment; a cut (`"move": 0`) on those lines would
+  avoid it if you prefer cuts.
+- The Queen stays where she stopped after the scene (no idle wander).
+- The worker ants walk straight between holes in wall coordinates, so a
+  path can cross a tunnel's letters or a fungus cluster; they have no
+  collision so nothing breaks, it just looks odd up close now and then.
+- The hero's "face" shot shows the ant from in front and a little to the
+  side; the ant doesn't turn to look at the Queen while she talks.
+- Pre-existing: with your saved tuning the arena's seesaw check could not
+  tip the plank with a 0.087 kg crate; the check now drops the boulder.
+- Pre-existing engine noise in headless runs ("Leaked instance
+  dependency", "get_nodes_in_group on a null value" during the physics
+  tests) is unchanged.
+- Letters use a code-built block font: Godot's TextMesh can't cut the
+  Nunito font (overlapping outlines) and Kenney's font pack needs a
+  browser download.
+
+## 33. Questions for you
+
+**Q27. The Queen's gift. What is it and what does it do?**
+- (a) A sugar crystal pouch: a counter / the thing crystals go into
+  (cosmetic, explains the HUD count).
+- (b) An ability: e.g. a short speed burst or a double jump, used with a
+  button, for the levels ahead.
+- (c) A map / compass: in a level, points toward the hidden bonus crystal.
+- (d) A key or token that opens tunnel 1 (so the first tunnel is locked
+  until you've said yes).
+- (e) Something else — tell me what it looks like and what it does.
+
+**Q28. Crystals per tunnel (now 0 / 0 / 0 / 2 / 4) and how they're earned
+(now: first finish under par = 1 crystal):**
+- (a) Keep: garden tunnels open, nest tunnels cost 2 and 4.
+- (b) Only tunnel 1 open at the start; 1 / 2 / 3 / 4 crystals for the
+  rest (one new tunnel per under-par finish).
+- (c) Build the full story rule now: each level has a time limit (fail
+  but keep playing), a par crystal, and a hidden bonus crystal placed in a
+  tricky spot; tunnels cost more (e.g. 0 / 1 / 2 / 4 / 6). I'd place the
+  bonus crystals; you'd tell me if they're too easy/hard.
+- (d) Your own numbers: ____ / ____ / ____ / ____ / ____.
+
+**Q29. The main menu. "Game Over" now returns to the title meadow.**
+- (a) Keep the meadow as the menu (it already has the title, the start
+  and customize).
+- (b) Add a real menu screen (Start / Customize / Quit, maybe Continue
+  once saving exists) before the meadow.
+- (c) A menu screen that replaces the meadow entirely; the hub is the
+  first thing you play.
+
+**Q30. Levels 4 and 5 are placeholders named "Placeholder 4/5" in the world
+"Inside the Nest". When you're ready: what are they?** Give me a name and a
+one-paragraph description each (setting, the momentum test, the hazard)
+and I'll build them like the garden ones.
+
+**Q31. Saving (needed for crystals, the gift, "intro seen", best times):**
+- (a) Build it now: one save file, autosave on every level finish and
+  hub arrival, a "New game" option that wipes it.
+- (b) Later, after more levels exist.
+
+**Q32. The arrival fall plays every time you enter the hub from the meadow
+or press H / R there.**
+- (a) Keep.
+- (b) Fall only the very first time; afterwards you roll in through
+  tunnel 1's mouth (or appear in the middle).
+
+**Q33. Cutscene camera between lines:**
+- (a) Smooth pans (as built, 0.9 s).
+- (b) Hard cuts.
+- (c) Pans between the same speaker's lines, cuts when the speaker changes.

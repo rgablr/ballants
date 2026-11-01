@@ -35,6 +35,13 @@ credit, but they are placeholders to be replaced:
 | Ball styles: basketball, volleyball, beach, tennis, baseball, bowling, 8-ball, golf, playground | `assets/placeholders/sports_ball.gdshader` (drawn by a shader, no image) | Optional: CC0 ball models, ~1 m across |
 | Rolling rumble, bee buzz and enemy-nearby drone sounds | `src/core/sound_hooks.gd` (made from noise / a hum in code, no recording) | Optional: CC0 recorded rolling and buzzing loops |
 | Enemies: ground beetle, tiger beetle, antlion pit, dragonfly | `src/objects/enemies/*.gd` | Optional: low-poly CC0 insect models; behaviour scripts and hit distances stay |
+| Anthill hub cave: floor, walls, dome, small holes with black plugs | `src/objects/hub/cave_shell.gd` | Optional: a sculpted low-poly cave interior; the wall parametrization (holes, ant paths) and collision stay |
+| Tunnel mouths, rubble, jail cell with bars | `src/objects/hub/arch_builder.gd`, `tunnel_entrance.gd`, `jail_cell.gd` | Optional: low-poly dug-earth arch models and a gate; triggers and collision stay |
+| 3D block letters over the tunnels and the "crystals needed" digits | `src/objects/hub/block_letters.gd` (a 5x7 dot font extruded into boxes) | Optional: a CC0 3D letter set (Kenney has none; Godot's TextMesh cannot cut the Nunito font's overlapping outlines) |
+| Sugar crystal (the glowing six-sided gem), glowing fungus, amber wall crystals, daylight shaft | `tunnel_entrance.gd` (`make_crystal`), `cave_decor.gd` | Optional: low-poly CC0 crystal and mushroom models |
+| Worker ants on the cave walls and the Queen Ant (crown, big abdomen) | `src/objects/hub/cave_ant.gd` | Optional: a low-poly CC0 ant (crawling pose) and a queen variant; the gait and path code stay |
+| The Queen's gift (a glowing orb) | `src/cutscene/cutscene_player.gd` (`_make_orb`) | Whatever the item turns out to be (see SETUP_NOTES Q27) |
+| Dialogue "jibber" voices | `src/cutscene/voice_synth.gd` (short pitched tones computed in code; no recording, no AI) | Keep, or CC0 recorded blips per character |
 
 ## Searched but not used
 

@@ -1263,3 +1263,14 @@ Known limits: I can't hear the game, so the volumes come from the numbers. If an
 - **F1 panel is mouse-only.** Sliders, checkboxes and buttons never take keyboard or controller focus, so you can drive and tune at the same time. The mouse wheel scrolls the list instead of nudging the slider under the pointer.
 - **Ant floating above the ball, fixed.** A hard bounce (or a jump) during the landing somersault cut it off partway without putting the ant back down. Ending a somersault early now always resets the ant onto the ball (also when knocked off).
 - **Turn sway (teetering) is easier to see.** It was there before but only kicked in on very sharp turns (sideways acceleration over 7 m/s², full at 16). A hard turn only reached about 38%. It now starts at 4 m/s² and is full at 10, and the ant rocks further (0.42 rad) and windmills its arms more. A hard turn now reaches full sway.
+
+## 28. Lazy camera: stick always relative to the camera
+
+- **The problem:** holding down (toward the camera) eventually sent the ball past the camera, then rolling away from it while you still held down. Two causes:
+  1. An old chase-camera rule froze the control direction while you held back.
+  2. When the camera was pushed back it also turned to face the ball. Each turn rotated the controls a little, and the ball curled round the camera.
+- **The fix:**
+  1. With the lazy camera on, the stick is always simply relative to the camera (the freeze still applies to the chase camera).
+  2. When you roll at the camera, it backs straight up along its view without turning. It only turns when you're inside its comfortable range or pulling it along.
+  3. Distances are measured from the ball's real position, not the slightly trailing camera rig, so it can't be caught.
+- **Result:** holding down for 5 s (with a sideways wiggle) keeps the ball heading straight at the camera the whole time, with the camera a steady 2 m ahead.

@@ -67,9 +67,11 @@ var _launch_grace := 0.0
 ## and tests read this).
 var seam_pops_removed := 0
 
-# While the player holds "back", the control direction is frozen at the
-# camera angle they started with. That way the camera can swing around
-# behind the reversing ball without the controls flipping mid-swing.
+# Chase camera only: while the player holds "back", the control direction is
+# frozen at the camera angle they started with, so the camera can swing
+# round behind the reversing ball without the controls flipping mid-swing.
+# The lazy camera never swings behind, so there the stick is always simply
+# relative to the camera (down = toward it, and it backs away).
 var _control_yaw_frozen := false
 var _frozen_yaw := 0.0
 
@@ -214,7 +216,7 @@ func _apply_movement() -> void:
 		input.y = minf(input.y, 0.0)
 		_control_yaw_frozen = false
 	else:
-		var holding_back := input.y > 0.5
+		var holding_back := input.y > 0.5 and not Tuning.camera_lazy
 		if holding_back and not _control_yaw_frozen:
 			_frozen_yaw = _camera_yaw()
 		_control_yaw_frozen = holding_back

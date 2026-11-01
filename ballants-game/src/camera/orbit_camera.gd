@@ -145,7 +145,10 @@ func _turn_manually(yaw_delta: float, pitch_delta: float) -> void:
 func _lazy_follow(delta: float) -> void:
 	if target == null:
 		return
-	var focus := global_position
+	# Distances are kept from the ball's real position, not the rig (which
+	# trails a little behind it), so a ball rolling straight at the camera
+	# can't catch up with it and roll past.
+	var focus := _focus_point()
 	var near: float = Tuning.camera_distance
 	var far: float = near + Tuning.camera_lazy_slack
 	if not _anchor_set:
@@ -157,7 +160,11 @@ func _lazy_follow(delta: float) -> void:
 		away = Vector3(sin(_yaw), 0.0, cos(_yaw))
 		distance = near
 	var length := clampf(distance, near, far)
-	_yaw = atan2(away.x, away.z)
+	if distance >= near:
+		_yaw = atan2(away.x, away.z)
+	# Too close (rolling at the camera): back straight away along the view
+	# without turning. Turning here would turn the controls with it, and
+	# the ball would curl round the camera instead of coming at it.
 	# Optional slow drift round behind the direction of travel.
 	if Tuning.camera_lazy_swing > 0.0 and target is RigidBody3D \
 			and _seconds_since_manual >= Tuning.camera_look_hold_time:
@@ -169,7 +176,9 @@ func _lazy_follow(delta: float) -> void:
 	if _seconds_since_manual >= Tuning.camera_look_hold_time:
 		_pitch = lerp(_pitch, deg_to_rad(Tuning.camera_pitch_default), 1.0 - exp(-delta * 3.0))
 	_anchor = focus + Vector3(sin(_yaw), 0.0, cos(_yaw)) * length
-	_arm.spring_length = length
+	# Aim the arm from the (trailing) rig so the camera lands on the anchor.
+	var from_rig := Vector3(_anchor.x - global_position.x, 0.0, _anchor.z - global_position.z)
+	_arm.spring_length = maxf(from_rig.dot(Vector3(sin(_yaw), 0.0, cos(_yaw))), 0.5)
 	_apply_rotation()
 
 
